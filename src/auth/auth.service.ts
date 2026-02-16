@@ -32,12 +32,18 @@ export class AuthService {
     // Le "10" est le nombre de "rounds" de salage — plus c'est élevé, plus c'est lent mais sécurisé
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
-    // 3. Créer l'utilisateur en base
+    // 3. Créer l'utilisateur en base avec le rôle USER par défaut
     const user = await this.prisma.user.create({
       data: {
         email: dto.email,
         password: hashedPassword,
         name: dto.name,
+        // Assigner automatiquement le rôle USER à l'inscription
+        roles: {
+          create: {
+            role: { connect: { name: 'USER' } },
+          },
+        },
       },
     });
 

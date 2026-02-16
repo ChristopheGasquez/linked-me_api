@@ -27,14 +27,36 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: JwtPayload) {
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
+      // Charger les rôles et leurs permissions en une seule requête
+      include: {
+        roles: {
+          include: {
+            role: {
+              include: {
+                permissions: {
+                  include: { permission: true },
+                },
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!user) {
       throw new UnauthorizedException();
     }
 
-    // Ce qui est retourné ici sera disponible dans request.user
-    const { password, ...userWithoutPassword } = user;
-    return userWithoutPassword;
+    // Extraire les noms de permissions en une liste plate : ['READ_USER', 'EDIT_OWN_PROFILE', ...]
+    const permissions = user.roles.flatMap((ur) =>
+      ur.role.permissions.map((rp) => rp.permission.name),
+    );
+
+    // Extraire les noms de rôles : ['USER', 'ADMIN', ...]
+    const roles = user.roles.map((ur) => ur.role.name);
+
+    // Retourner l'utilisateur avec ses rôles et permissions (sans le mot de passe ni les relations brutes)
+    const { password, roles: _, ...userWithoutPassword } = user;
+    return { ...userWithoutPassword, roles, permissions };
   }
 }
