@@ -1,0 +1,44 @@
+// Fichier de schéma Prisma
+// Chaque "model" correspond à une table dans PostgreSQL
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Table des utilisateurs
+model User {
+  id        Int          @id @default(autoincrement()) // Clé primaire auto-incrémentée
+  email     String       @unique @db.VarChar(255)      // Email unique (pas de doublons)
+  password  String       @db.VarChar(255)              // Hash bcrypt (~60 chars, 255 par sécurité)
+  name      String       @db.VarChar(100)              // Nom affiché
+  createdAt DateTime     @default(now())               // Date de création automatique
+  updatedAt DateTime     @updatedAt                    // Mis à jour automatiquement à chaque modification
+  isEmailChecked Boolean @default(false)               // True après vérification de l'email (link on mail)
+
+  // Relation : un User peut avoir plusieurs Posts
+  posts Post[]
+
+  // Nom de la table en base de données (convention snake_case en SQL)
+  @@map("users")
+}
+
+// Table des posts
+model Post {
+  id        Int      @id @default(autoincrement())
+  title     String   @db.VarChar(255)               // Titre du post
+  content   String   @db.Text                      // Contenu du post (texte long, pas de limite)
+  published Boolean  @default(false)               // Brouillon par défaut
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relation : chaque Post appartient à un User
+  author   User @relation(fields: [authorId], references: [id])
+  authorId Int  // Clé étrangère vers User
+
+  @@map("posts")
+}
