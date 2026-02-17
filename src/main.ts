@@ -4,9 +4,6 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module.js';
 
-// DEBUG: vérifier quelles variables d'environnement sont disponibles (à supprimer après debug)
-console.log('ENV KEYS:', Object.keys(process.env).filter(k => ['JWT_SECRET', 'DATABASE_URL', 'NODE_ENV', 'PORT', 'ADMIN_EMAIL'].includes(k)));
-
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
