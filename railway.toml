@@ -2,4 +2,4 @@
 buildCommand = "npm run build"
 
 [deploy]
-startCommand = "node dist/main.js"
+startCommand = "node dist/src/main.js"
