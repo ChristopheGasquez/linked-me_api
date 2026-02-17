@@ -11,7 +11,7 @@ import { AdminModule } from './admin/admin.module.js';
 
 @Module({
   imports: [
-    ConfigModule.forRoot(),
+    ConfigModule.forRoot({ isGlobal: true }),
     // Rate limiting : max 60 requêtes par minute par IP
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 60 }]),
     PrismaModule,
