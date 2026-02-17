@@ -1,9 +1,0 @@
-node_modules
-dist
-generated
-.env
-.env.*
-.claude
-.git
-.gitignore
-*.md
