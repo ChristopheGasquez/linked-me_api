@@ -1,5 +1,5 @@
 [build]
-buildCommand = "npm run build"
+buildCommand = "npm run build && npx prisma migrate deploy && npx prisma db seed"
 
 [deploy]
 startCommand = "node dist/src/main.js"
