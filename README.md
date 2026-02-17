@@ -79,6 +79,8 @@ npm run start:prod
 
 Swagger is available in development at `/api` (disabled in production).
 
+A Postman collection is available in [`docs/`](docs/) for testing all endpoints.
+
 ## Authentication
 
 The API uses **JWT Bearer tokens**. To authenticate:
