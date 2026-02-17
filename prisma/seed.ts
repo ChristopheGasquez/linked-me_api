@@ -66,26 +66,24 @@ async function main() {
   const adminEmail = process.env.ADMIN_EMAIL as string;
   const adminPassword = process.env.ADMIN_PASSWORD as string;
 
-  const existingAdmin = await prisma.user.findUnique({ where: { email: adminEmail } });
+  const hashedPassword = await bcrypt.hash(adminPassword, 10);
 
-  if (!existingAdmin) {
-    const hashedPassword = await bcrypt.hash(adminPassword, 10);
-
-    await prisma.user.create({
-      data: {
-        email: adminEmail,
-        password: hashedPassword,
-        name: 'Admin',
-        roles: {
-          create: {
-            role: { connect: { name: 'ADMIN' } },
-          },
+  await prisma.user.upsert({
+    where: { email: adminEmail },
+    update: { password: hashedPassword },
+    create: {
+      email: adminEmail,
+      password: hashedPassword,
+      name: 'Admin',
+      roles: {
+        create: {
+          role: { connect: { name: 'ADMIN' } },
         },
       },
-    });
+    },
+  });
 
-    console.log(`Utilisateur admin créé (${adminEmail})`);
-  }
+  console.log(`Utilisateur admin upsert (${adminEmail})`);
 
   console.log('Seed terminé : rôles, permissions et admin créés');
 }

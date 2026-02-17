@@ -105,4 +105,14 @@ export class AdminController {
   ) {
     return this.adminService.removeRoleFromUser(userId, roleId);
   }
+
+  @ApiOperation({ summary: 'Supprimer un utilisateur (si aucun rôle assigné)' })
+  @ApiResponse({ status: 200, description: 'Utilisateur supprimé' })
+  @ApiResponse({ status: 400, description: 'L\'utilisateur a encore des rôles' })
+  @ApiResponse({ status: 404, description: 'Utilisateur non trouvé' })
+  @RequirePermissions(Permissions.USER_DELETE_ANY)
+  @Delete('users/:id')
+  deleteUser(@Param('id', ParseIntPipe) id: number) {
+    return this.adminService.deleteUser(id);
+  }
 }

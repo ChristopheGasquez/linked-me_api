@@ -133,4 +133,23 @@ export class AdminService {
     });
     return { message: 'Rôle retiré de l\'utilisateur' };
   }
+
+  // ─── Suppression d'un utilisateur ─────────────────────────
+
+  async deleteUser(userId: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { roles: true },
+    });
+    if (!user) throw new NotFoundException('Utilisateur non trouvé');
+
+    if (user.roles.length > 0) {
+      throw new BadRequestException(
+        'Impossible de supprimer : retirez d\'abord tous les rôles de cet utilisateur',
+      );
+    }
+
+    await this.prisma.user.delete({ where: { id: userId } });
+    return { message: `Utilisateur ${userId} supprimé` };
+  }
 }
