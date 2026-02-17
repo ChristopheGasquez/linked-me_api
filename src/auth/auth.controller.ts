@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 import { AuthService } from './auth.service.js';
 import { RegisterDto } from './dto/register.dto.js';
 import { LoginDto } from './dto/login.dto.js';
+import { RefreshTokenDto } from './dto/refresh-token.dto.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
 
 @ApiTags('Auth')  // Regroupe les routes sous "Auth" dans Swagger
@@ -34,5 +35,30 @@ export class AuthController {
   @Get('me')
   getMe(@Request() req: any) {
     return req.user;
+  }
+
+  @ApiOperation({ summary: 'Rafraîchir les tokens (rotation)' })
+  @ApiResponse({ status: 200, description: 'Nouvelle paire access_token + refresh_token' })
+  @ApiResponse({ status: 401, description: 'Refresh token invalide ou révoqué' })
+  @Post('refresh')
+  refresh(@Body() dto: RefreshTokenDto) {
+    return this.authService.refresh(dto.refresh_token);
+  }
+
+  @ApiOperation({ summary: 'Déconnexion (révoque le refresh token)' })
+  @ApiResponse({ status: 200, description: 'Refresh token révoqué' })
+  @Post('logout')
+  logout(@Body() dto: RefreshTokenDto) {
+    return this.authService.logout(dto.refresh_token);
+  }
+
+  @ApiOperation({ summary: 'Révoquer toutes les sessions' })
+  @ApiBearerAuth()
+  @ApiResponse({ status: 200, description: 'Tous les refresh tokens révoqués' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @UseGuards(JwtAuthGuard)
+  @Post('logout-all')
+  logoutAll(@Request() req: any) {
+    return this.authService.logoutAll(req.user.id);
   }
 }
