@@ -24,9 +24,23 @@ model User {
   posts Post[]
   // Relation : un User peut avoir plusieurs Rôles
   roles UserRole[]
+  // Relation : un User peut avoir plusieurs Refresh Tokens (multi-appareils)
+  refreshTokens RefreshToken[]
 
   // Nom de la table en base de données (convention snake_case en SQL)
   @@map("users")
+}
+
+// Table des refresh tokens (un par session/appareil)
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @db.VarChar(500)
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("refresh_tokens")
 }
 
 // Table des posts

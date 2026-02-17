@@ -34,6 +34,9 @@ cp .env.example .env
 |----------|-------------|
 | `DATABASE_URL` | PostgreSQL connection URL |
 | `JWT_SECRET` | Secret key for JWT tokens |
+| `JWT_ACCESS_EXPIRY` | Access token lifetime (default: `15m`) |
+| `JWT_REFRESH_SECRET` | Secret key for refresh tokens |
+| `JWT_REFRESH_EXPIRY` | Refresh token lifetime (default: `7d`) |
 | `ADMIN_EMAIL` | Initial admin account email |
 | `ADMIN_PASSWORD` | Initial admin account password |
 
@@ -82,6 +85,10 @@ The API uses **JWT Bearer tokens**. To authenticate:
 
 1. `POST /auth/login` with `email` and `password`
 2. Use the returned `access_token` in the `Authorization` header: `Bearer <token>`
+3. When the access token expires, call `POST /auth/refresh` with the `refresh_token` to get a new pair
+4. `POST /auth/logout` to revoke a refresh token, or `POST /auth/logout-all` to revoke all sessions
+
+Tokens use **rotation**: each refresh invalidates the previous refresh token and issues a new one.
 
 Access control is based on **RBAC** (Role-Based Access Control):
 - Each user has one or more **roles** (USER, ADMIN...)
