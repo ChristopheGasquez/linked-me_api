@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Param, Body, UseGuards, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Param, Body, UseGuards, ParseIntPipe, HttpCode } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AdminService } from './admin.service.js';
 import { CreateRoleDto } from './dto/create-role.dto.js';
@@ -114,5 +114,16 @@ export class AdminController {
   @Delete('users/:id')
   deleteUser(@Param('id', ParseIntPipe) id: number) {
     return this.adminService.deleteUser(id);
+  }
+
+  // ─── Maintenance ───────────────────────────────────────
+
+  @ApiOperation({ summary: 'Forcer le nettoyage des comptes non vérifiés' })
+  @ApiResponse({ status: 200, description: 'Nettoyage effectué' })
+  @RequirePermissions(Permissions.USER_DELETE_ANY)
+  @Post('cleanup-unverified-users')
+  @HttpCode(200)
+  cleanupUnverifiedUsers() {
+    return this.adminService.cleanupUnverifiedUsers();
   }
 }

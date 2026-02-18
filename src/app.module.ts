@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller.js';
@@ -9,10 +10,12 @@ import { AuthModule } from './auth/auth.module.js';
 import { UsersModule } from './users/users.module.js';
 import { AdminModule } from './admin/admin.module.js';
 import { MailModule } from './mail/mail.module.js';
+import { TasksModule } from './tasks/tasks.module.js';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(),
     // Rate limiting : max 60 requêtes par minute par IP
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 60 }]),
     PrismaModule,
@@ -20,6 +23,7 @@ import { MailModule } from './mail/mail.module.js';
     AuthModule,
     UsersModule,
     AdminModule,
+    TasksModule,
   ],
   controllers: [AppController],
   providers: [

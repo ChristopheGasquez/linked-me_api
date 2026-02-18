@@ -38,4 +38,13 @@ export class UsersService {
     await this.prisma.user.delete({ where: { id } });
     return { message: 'Compte supprimé' };
   }
+
+  // Supprimer les comptes non vérifiés créés avant le seuil
+  async deleteUnverified(ttlHours: number): Promise<number> {
+    const threshold = new Date(Date.now() - ttlHours * 60 * 60 * 1000);
+    const result = await this.prisma.user.deleteMany({
+      where: { isEmailChecked: false, createdAt: { lt: threshold } },
+    });
+    return result.count;
+  }
 }
