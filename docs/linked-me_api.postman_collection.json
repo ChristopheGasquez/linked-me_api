@@ -1,7 +1,7 @@
 {
 	"info": {
 		"_postman_id": "9c3140ab-f4c7-4e33-a173-01a1f3ff4187",
-		"name": "linked-me_api",
+		"name": "linked-me_api_G",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "2920763"
 	},
@@ -185,8 +185,8 @@
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.collectionVariables.set(\"subTocken\", response.access_token);",
-									"pm.collectionVariables.set(\"subRefreshTocken\", response.access_token);",
+									"pm.collectionVariables.set(\"subTocken\", \"\");",
+									"pm.collectionVariables.set(\"subRefreshTocken\", \"\");",
 									""
 								],
 								"type": "text/javascript",
@@ -701,6 +701,39 @@
 										"5",
 										"roles",
 										"2"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "maintenance",
+					"item": [
+						{
+							"name": "admin/cleanup-unverified-users",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{subTocken}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/admin/cleanup-unverified-users",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"cleanup-unverified-users"
 									]
 								}
 							},

@@ -1,9 +1,15 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { UsersService } from '../users/users.service.js';
 
 @Injectable()
 export class AdminService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private usersService: UsersService,
+    private configService: ConfigService,
+  ) {}
 
   // ─── Rôles ───────────────────────────────────────────────
 
@@ -151,5 +157,13 @@ export class AdminService {
 
     await this.prisma.user.delete({ where: { id: userId } });
     return { message: `Utilisateur ${userId} supprimé` };
+  }
+
+  // ─── Nettoyage des comptes non vérifiés ─────────────────
+
+  async cleanupUnverifiedUsers() {
+    const ttl = +this.configService.getOrThrow<string>('UNVERIFIED_USER_TTL_HOURS');
+    const count = await this.usersService.deleteUnverified(ttl);
+    return { message: `${count} compte(s) non vérifié(s) supprimé(s)` };
   }
 }
