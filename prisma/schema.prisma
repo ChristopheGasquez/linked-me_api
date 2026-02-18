@@ -26,6 +26,7 @@ model User {
   roles UserRole[]
   // Relation : un User peut avoir plusieurs Refresh Tokens (multi-appareils)
   refreshTokens RefreshToken[]
+  emailVerifications EmailVerification[]
 
   // Nom de la table en base de données (convention snake_case en SQL)
   @@map("users")
@@ -41,6 +42,18 @@ model RefreshToken {
   createdAt DateTime @default(now())
 
   @@map("refresh_tokens")
+}
+
+// Table des tokens de vérification d'email
+model EmailVerification {
+  id        Int      @id @default(autoincrement())
+  token     String   @db.VarChar(500)
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("email_verifications")
 }
 
 // Table des posts
