@@ -19,7 +19,7 @@ async function bootstrap() {
 
   // Active la validation automatique des DTOs (class-validator)
   // whitelist: true → ignore les propriétés non décorées dans le DTO
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
   // Swagger : documentation de l'API, uniquement hors production
   if (process.env.NODE_ENV !== 'production') {
