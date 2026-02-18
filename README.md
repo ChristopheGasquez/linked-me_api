@@ -103,11 +103,48 @@ Access control is based on **RBAC** (Role-Based Access Control):
 src/
 ├── auth/           # Authentication (JWT, guards, decorators, permissions)
 ├── admin/          # Administration (roles, permissions, users)
+├── common/         # Shared utilities (pagination, DTOs)
 ├── users/          # User profile management
+├── mail/           # Email service (Resend)
+├── tasks/          # Scheduled tasks (cron cleanup)
 ├── prisma/         # PrismaModule (service + connection)
 ├── app.module.ts   # Root module
 └── main.ts         # Bootstrap
 ```
+
+## Pagination
+
+List endpoints support offset-based pagination with search and filters.
+
+**Query parameters:**
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `page` | `1` | Page number |
+| `limit` | `20` | Items per page (max 100) |
+| `sortBy` | `createdAt` | Sort field |
+| `sortOrder` | `desc` | Sort direction (`asc` / `desc`) |
+| `search` | — | Text search (depends on endpoint) |
+
+**Response format:**
+
+```json
+{
+  "data": [...],
+  "meta": {
+    "page": 1,
+    "limit": 20,
+    "total": 150,
+    "totalPages": 8,
+    "sortBy": "createdAt",
+    "sortOrder": "desc",
+    "search": "john",
+    "filters": { "role": "ADMIN" }
+  }
+}
+```
+
+Each endpoint may support additional filters (e.g. `role`, `isEmailChecked` for `GET /admin/users`).
 
 ## Deployment
 

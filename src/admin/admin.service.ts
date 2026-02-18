@@ -2,6 +2,8 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { UsersService } from '../users/users.service.js';
+import { paginate } from '../common/pagination/index.js';
+import { FindUsersQueryDto } from './dto/find-users-query.dto.js';
 
 @Injectable()
 export class AdminService {
@@ -97,15 +99,34 @@ export class AdminService {
 
   // ─── Utilisateurs & rôles ────────────────────────────────
 
-  async findAllUsers() {
-    const users = await this.prisma.user.findMany({
+  async findAllUsers(query: FindUsersQueryDto) {
+    const where: Record<string, unknown> = {};
+    const metaFilters: Record<string, unknown> = {};
+
+    if (query.role) {
+      where.roles = { some: { role: { name: query.role } } };
+      metaFilters.role = query.role;
+    }
+
+    if (query.isEmailChecked !== undefined) {
+      where.isEmailChecked = query.isEmailChecked;
+      metaFilters.isEmailChecked = query.isEmailChecked;
+    }
+
+    const result = await paginate(this.prisma.user, query, {
+      searchFields: ['email', 'name'],
+      where,
       include: { roles: { include: { role: true } } },
+      metaFilters,
     });
 
-    return users.map(({ password, ...user }) => ({
-      ...user,
-      roles: user.roles.map((ur) => ur.role),
-    }));
+    return {
+      ...result,
+      data: result.data.map(({ password, ...user }: any) => ({
+        ...user,
+        roles: user.roles.map((ur: any) => ur.role),
+      })),
+    };
   }
 
   async addRoleToUser(userId: number, roleName: string) {
