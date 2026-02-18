@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Delete, Param, Body, UseGuards, ParseIntPipe, HttpCode } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Param, Body, Query, UseGuards, ParseIntPipe, HttpCode } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AdminService } from './admin.service.js';
 import { CreateRoleDto } from './dto/create-role.dto.js';
 import { AssignPermissionsDto } from './dto/assign-permissions.dto.js';
 import { AssignRoleDto } from './dto/assign-role.dto.js';
+import { FindUsersQueryDto } from './dto/find-users-query.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { PermissionsGuard } from '../auth/guards/permissions.guard.js';
 import { RequirePermissions } from '../auth/decorators/permissions.decorator.js';
@@ -77,10 +78,11 @@ export class AdminController {
 
   // ─── Utilisateurs ────────────────────────────────────────
 
-  @ApiOperation({ summary: 'Lister tous les utilisateurs avec leurs rôles' })
+  @ApiOperation({ summary: 'Lister les utilisateurs avec pagination, tri et filtres' })
+  @ApiResponse({ status: 200, description: 'Liste paginée des utilisateurs' })
   @Get('users')
-  findAllUsers() {
-    return this.adminService.findAllUsers();
+  findAllUsers(@Query() query: FindUsersQueryDto) {
+    return this.adminService.findAllUsers(query);
   }
 
   @ApiOperation({ summary: 'Assigner un rôle à un utilisateur' })
