@@ -595,13 +595,53 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/admin/users",
+									"raw": "{{baseUrl}}/admin/users?page=1&limit=20&sortBy=createdAt&sortOrder=desc",
 									"host": [
 										"{{baseUrl}}"
 									],
 									"path": [
 										"admin",
 										"users"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "1",
+											"description": "Numéro de page"
+										},
+										{
+											"key": "limit",
+											"value": "20",
+											"description": "Nombre d'éléments par page (max 100)"
+										},
+										{
+											"key": "sortBy",
+											"value": "createdAt",
+											"description": "Champ de tri"
+										},
+										{
+											"key": "sortOrder",
+											"value": "desc",
+											"description": "Ordre de tri (asc/desc)"
+										},
+										{
+											"key": "search",
+											"value": "",
+											"description": "Recherche sur email et nom",
+											"disabled": true
+										},
+										{
+											"key": "role",
+											"value": "",
+											"description": "Filtrer par rôle (ex: ADMIN)",
+											"disabled": true
+										},
+										{
+											"key": "isEmailChecked",
+											"value": "",
+											"description": "Filtrer par email vérifié (true/false)",
+											"disabled": true
+										}
 									]
 								}
 							},
