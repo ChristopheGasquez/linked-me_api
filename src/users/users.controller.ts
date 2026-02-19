@@ -10,6 +10,7 @@ import { Permissions } from '../auth/permissions.constants.js';
 @ApiTags('Users')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
+@RequirePermissions(Permissions.REALM_USER)
 @Controller('users')
 export class UsersController {
   constructor(private usersService: UsersService) {}

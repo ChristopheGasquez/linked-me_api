@@ -33,6 +33,7 @@ async function main() {
 
   // 3. Associer les permissions aux rôles
   const userPermissions = [
+    Permissions.REALM_USER,
     Permissions.USER_READ,
     Permissions.USER_UPDATE_OWN,
     Permissions.USER_DELETE_OWN,

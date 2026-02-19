@@ -13,7 +13,7 @@ import { Permissions } from '../auth/permissions.constants.js';
 @ApiTags('Admin')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
-@RequirePermissions(Permissions.ROLE_MANAGE)
+@RequirePermissions(Permissions.REALM_ADMIN)
 @Controller('admin')
 export class AdminController {
   constructor(private adminService: AdminService) {}
@@ -21,6 +21,7 @@ export class AdminController {
   // ─── Rôles ───────────────────────────────────────────────
 
   @ApiOperation({ summary: 'Lister tous les rôles avec leurs permissions' })
+  @RequirePermissions(Permissions.ADMIN_ROLE_READ)
   @Get('roles')
   findAllRoles() {
     return this.adminService.findAllRoles();
@@ -29,6 +30,7 @@ export class AdminController {
   @ApiOperation({ summary: 'Créer un nouveau rôle' })
   @ApiResponse({ status: 201, description: 'Rôle créé' })
   @ApiResponse({ status: 400, description: 'Le rôle existe déjà' })
+  @RequirePermissions(Permissions.ADMIN_ROLE_MANAGE)
   @Post('roles')
   createRole(@Body() dto: CreateRoleDto) {
     return this.adminService.createRole(dto.name);
@@ -38,6 +40,7 @@ export class AdminController {
   @ApiResponse({ status: 200, description: 'Rôle supprimé' })
   @ApiResponse({ status: 400, description: 'Rôle encore assigné à des utilisateurs' })
   @ApiResponse({ status: 404, description: 'Rôle non trouvé' })
+  @RequirePermissions(Permissions.ADMIN_ROLE_MANAGE)
   @Delete('roles/:id')
   deleteRole(@Param('id', ParseIntPipe) id: number) {
     return this.adminService.deleteRole(id);
@@ -49,6 +52,7 @@ export class AdminController {
   @ApiResponse({ status: 200, description: 'Permissions ajoutées, retourne le rôle mis à jour' })
   @ApiResponse({ status: 400, description: 'Permissions inconnues' })
   @ApiResponse({ status: 404, description: 'Rôle non trouvé' })
+  @RequirePermissions(Permissions.ADMIN_ROLE_MANAGE)
   @Post('roles/:id/permissions')
   addPermissions(
     @Param('id', ParseIntPipe) id: number,
@@ -60,6 +64,7 @@ export class AdminController {
   @ApiOperation({ summary: 'Retirer une permission d\'un rôle' })
   @ApiResponse({ status: 200, description: 'Permission retirée' })
   @ApiResponse({ status: 404, description: 'Association non trouvée' })
+  @RequirePermissions(Permissions.ADMIN_ROLE_MANAGE)
   @Delete('roles/:id/permissions/:permId')
   removePermission(
     @Param('id', ParseIntPipe) id: number,
@@ -71,6 +76,7 @@ export class AdminController {
   // ─── Permissions (consultation) ──────────────────────────
 
   @ApiOperation({ summary: 'Lister toutes les permissions disponibles' })
+  @RequirePermissions(Permissions.ADMIN_PERMISSION_READ)
   @Get('permissions')
   findAllPermissions() {
     return this.adminService.findAllPermissions();
@@ -80,6 +86,7 @@ export class AdminController {
 
   @ApiOperation({ summary: 'Lister les utilisateurs avec pagination, tri et filtres' })
   @ApiResponse({ status: 200, description: 'Liste paginée des utilisateurs' })
+  @RequirePermissions(Permissions.ADMIN_USER_READ)
   @Get('users')
   findAllUsers(@Query() query: FindUsersQueryDto) {
     return this.adminService.findAllUsers(query);
@@ -88,6 +95,7 @@ export class AdminController {
   @ApiOperation({ summary: 'Récupérer un utilisateur par son ID' })
   @ApiResponse({ status: 200, description: 'Utilisateur trouvé' })
   @ApiResponse({ status: 404, description: 'Utilisateur non trouvé' })
+  @RequirePermissions(Permissions.ADMIN_USER_READ)
   @Get('users/:id')
   findUserById(@Param('id', ParseIntPipe) id: number) {
     return this.adminService.findUserById(id);
@@ -97,6 +105,7 @@ export class AdminController {
   @ApiResponse({ status: 201, description: 'Rôle assigné' })
   @ApiResponse({ status: 400, description: 'L\'utilisateur a déjà ce rôle' })
   @ApiResponse({ status: 404, description: 'Utilisateur ou rôle non trouvé' })
+  @RequirePermissions(Permissions.ADMIN_USER_ASSIGN_ROLE)
   @Post('users/:id/roles')
   addRoleToUser(
     @Param('id', ParseIntPipe) id: number,
@@ -108,6 +117,7 @@ export class AdminController {
   @ApiOperation({ summary: 'Retirer un rôle d\'un utilisateur' })
   @ApiResponse({ status: 200, description: 'Rôle retiré' })
   @ApiResponse({ status: 404, description: 'Association non trouvée' })
+  @RequirePermissions(Permissions.ADMIN_USER_ASSIGN_ROLE)
   @Delete('users/:id/roles/:roleId')
   removeRoleFromUser(
     @Param('id', ParseIntPipe) userId: number,
@@ -116,11 +126,10 @@ export class AdminController {
     return this.adminService.removeRoleFromUser(userId, roleId);
   }
 
-  @ApiOperation({ summary: 'Supprimer un utilisateur (si aucun rôle assigné)' })
+  @ApiOperation({ summary: 'Supprimer un utilisateur' })
   @ApiResponse({ status: 200, description: 'Utilisateur supprimé' })
-  @ApiResponse({ status: 400, description: 'L\'utilisateur a encore des rôles' })
   @ApiResponse({ status: 404, description: 'Utilisateur non trouvé' })
-  @RequirePermissions(Permissions.USER_DELETE_ANY)
+  @RequirePermissions(Permissions.ADMIN_USER_DELETE)
   @Delete('users/:id')
   deleteUser(@Param('id', ParseIntPipe) id: number) {
     return this.adminService.deleteUser(id);
@@ -130,7 +139,7 @@ export class AdminController {
 
   @ApiOperation({ summary: 'Forcer le nettoyage des comptes non vérifiés' })
   @ApiResponse({ status: 200, description: 'Nettoyage effectué' })
-  @RequirePermissions(Permissions.USER_DELETE_ANY)
+  @RequirePermissions(Permissions.ADMIN_CLEAN_USERS)
   @Post('cleanup-unverified-users')
   @HttpCode(200)
   cleanupUnverifiedUsers() {
