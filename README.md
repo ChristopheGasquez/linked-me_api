@@ -39,6 +39,9 @@ cp .env.example .env
 | `JWT_REFRESH_EXPIRY` | Refresh token lifetime (default: `7d`) |
 | `ADMIN_EMAIL` | Initial admin account email |
 | `ADMIN_PASSWORD` | Initial admin account password |
+| `RESEND_API_KEY` | API key for transactional emails (Resend) |
+| `UNVERIFIED_USER_TTL_HOURS` | Hours before unverified accounts are deleted |
+| `SWAGGER_ENABLED` | Set to `true` to enable Swagger UI |
 
 ### Database
 
@@ -77,7 +80,7 @@ npm run start:prod
 
 ## API Documentation
 
-Swagger is available in development at `/api` (disabled in production).
+Swagger is available at `/api` when `SWAGGER_ENABLED=true` (disabled by default).
 
 A Postman collection is available in [`docs/`](docs/) for testing all endpoints.
 
@@ -94,7 +97,7 @@ Tokens use **rotation**: each refresh invalidates the previous refresh token and
 
 Access control is based on **RBAC** (Role-Based Access Control):
 - Each user has one or more **roles** (USER, ADMIN...)
-- Each role has **permissions** (e.g. `user:read`, `role:manage`)
+- Each role has **permissions** (e.g. `realm:admin`, `admin:role:read`, `profile:read`)
 - Routes are protected by permission-based guards
 
 ## Architecture
@@ -102,9 +105,12 @@ Access control is based on **RBAC** (Role-Based Access Control):
 ```
 src/
 ├── auth/           # Authentication (JWT, guards, decorators, permissions)
-├── admin/          # Administration (roles, permissions, users)
+├── admin/          # Administration
+│   ├── roles/      #   Roles + permissions management
+│   ├── users/      #   Full user management (with roles)
+│   └── maintenance/ #  Cleanup endpoints
+├── profiles/       # Public user profiles (limited fields)
 ├── common/         # Shared utilities (pagination, DTOs)
-├── users/          # User profile management
 ├── mail/           # Email service (Resend)
 ├── tasks/          # Scheduled tasks (cron cleanup)
 ├── prisma/         # PrismaModule (service + connection)

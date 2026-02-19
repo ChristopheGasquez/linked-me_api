@@ -1,7 +1,7 @@
 {
 	"info": {
 		"_postman_id": "9c3140ab-f4c7-4e33-a173-01a1f3ff4187",
-		"name": "linked-me_api_G",
+		"name": "linked-me_api",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "2920763"
 	},
@@ -263,10 +263,10 @@
 			]
 		},
 		{
-			"name": "users",
+			"name": "profiles",
 			"item": [
 				{
-					"name": "users/:id",
+					"name": "profiles/:id",
 					"protocolProfileBehavior": {
 						"disableBodyPruning": true
 					},
@@ -288,12 +288,12 @@
 							"raw": "{\n    \"email\": \"test1@example.com\",\n    \"password\": \"monMotDePasse123\",\n    \"name\": \"Test Premier\"\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/users/2",
+							"raw": "{{baseUrl}}/profiles/2",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
-								"users",
+								"profiles",
 								"2"
 							]
 						}
@@ -301,7 +301,7 @@
 					"response": []
 				},
 				{
-					"name": "users/me",
+					"name": "profiles/me",
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -325,12 +325,12 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/users/me",
+							"raw": "{{baseUrl}}/profiles/me",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
-								"users",
+								"profiles",
 								"me"
 							]
 						}
@@ -338,7 +338,7 @@
 					"response": []
 				},
 				{
-					"name": "users/me",
+					"name": "profiles/me",
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -357,12 +357,12 @@
 							"raw": ""
 						},
 						"url": {
-							"raw": "{{baseUrl}}/users/me",
+							"raw": "{{baseUrl}}/profiles/me",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
-								"users",
+								"profiles",
 								"me"
 							]
 						}
@@ -832,6 +832,34 @@
 									"path": [
 										"admin",
 										"cleanup-unverified-users"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "admin/cleanup-orphaned-permissions",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{subTocken}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/admin/cleanup-orphaned-permissions",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"cleanup-orphaned-permissions"
 									]
 								}
 							},

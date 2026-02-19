@@ -2,8 +2,8 @@
 // Utilisé par le seed, les guards et les controllers
 export const Permissions = {
   // Realms (niveau controller)
-  REALM_ADMIN: 'realm:admin',
-  REALM_USER:  'realm:user',
+  REALM_ADMIN:    'realm:admin',
+  REALM_PROFILE:  'realm:profile',
 
   // Admin — Rôles
   ADMIN_ROLE_READ:   'admin:role:read',
@@ -18,12 +18,13 @@ export const Permissions = {
   ADMIN_USER_DELETE:      'admin:user:delete',
 
   // Admin — Maintenance
-  ADMIN_CLEAN_USERS: 'admin:clean-users',
+  ADMIN_CLEAN_USERS:       'admin:clean-users',
+  ADMIN_CLEAN_PERMISSIONS: 'admin:clean-permissions',
 
-  // User
-  USER_READ:       'user:read',
-  USER_UPDATE_OWN: 'user:update:own',
-  USER_DELETE_OWN: 'user:delete:own',
+  // Profiles
+  PROFILE_READ:       'profile:read',
+  PROFILE_UPDATE_OWN: 'profile:update:own',
+  PROFILE_DELETE_OWN: 'profile:delete:own',
 } as const;
 
 // Type utilitaire : extrait les valeurs possibles ('realm:admin' | 'user:read' | ...)

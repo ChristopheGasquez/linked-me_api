@@ -1,42 +1,42 @@
 import { Controller, Get, Patch, Delete, Param, Body, UseGuards, Request, ParseIntPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
-import { UsersService } from './users.service.js';
-import { UpdateUserDto } from './dto/update-user.dto.js';
+import { ProfilesService } from './profiles.service.js';
+import { UpdateProfileDto } from './dto/update-profile.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { PermissionsGuard } from '../auth/guards/permissions.guard.js';
 import { RequirePermissions } from '../auth/decorators/permissions.decorator.js';
 import { Permissions } from '../auth/permissions.constants.js';
 
-@ApiTags('Users')
+@ApiTags('Profiles')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
-@RequirePermissions(Permissions.REALM_USER)
-@Controller('users')
-export class UsersController {
-  constructor(private usersService: UsersService) {}
+@RequirePermissions(Permissions.REALM_PROFILE)
+@Controller('profiles')
+export class ProfilesController {
+  constructor(private profilesService: ProfilesService) {}
 
-  @ApiOperation({ summary: 'Consulter un profil par ID' })
-  @ApiResponse({ status: 200, description: 'Profil utilisateur' })
+  @ApiOperation({ summary: 'Consulter le profil public d\'un utilisateur' })
+  @ApiResponse({ status: 200, description: 'Profil utilisateur (id, name, email, createdAt)' })
   @ApiResponse({ status: 404, description: 'Utilisateur non trouvé' })
-  @RequirePermissions(Permissions.USER_READ)
+  @RequirePermissions(Permissions.PROFILE_READ)
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.usersService.findOne(id);
+    return this.profilesService.findOne(id);
   }
 
   @ApiOperation({ summary: 'Modifier son propre profil' })
   @ApiResponse({ status: 200, description: 'Profil mis à jour' })
-  @RequirePermissions(Permissions.USER_UPDATE_OWN)
+  @RequirePermissions(Permissions.PROFILE_UPDATE_OWN)
   @Patch('me')
-  update(@Request() req: any, @Body() dto: UpdateUserDto) {
-    return this.usersService.update(req.user.id, dto);
+  update(@Request() req: any, @Body() dto: UpdateProfileDto) {
+    return this.profilesService.update(req.user.id, dto);
   }
 
   @ApiOperation({ summary: 'Supprimer son propre compte' })
   @ApiResponse({ status: 200, description: 'Compte supprimé' })
-  @RequirePermissions(Permissions.USER_DELETE_OWN)
+  @RequirePermissions(Permissions.PROFILE_DELETE_OWN)
   @Delete('me')
   remove(@Request() req: any) {
-    return this.usersService.remove(req.user.id);
+    return this.profilesService.remove(req.user.id);
   }
 }
