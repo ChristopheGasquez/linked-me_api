@@ -13,8 +13,8 @@ export class PermissionsGuard implements CanActivate {
       [context.getHandler(), context.getClass()],
     );
 
-    // Si pas de décorateur @RequirePermissions → accès libre
-    if (!requiredPermissions) {
+    // Si aucune permission requise → accès libre
+    if (requiredPermissions.length === 0) {
       return true;
     }
 
