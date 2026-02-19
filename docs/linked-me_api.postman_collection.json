@@ -648,6 +648,35 @@
 							"response": []
 						},
 						{
+							"name": "admin/users/:id GET",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{subTocken}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/admin/users/1",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"users",
+										"1"
+									]
+								}
+							},
+							"response": []
+						},
+						{
 							"name": "admin/users/:id/roles",
 							"request": {
 								"auth": {

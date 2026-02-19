@@ -85,6 +85,14 @@ export class AdminController {
     return this.adminService.findAllUsers(query);
   }
 
+  @ApiOperation({ summary: 'Récupérer un utilisateur par son ID' })
+  @ApiResponse({ status: 200, description: 'Utilisateur trouvé' })
+  @ApiResponse({ status: 404, description: 'Utilisateur non trouvé' })
+  @Get('users/:id')
+  findUserById(@Param('id', ParseIntPipe) id: number) {
+    return this.adminService.findUserById(id);
+  }
+
   @ApiOperation({ summary: 'Assigner un rôle à un utilisateur' })
   @ApiResponse({ status: 201, description: 'Rôle assigné' })
   @ApiResponse({ status: 400, description: 'L\'utilisateur a déjà ce rôle' })
