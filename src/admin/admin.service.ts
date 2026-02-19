@@ -16,9 +16,13 @@ export class AdminService {
   // ─── Rôles ───────────────────────────────────────────────
 
   async findAllRoles() {
-    return this.prisma.role.findMany({
+    const roles = await this.prisma.role.findMany({
       include: { permissions: { include: { permission: true } } },
     });
+    return roles.map((role) => ({
+      ...role,
+      permissions: role.permissions.map((rp) => rp.permission),
+    }));
   }
 
   async createRole(name: string) {
@@ -71,10 +75,11 @@ export class AdminService {
       });
     }
 
-    return this.prisma.role.findUnique({
+    const updated = await this.prisma.role.findUnique({
       where: { id: roleId },
       include: { permissions: { include: { permission: true } } },
     });
+    return { ...updated!, permissions: updated!.permissions.map((rp) => rp.permission) };
   }
 
   async removePermissionFromRole(roleId: number, permissionId: number) {
