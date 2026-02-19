@@ -1,8 +1,10 @@
-import { Controller, Get, Post, Delete, Param, Body, UseGuards, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Param, Body, Query, UseGuards, ParseIntPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AdminRolesService } from './roles.service.js';
 import { CreateRoleDto } from './dto/create-role.dto.js';
 import { AssignPermissionsDto } from './dto/assign-permissions.dto.js';
+import { FindRolesQueryDto } from './dto/find-roles-query.dto.js';
+import { FindPermissionsQueryDto } from './dto/find-permissions-query.dto.js';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard.js';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard.js';
 import { RequirePermissions } from '../../auth/decorators/permissions.decorator.js';
@@ -21,8 +23,8 @@ export class AdminRolesController {
   @ApiOperation({ summary: 'Lister tous les rôles avec leurs permissions' })
   @RequirePermissions(Permissions.ADMIN_ROLE_READ)
   @Get('roles')
-  findAllRoles() {
-    return this.rolesService.findAllRoles();
+  findAllRoles(@Query() query: FindRolesQueryDto) {
+    return this.rolesService.findAllRoles(query);
   }
 
   @ApiOperation({ summary: 'Récupérer un rôle par son ID' })
@@ -85,7 +87,7 @@ export class AdminRolesController {
   @ApiOperation({ summary: 'Lister toutes les permissions disponibles' })
   @RequirePermissions(Permissions.ADMIN_PERMISSION_READ)
   @Get('permissions')
-  findAllPermissions() {
-    return this.rolesService.findAllPermissions();
+  findAllPermissions(@Query() query: FindPermissionsQueryDto) {
+    return this.rolesService.findAllPermissions(query);
   }
 }

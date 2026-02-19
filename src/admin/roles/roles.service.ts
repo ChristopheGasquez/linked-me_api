@@ -1,18 +1,26 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { paginate } from '../../common/pagination/index.js';
+import { FindRolesQueryDto } from './dto/find-roles-query.dto.js';
+import { FindPermissionsQueryDto } from './dto/find-permissions-query.dto.js';
 
 @Injectable()
 export class AdminRolesService {
   constructor(private prisma: PrismaService) {}
 
-  async findAllRoles() {
-    const roles = await this.prisma.role.findMany({
+  async findAllRoles(query: FindRolesQueryDto) {
+    const result = await paginate(this.prisma.role, query, {
+      searchFields: ['name'],
       include: { permissions: { include: { permission: true } } },
     });
-    return roles.map((role) => ({
-      ...role,
-      permissions: role.permissions.map((rp) => rp.permission),
-    }));
+    return {
+      ...result,
+      data: result.data.map((role: any) => ({
+        ...role,
+        permissions: role.permissions.map((rp: any) => rp.permission,
+        ),
+      })),
+    };
   }
 
   async findRoleById(roleId: number) {
@@ -90,7 +98,9 @@ export class AdminRolesService {
     return { message: 'Permission retirée du rôle' };
   }
 
-  async findAllPermissions() {
-    return this.prisma.permission.findMany();
+  async findAllPermissions(query: FindPermissionsQueryDto) {
+    return paginate(this.prisma.permission, query, {
+      searchFields: ['name'],
+    });
   }
 }

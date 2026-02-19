@@ -393,13 +393,41 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/admin/roles",
+									"raw": "{{baseUrl}}/admin/roles?page=1&limit=20&sortBy=createdAt&sortOrder=desc",
 									"host": [
 										"{{baseUrl}}"
 									],
 									"path": [
 										"admin",
 										"roles"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "1",
+											"description": "Numéro de page"
+										},
+										{
+											"key": "limit",
+											"value": "20",
+											"description": "Nombre d'éléments par page (max 100)"
+										},
+										{
+											"key": "sortBy",
+											"value": "createdAt",
+											"description": "Champ de tri"
+										},
+										{
+											"key": "sortOrder",
+											"value": "desc",
+											"description": "Ordre de tri (asc/desc)"
+										},
+										{
+											"key": "search",
+											"value": "",
+											"description": "Recherche sur le nom du rôle",
+											"disabled": true
+										}
 									]
 								}
 							},
@@ -591,13 +619,41 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/admin/permissions",
+									"raw": "{{baseUrl}}/admin/permissions?page=1&limit=20&sortBy=name&sortOrder=asc",
 									"host": [
 										"{{baseUrl}}"
 									],
 									"path": [
 										"admin",
 										"permissions"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "1",
+											"description": "Numéro de page"
+										},
+										{
+											"key": "limit",
+											"value": "20",
+											"description": "Nombre d'éléments par page (max 100)"
+										},
+										{
+											"key": "sortBy",
+											"value": "name",
+											"description": "Champ de tri"
+										},
+										{
+											"key": "sortOrder",
+											"value": "asc",
+											"description": "Ordre de tri (asc/desc)"
+										},
+										{
+											"key": "search",
+											"value": "",
+											"description": "Recherche sur le nom de la permission",
+											"disabled": true
+										}
 									]
 								}
 							},
