@@ -21,8 +21,8 @@ async function bootstrap() {
   // whitelist: true → ignore les propriétés non décorées dans le DTO
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
-  // Swagger : documentation de l'API, uniquement hors production
-  if (process.env.NODE_ENV !== 'production') {
+  // Swagger : documentation de l'API, activée uniquement si SWAGGER_ENABLED=true
+  if (process.env.SWAGGER_ENABLED === 'true') {
     const config = new DocumentBuilder()
       .setTitle('linked-me API')
       .setDescription('API de la plateforme linked-me')
