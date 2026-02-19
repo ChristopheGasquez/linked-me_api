@@ -1,7 +1,7 @@
 {
 	"info": {
 		"_postman_id": "9c3140ab-f4c7-4e33-a173-01a1f3ff4187",
-		"name": "linked-me_api_G",
+		"name": "linked-me_api",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "2920763"
 	},
@@ -263,10 +263,10 @@
 			]
 		},
 		{
-			"name": "users",
+			"name": "profiles",
 			"item": [
 				{
-					"name": "users/:id",
+					"name": "profiles/:id",
 					"protocolProfileBehavior": {
 						"disableBodyPruning": true
 					},
@@ -288,12 +288,12 @@
 							"raw": "{\n    \"email\": \"test1@example.com\",\n    \"password\": \"monMotDePasse123\",\n    \"name\": \"Test Premier\"\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/users/2",
+							"raw": "{{baseUrl}}/profiles/2",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
-								"users",
+								"profiles",
 								"2"
 							]
 						}
@@ -301,7 +301,7 @@
 					"response": []
 				},
 				{
-					"name": "users/me",
+					"name": "profiles/me",
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -325,12 +325,12 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/users/me",
+							"raw": "{{baseUrl}}/profiles/me",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
-								"users",
+								"profiles",
 								"me"
 							]
 						}
@@ -338,7 +338,7 @@
 					"response": []
 				},
 				{
-					"name": "users/me",
+					"name": "profiles/me",
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -357,12 +357,12 @@
 							"raw": ""
 						},
 						"url": {
-							"raw": "{{baseUrl}}/users/me",
+							"raw": "{{baseUrl}}/profiles/me",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
-								"users",
+								"profiles",
 								"me"
 							]
 						}
@@ -393,13 +393,70 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/admin/roles",
+									"raw": "{{baseUrl}}/admin/roles?page=1&limit=20&sortBy=createdAt&sortOrder=desc",
 									"host": [
 										"{{baseUrl}}"
 									],
 									"path": [
 										"admin",
 										"roles"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "1",
+											"description": "Numéro de page"
+										},
+										{
+											"key": "limit",
+											"value": "20",
+											"description": "Nombre d'éléments par page (max 100)"
+										},
+										{
+											"key": "sortBy",
+											"value": "createdAt",
+											"description": "Champ de tri"
+										},
+										{
+											"key": "sortOrder",
+											"value": "desc",
+											"description": "Ordre de tri (asc/desc)"
+										},
+										{
+											"key": "search",
+											"value": "",
+											"description": "Recherche sur le nom du rôle",
+											"disabled": true
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "admin/roles/:id GET",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{subTocken}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/admin/roles/1",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"roles",
+										"1"
 									]
 								}
 							},
@@ -562,13 +619,41 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/admin/permissions",
+									"raw": "{{baseUrl}}/admin/permissions?page=1&limit=20&sortBy=name&sortOrder=asc",
 									"host": [
 										"{{baseUrl}}"
 									],
 									"path": [
 										"admin",
 										"permissions"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "1",
+											"description": "Numéro de page"
+										},
+										{
+											"key": "limit",
+											"value": "20",
+											"description": "Nombre d'éléments par page (max 100)"
+										},
+										{
+											"key": "sortBy",
+											"value": "name",
+											"description": "Champ de tri"
+										},
+										{
+											"key": "sortOrder",
+											"value": "asc",
+											"description": "Ordre de tri (asc/desc)"
+										},
+										{
+											"key": "search",
+											"value": "",
+											"description": "Recherche sur le nom de la permission",
+											"disabled": true
+										}
 									]
 								}
 							},
@@ -642,6 +727,35 @@
 											"description": "Filtrer par email vérifié (true/false)",
 											"disabled": true
 										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "admin/users/:id GET",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{subTocken}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/admin/users/1",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"users",
+										"1"
 									]
 								}
 							},
@@ -774,6 +888,34 @@
 									"path": [
 										"admin",
 										"cleanup-unverified-users"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "admin/cleanup-orphaned-permissions",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{subTocken}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/admin/cleanup-orphaned-permissions",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"cleanup-orphaned-permissions"
 									]
 								}
 							},

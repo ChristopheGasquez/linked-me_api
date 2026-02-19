@@ -8,13 +8,13 @@ export class PermissionsGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     // 1. Lire les permissions requises par le décorateur @RequirePermissions()
-    const requiredPermissions = this.reflector.getAllAndOverride<string[]>(
+    const requiredPermissions = this.reflector.getAllAndMerge<string[]>(
       PERMISSIONS_KEY,
       [context.getHandler(), context.getClass()],
     );
 
-    // Si pas de décorateur @RequirePermissions → accès libre
-    if (!requiredPermissions) {
+    // Si aucune permission requise → accès libre
+    if (requiredPermissions.length === 0) {
       return true;
     }
 
