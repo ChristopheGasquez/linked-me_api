@@ -406,6 +406,35 @@
 							"response": []
 						},
 						{
+							"name": "admin/roles/:id GET",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{subTocken}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/admin/roles/1",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"roles",
+										"1"
+									]
+								}
+							},
+							"response": []
+						},
+						{
 							"name": "admin/roles",
 							"request": {
 								"auth": {

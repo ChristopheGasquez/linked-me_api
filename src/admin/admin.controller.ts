@@ -27,6 +27,15 @@ export class AdminController {
     return this.adminService.findAllRoles();
   }
 
+  @ApiOperation({ summary: 'Récupérer un rôle par son ID' })
+  @ApiResponse({ status: 200, description: 'Rôle trouvé' })
+  @ApiResponse({ status: 404, description: 'Rôle non trouvé' })
+  @RequirePermissions(Permissions.ADMIN_ROLE_READ)
+  @Get('roles/:id')
+  findRoleById(@Param('id', ParseIntPipe) id: number) {
+    return this.adminService.findRoleById(id);
+  }
+
   @ApiOperation({ summary: 'Créer un nouveau rôle' })
   @ApiResponse({ status: 201, description: 'Rôle créé' })
   @ApiResponse({ status: 400, description: 'Le rôle existe déjà' })

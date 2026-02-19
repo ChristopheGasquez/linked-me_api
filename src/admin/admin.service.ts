@@ -50,6 +50,15 @@ export class AdminService {
     return { message: `Rôle "${role.name}" supprimé` };
   }
 
+  async findRoleById(roleId: number) {
+    const role = await this.prisma.role.findUnique({
+      where: { id: roleId },
+      include: { permissions: { include: { permission: true } } },
+    });
+    if (!role) throw new NotFoundException('Rôle non trouvé');
+    return { ...role, permissions: role.permissions.map((rp) => rp.permission) };
+  }
+
   // ─── Permissions sur un rôle ─────────────────────────────
 
   async addPermissionsToRole(roleId: number, permissionNames: string[]) {
