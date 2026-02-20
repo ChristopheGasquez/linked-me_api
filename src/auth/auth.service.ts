@@ -1,6 +1,7 @@
 import {
   Injectable,
   ConflictException,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -10,6 +11,8 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { MailService } from '../mail/mail.service.js';
 import { RegisterDto } from './dto/register.dto.js';
+import { FindSessionsQueryDto } from './dto/find-sessions-query.dto.js';
+import { paginate } from '../common/pagination/index.js';
 
 @Injectable()
 export class AuthService {
@@ -169,6 +172,23 @@ export class AuthService {
     const hash = crypto.createHash('sha256').update(refreshToken).digest('hex');
     await this.prisma.refreshToken.deleteMany({ where: { token: hash } });
     return { message: 'Déconnexion réussie' };
+  }
+
+  // Lister les sessions actives de l'utilisateur (refresh tokens non expirés)
+  async getSessions(userId: number, query: FindSessionsQueryDto) {
+    return paginate(this.prisma.refreshToken, query, {
+      where: { userId, expiresAt: { gt: new Date() } },
+    });
+  }
+
+  // Révoquer une session spécifique (par id)
+  async revokeSession(userId: number, sessionId: number) {
+    const session = await this.prisma.refreshToken.findFirst({
+      where: { id: sessionId, userId },
+    });
+    if (!session) throw new NotFoundException('Session introuvable');
+    await this.prisma.refreshToken.delete({ where: { id: sessionId } });
+    return { message: 'Session révoquée' };
   }
 
   // Révoquer tous les refresh tokens d'un utilisateur (logout-all)
