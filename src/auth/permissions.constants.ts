@@ -17,9 +17,11 @@ export const Permissions = {
   ADMIN_USER_ASSIGN_ROLE: 'admin:user:assign-role',
   ADMIN_USER_DELETE:      'admin:user:delete',
 
-  // Admin — Maintenance
-  ADMIN_CLEAN_USERS:       'admin:clean-users',
-  ADMIN_CLEAN_PERMISSIONS: 'admin:clean-permissions',
+  // Tasks
+  REALM_TASK:             'realm:task',
+  TASK_CLEAN_USERS:       'task:clean-users',
+  TASK_CLEAN_TOKENS:      'task:clean-tokens',
+  TASK_CLEAN_PERMISSIONS: 'task:clean-permissions',
 
   // Profiles
   PROFILE_READ:       'profile:read',

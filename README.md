@@ -37,10 +37,16 @@ cp .env.example .env
 | `JWT_ACCESS_EXPIRY` | Access token lifetime (default: `15m`) |
 | `JWT_REFRESH_SECRET` | Secret key for refresh tokens |
 | `JWT_REFRESH_EXPIRY` | Refresh token lifetime (default: `7d`) |
+| `PORT` | Server port (default: `3000`) |
+| `NODE_ENV` | Environment (`development` / `production`) |
+| `APP_URL` | API base URL (used in email links) |
+| `FRONTEND_URL` | Frontend URL for password reset links (optional, falls back to `APP_URL`) |
+| `MAIL_FROM` | Sender email address (must be verified in Resend) |
+| `RESEND_API_KEY` | API key for transactional emails (Resend) |
+| `CORS_ORIGIN` | Allowed CORS origin (optional, all origins if unset) |
 | `ADMIN_EMAIL` | Initial admin account email |
 | `ADMIN_PASSWORD` | Initial admin account password |
-| `RESEND_API_KEY` | API key for transactional emails (Resend) |
-| `UNVERIFIED_USER_TTL_HOURS` | Hours before unverified accounts are deleted |
+| `UNVERIFIED_USER_TTL_HOURS` | Hours before unverified accounts are deleted (default: `24`) |
 | `SWAGGER_ENABLED` | Set to `true` to enable Swagger UI |
 
 ### Database
@@ -77,6 +83,7 @@ npm run start:prod
 | `npm run prisma:migrate` | Create/apply a migration |
 | `npm run prisma:seed` | Seed database (upsert roles, permissions, admin) |
 | `npm run prisma:reset` | Full database reset + re-seed |
+| `npm run prisma:studio` | Open Prisma Studio (visual DB browser) |
 
 ## API Documentation
 
@@ -113,16 +120,26 @@ src/
 ├── auth/           # Authentication (JWT, guards, decorators, permissions)
 ├── admin/          # Administration
 │   ├── roles/      #   Roles + permissions management
-│   ├── users/      #   Full user management (with roles)
-│   └── maintenance/ #  Cleanup endpoints
+│   └── users/      #   Full user management (with roles)
 ├── profiles/       # Public user profiles (limited fields)
 ├── common/         # Shared utilities (pagination, DTOs)
 ├── mail/           # Email service (Resend)
-├── tasks/          # Scheduled tasks (cron cleanup)
+├── tasks/          # Scheduled tasks (cron jobs + manual trigger endpoints)
 ├── prisma/         # PrismaModule (service + connection)
 ├── app.module.ts   # Root module
 └── main.ts         # Bootstrap
 ```
+
+## Cron Jobs
+
+Scheduled tasks run automatically via `TasksModule`:
+
+| Task | Schedule | Action |
+|------|----------|--------|
+| Cleanup unverified users | Every 6 hours | Deletes unverified accounts older than `UNVERIFIED_USER_TTL_HOURS` |
+| Cleanup expired tokens | Daily at 2:00 AM | Deletes expired rows in `refresh_tokens` and `password_resets` |
+
+All tasks can also be triggered manually via `POST /tasks/*` (requires `realm:task` permission).
 
 ## Pagination
 

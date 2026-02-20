@@ -120,6 +120,20 @@ export class AuthService {
       },
     });
 
+    // Limiter à N sessions actives : supprimer les plus anciennes si dépassé
+    const MAX_REFRESH_TOKENS_PER_USER = 10;
+    const userTokens = await this.prisma.refreshToken.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true },
+    });
+    if (userTokens.length > MAX_REFRESH_TOKENS_PER_USER) {
+      const toDelete = userTokens.slice(0, userTokens.length - MAX_REFRESH_TOKENS_PER_USER);
+      await this.prisma.refreshToken.deleteMany({
+        where: { id: { in: toDelete.map((t) => t.id) } },
+      });
+    }
+
     return { access_token, refresh_token };
   }
 

@@ -917,10 +917,10 @@
 					]
 				},
 				{
-					"name": "maintenance",
+					"name": "tasks",
 					"item": [
 						{
-							"name": "admin/cleanup-unverified-users",
+							"name": "tasks/cleanup-unverified-users",
 							"request": {
 								"auth": {
 									"type": "bearer",
@@ -935,12 +935,12 @@
 								"method": "POST",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/admin/cleanup-unverified-users",
+									"raw": "{{baseUrl}}/tasks/cleanup-unverified-users",
 									"host": [
 										"{{baseUrl}}"
 									],
 									"path": [
-										"admin",
+										"tasks",
 										"cleanup-unverified-users"
 									]
 								}
@@ -948,7 +948,7 @@
 							"response": []
 						},
 						{
-							"name": "admin/cleanup-orphaned-permissions",
+							"name": "tasks/cleanup-expired-tokens",
 							"request": {
 								"auth": {
 									"type": "bearer",
@@ -963,12 +963,40 @@
 								"method": "POST",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/admin/cleanup-orphaned-permissions",
+									"raw": "{{baseUrl}}/tasks/cleanup-expired-tokens",
 									"host": [
 										"{{baseUrl}}"
 									],
 									"path": [
-										"admin",
+										"tasks",
+										"cleanup-expired-tokens"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "tasks/cleanup-orphaned-permissions",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{subTocken}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/tasks/cleanup-orphaned-permissions",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"tasks",
 										"cleanup-orphaned-permissions"
 									]
 								}
