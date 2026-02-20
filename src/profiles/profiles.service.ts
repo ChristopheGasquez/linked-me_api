@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { UpdateProfileDto } from './dto/update-profile.dto.js';
 
@@ -33,6 +34,23 @@ export class ProfilesService {
     if (!user) throw new NotFoundException('Utilisateur non trouvé');
     await this.prisma.user.delete({ where: { id } });
     return { message: 'Compte supprimé' };
+  }
+
+  async changePassword(userId: number, currentPassword: string, newPassword: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('Utilisateur non trouvé');
+
+    const isValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isValid) throw new UnauthorizedException('Mot de passe actuel incorrect');
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({ where: { id: userId }, data: { password: hashed } }),
+      this.prisma.refreshToken.deleteMany({ where: { userId } }),
+    ]);
+
+    return { message: 'Mot de passe modifié. Veuillez vous reconnecter.' };
   }
 
   async deleteUnverified(ttlHours: number): Promise<number> {

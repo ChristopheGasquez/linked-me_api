@@ -2,6 +2,7 @@ import { Controller, Get, Patch, Delete, Param, Body, UseGuards, Request, ParseI
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { ProfilesService } from './profiles.service.js';
 import { UpdateProfileDto } from './dto/update-profile.dto.js';
+import { ChangePasswordDto } from './dto/change-password.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { PermissionsGuard } from '../auth/guards/permissions.guard.js';
 import { RequirePermissions } from '../auth/decorators/permissions.decorator.js';
@@ -30,6 +31,15 @@ export class ProfilesController {
   @Patch('me')
   update(@Request() req: any, @Body() dto: UpdateProfileDto) {
     return this.profilesService.update(req.user.id, dto);
+  }
+
+  @ApiOperation({ summary: 'Changer son mot de passe' })
+  @ApiResponse({ status: 200, description: 'Mot de passe modifié, toutes les sessions révoquées' })
+  @ApiResponse({ status: 401, description: 'Mot de passe actuel incorrect' })
+  @RequirePermissions(Permissions.PROFILE_UPDATE_OWN)
+  @Patch('me/password')
+  changePassword(@Request() req: any, @Body() dto: ChangePasswordDto) {
+    return this.profilesService.changePassword(req.user.id, dto.currentPassword, dto.newPassword);
   }
 
   @ApiOperation({ summary: 'Supprimer son propre compte' })
