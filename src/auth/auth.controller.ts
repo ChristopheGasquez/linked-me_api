@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Query, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Body, Get, Delete, Query, Param, ParseIntPipe, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service.js';
@@ -8,6 +8,7 @@ import { RefreshTokenDto } from './dto/refresh-token.dto.js';
 import { ResendVerificationDto } from './dto/resend-verification.dto.js';
 import { ForgotPasswordDto } from './dto/forgot-password.dto.js';
 import { ResetPasswordDto } from './dto/reset-password.dto.js';
+import { FindSessionsQueryDto } from './dto/find-sessions-query.dto.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
 
 @ApiTags('Auth')  // Regroupe les routes sous "Auth" dans Swagger
@@ -106,5 +107,26 @@ export class AuthController {
   @Post('logout-all')
   logoutAll(@Request() req: any) {
     return this.authService.logoutAll(req.user.id);
+  }
+
+  @ApiOperation({ summary: 'Lister les sessions actives' })
+  @ApiBearerAuth()
+  @ApiResponse({ status: 200, description: 'Liste paginée des sessions actives' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @UseGuards(JwtAuthGuard)
+  @Get('sessions')
+  getSessions(@Request() req: any, @Query() query: FindSessionsQueryDto) {
+    return this.authService.getSessions(req.user.id, query);
+  }
+
+  @ApiOperation({ summary: 'Révoquer une session spécifique' })
+  @ApiBearerAuth()
+  @ApiResponse({ status: 200, description: 'Session révoquée' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 404, description: 'Session introuvable' })
+  @UseGuards(JwtAuthGuard)
+  @Delete('sessions/:id')
+  revokeSession(@Request() req: any, @Param('id', ParseIntPipe) id: number) {
+    return this.authService.revokeSession(req.user.id, id);
   }
 }

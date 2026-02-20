@@ -261,6 +261,59 @@
 					"response": []
 				},
 				{
+					"name": "auth/sessions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{subTocken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/sessions?page=1&limit=20&sortBy=createdAt&sortOrder=desc",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"sessions"
+							],
+							"query": [
+								{ "key": "page", "value": "1" },
+								{ "key": "limit", "value": "20" },
+								{ "key": "sortBy", "value": "createdAt" },
+								{ "key": "sortOrder", "value": "desc" }
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "auth/sessions/:id (revoke)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{subTocken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/auth/sessions/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"sessions",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "auth/forgot-password",
 					"request": {
 						"method": "POST",
