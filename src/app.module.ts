@@ -17,7 +17,7 @@ import { TasksModule } from './tasks/tasks.module.js';
     ConfigModule.forRoot({ isGlobal: true }),
     ScheduleModule.forRoot(),
     // Rate limiting : max 60 requêtes par minute par IP
-    ThrottlerModule.forRoot([{ ttl: 60000, limit: 60 }]),
+    ThrottlerModule.forRoot([{ name: 'global', ttl: 60000, limit: 60 }]),
     PrismaModule,
     MailModule,
     AuthModule,

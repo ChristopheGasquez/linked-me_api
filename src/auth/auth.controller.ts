@@ -1,5 +1,6 @@
 import { Controller, Post, Body, Get, Query, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service.js';
 import { RegisterDto } from './dto/register.dto.js';
 import { LoginDto } from './dto/login.dto.js';
@@ -15,6 +16,8 @@ export class AuthController {
   @ApiOperation({ summary: 'Inscription d\'un nouvel utilisateur' })
   @ApiResponse({ status: 201, description: 'Utilisateur créé' })
   @ApiResponse({ status: 409, description: 'Email déjà utilisé' })
+  @ApiResponse({ status: 429, description: 'Trop de tentatives, réessaye dans 15 minutes' })
+  @Throttle({ global: { limit: 10, ttl: 900_000 } })
   @Post('register')
   register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
@@ -23,6 +26,8 @@ export class AuthController {
   @ApiOperation({ summary: 'Connexion (retourne un JWT)' })
   @ApiResponse({ status: 200, description: 'Token JWT retourné' })
   @ApiResponse({ status: 401, description: 'Email ou mot de passe incorrect' })
+  @ApiResponse({ status: 429, description: 'Trop de tentatives, réessaye dans 15 minutes' })
+  @Throttle({ global: { limit: 10, ttl: 900_000 } })
   @Post('login')
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto.email, dto.password);
@@ -38,6 +43,8 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Renvoyer l\'email de vérification' })
   @ApiResponse({ status: 200, description: 'Email renvoyé si le compte existe et n\'est pas vérifié' })
+  @ApiResponse({ status: 429, description: 'Trop de tentatives, réessaye dans 1 heure' })
+  @Throttle({ global: { limit: 3, ttl: 3_600_000 } })
   @Post('resend-verification')
   resendVerification(@Body() dto: ResendVerificationDto) {
     return this.authService.resendVerificationEmail(dto.email);
