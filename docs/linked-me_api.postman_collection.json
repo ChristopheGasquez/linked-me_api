@@ -248,13 +248,67 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/auth/logout",
+							"raw": "{{baseUrl}}/auth/logout-all",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"auth",
-								"logout"
+								"logout-all"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "auth/forgot-password",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"user@example.com\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/forgot-password",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"forgot-password"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "auth/reset-password",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"token\": \"<token reçu par email>\",\n    \"password\": \"NouveauMotDePasse123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/reset-password",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"reset-password"
 							]
 						}
 					},

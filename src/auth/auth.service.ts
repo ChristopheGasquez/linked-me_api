@@ -210,6 +210,63 @@ export class AuthService {
     return { message: 'Email vérifié avec succès' };
   }
 
+  // Demande de réinitialisation de mot de passe
+  async forgotPassword(email: string) {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+
+    // Réponse générique : ne jamais révéler si l'email existe
+    if (!user) {
+      return { message: 'Si un compte existe avec cet email, un lien de réinitialisation a été envoyé' };
+    }
+
+    // Supprimer les anciens tokens de reset de cet utilisateur
+    await this.prisma.passwordReset.deleteMany({ where: { userId: user.id } });
+
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const hash = crypto.createHash('sha256').update(rawToken).digest('hex');
+
+    await this.prisma.passwordReset.create({
+      data: {
+        token: hash,
+        userId: user.id,
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000), // 1h
+      },
+    });
+
+    await this.mailService.sendPasswordResetEmail(user.email, user.name, rawToken);
+
+    return { message: 'Si un compte existe avec cet email, un lien de réinitialisation a été envoyé' };
+  }
+
+  // Réinitialisation du mot de passe avec le token reçu par email
+  async resetPassword(token: string, newPassword: string) {
+    const hash = crypto.createHash('sha256').update(token).digest('hex');
+
+    const resetRecord = await this.prisma.passwordReset.findFirst({
+      where: {
+        token: hash,
+        expiresAt: { gt: new Date() },
+      },
+    });
+
+    if (!resetRecord) {
+      throw new UnauthorizedException('Token de réinitialisation invalide ou expiré');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: resetRecord.userId },
+        data: { password: hashedPassword },
+      }),
+      this.prisma.passwordReset.delete({ where: { id: resetRecord.id } }),
+      this.prisma.refreshToken.deleteMany({ where: { userId: resetRecord.userId } }),
+    ]);
+
+    return { message: 'Mot de passe réinitialisé avec succès. Veuillez vous reconnecter.' };
+  }
+
   // Renvoie un email de vérification (réponse générique pour ne pas révéler l'existence du compte)
   async resendVerificationEmail(email: string) {
     const user = await this.prisma.user.findUnique({ where: { email } });
