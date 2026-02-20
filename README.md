@@ -9,6 +9,19 @@
 
 API REST pour la plateforme linked-me.
 
+## Table of contents
+
+- [Getting started](#getting-started)
+- [Scripts](#scripts)
+- [API Documentation](#api-documentation)
+- [Authentication](#authentication)
+- [Rate Limiting](#rate-limiting)
+- [Architecture](#architecture)
+- [Cron Jobs](#cron-jobs)
+- [Pagination](#pagination)
+- [Deployment](#deployment)
+- [Git flow](#git-flow)
+
 ## Getting started
 
 ### Prerequisite
@@ -93,14 +106,30 @@ A Postman collection is available in [`docs/`](docs/) for testing all endpoints.
 
 ## Authentication
 
-The API uses **JWT Bearer tokens**. To authenticate:
+The API uses **JWT Bearer tokens** with refresh token rotation (max 10 active sessions per user).
 
-1. `POST /auth/login` with `email` and `password`
-2. Use the returned `access_token` in the `Authorization` header: `Bearer <token>`
-3. When the access token expires, call `POST /auth/refresh` with the `refresh_token` to get a new pair
-4. `POST /auth/logout` to revoke a refresh token, or `POST /auth/logout-all` to revoke all sessions
+```mermaid
+flowchart TD
+    A[POST /auth/register] --> B[Verification email sent]
+    B --> C[GET /auth/verify-email?token=...]
+    C --> D[POST /auth/login]
+    C -- not received --> E[POST /auth/resend-verification]
+    E --> B
 
-Tokens use **rotation**: each refresh invalidates the previous refresh token and issues a new one.
+    D --> F[access_token 15min + refresh_token 7d]
+    F --> G[API calls\nAuthorization: Bearer access_token]
+    G -- expired --> H[POST /auth/refresh]
+    H -- rotation --> F
+
+    F --> I[POST /auth/logout]
+    F --> J[POST /auth/logout-all]
+    F --> K[DELETE /auth/sessions/:id]
+
+    D -- forgot? --> L[POST /auth/forgot-password]
+    L --> M[Reset email sent]
+    M --> N[POST /auth/reset-password]
+    N --> O[All sessions revoked]
+```
 
 ## Rate Limiting
 
