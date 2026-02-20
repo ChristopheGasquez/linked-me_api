@@ -17,6 +17,7 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Inscription d\'un nouvel utilisateur' })
   @ApiResponse({ status: 201, description: 'Utilisateur créé' })
+  @ApiResponse({ status: 400, description: 'Données invalides (email, format de mot de passe)' })
   @ApiResponse({ status: 409, description: 'Email déjà utilisé' })
   @ApiResponse({ status: 429, description: 'Trop de tentatives, réessaye dans 15 minutes' })
   @Throttle({ global: { limit: 10, ttl: 900_000 } })
@@ -63,6 +64,7 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Réinitialiser le mot de passe avec le token reçu par email' })
   @ApiResponse({ status: 200, description: 'Mot de passe réinitialisé, toutes les sessions révoquées' })
+  @ApiResponse({ status: 400, description: 'Mot de passe invalide (format non respecté)' })
   @ApiResponse({ status: 401, description: 'Token invalide ou expiré' })
   @ApiResponse({ status: 429, description: 'Trop de tentatives' })
   @Throttle({ global: { limit: 5, ttl: 900_000 } })

@@ -35,6 +35,7 @@ export class ProfilesController {
 
   @ApiOperation({ summary: 'Changer son mot de passe' })
   @ApiResponse({ status: 200, description: 'Mot de passe modifié, toutes les sessions révoquées' })
+  @ApiResponse({ status: 400, description: 'Nouveau mot de passe invalide (format non respecté)' })
   @ApiResponse({ status: 401, description: 'Mot de passe actuel incorrect' })
   @RequirePermissions(Permissions.PROFILE_UPDATE_OWN)
   @Patch('me/password')
