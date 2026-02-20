@@ -20,13 +20,12 @@ model User {
   updatedAt DateTime     @updatedAt                    // Mis à jour automatiquement à chaque modification
   isEmailChecked Boolean @default(false)               // True après vérification de l'email (link on mail)
 
-  // Relation : un User peut avoir plusieurs Posts
-  posts Post[]
   // Relation : un User peut avoir plusieurs Rôles
   roles UserRole[]
   // Relation : un User peut avoir plusieurs Refresh Tokens (multi-appareils)
   refreshTokens RefreshToken[]
   emailVerifications EmailVerification[]
+  passwordResets PasswordReset[]
 
   // Nom de la table en base de données (convention snake_case en SQL)
   @@map("users")
@@ -56,20 +55,16 @@ model EmailVerification {
   @@map("email_verifications")
 }
 
-// Table des posts
-model Post {
+// Table des tokens de réinitialisation de mot de passe
+model PasswordReset {
   id        Int      @id @default(autoincrement())
-  title     String   @db.VarChar(255)               // Titre du post
-  content   String   @db.Text                      // Contenu du post (texte long, pas de limite)
-  published Boolean  @default(false)               // Brouillon par défaut
+  token     String   @db.VarChar(500)
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 
-  // Relation : chaque Post appartient à un User
-  author   User @relation(fields: [authorId], references: [id])
-  authorId Int  // Clé étrangère vers User
-
-  @@map("posts")
+  @@map("password_resets")
 }
 
 // Table des rôles (USER, ADMIN, MODERATOR...)

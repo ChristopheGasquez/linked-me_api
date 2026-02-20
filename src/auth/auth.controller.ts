@@ -6,6 +6,8 @@ import { RegisterDto } from './dto/register.dto.js';
 import { LoginDto } from './dto/login.dto.js';
 import { RefreshTokenDto } from './dto/refresh-token.dto.js';
 import { ResendVerificationDto } from './dto/resend-verification.dto.js';
+import { ForgotPasswordDto } from './dto/forgot-password.dto.js';
+import { ResetPasswordDto } from './dto/reset-password.dto.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
 
 @ApiTags('Auth')  // Regroupe les routes sous "Auth" dans Swagger
@@ -48,6 +50,25 @@ export class AuthController {
   @Post('resend-verification')
   resendVerification(@Body() dto: ResendVerificationDto) {
     return this.authService.resendVerificationEmail(dto.email);
+  }
+
+  @ApiOperation({ summary: 'Demander une réinitialisation de mot de passe' })
+  @ApiResponse({ status: 200, description: 'Email envoyé si le compte existe' })
+  @ApiResponse({ status: 429, description: 'Trop de tentatives, réessaye dans 1 heure' })
+  @Throttle({ global: { limit: 3, ttl: 3_600_000 } })
+  @Post('forgot-password')
+  forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto.email);
+  }
+
+  @ApiOperation({ summary: 'Réinitialiser le mot de passe avec le token reçu par email' })
+  @ApiResponse({ status: 200, description: 'Mot de passe réinitialisé, toutes les sessions révoquées' })
+  @ApiResponse({ status: 401, description: 'Token invalide ou expiré' })
+  @ApiResponse({ status: 429, description: 'Trop de tentatives' })
+  @Throttle({ global: { limit: 5, ttl: 900_000 } })
+  @Post('reset-password')
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto.token, dto.password);
   }
 
   @ApiOperation({ summary: 'Profil de l\'utilisateur connecté' })
