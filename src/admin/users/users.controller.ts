@@ -1,5 +1,21 @@
-import { Controller, Get, Post, Delete, Param, Body, Query, UseGuards, ParseIntPipe, Request } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Param,
+  Body,
+  Query,
+  UseGuards,
+  ParseIntPipe,
+  Request,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { AdminUsersService } from './users.service.js';
 import { AssignRoleDto } from './dto/assign-role.dto.js';
 import { FindUsersQueryDto } from './dto/find-users-query.dto.js';
@@ -16,7 +32,9 @@ import { Permissions } from '../../auth/permissions.constants.js';
 export class AdminUsersController {
   constructor(private usersService: AdminUsersService) {}
 
-  @ApiOperation({ summary: 'Lister les utilisateurs avec pagination, tri et filtres' })
+  @ApiOperation({
+    summary: 'Lister les utilisateurs avec pagination, tri et filtres',
+  })
   @ApiResponse({ status: 200, description: 'Liste paginée des utilisateurs' })
   @RequirePermissions(Permissions.ADMIN_USER_READ)
   @Get('users')
@@ -33,7 +51,7 @@ export class AdminUsersController {
     return this.usersService.findUserById(id);
   }
 
-  @ApiOperation({ summary: "Assigner un rôle à un utilisateur" })
+  @ApiOperation({ summary: 'Assigner un rôle à un utilisateur' })
   @ApiResponse({ status: 201, description: 'Rôle assigné' })
   @ApiResponse({ status: 400, description: "L'utilisateur a déjà ce rôle" })
   @ApiResponse({ status: 404, description: 'Utilisateur ou rôle non trouvé' })

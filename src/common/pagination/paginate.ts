@@ -9,7 +9,10 @@ export interface PaginateOptions {
 }
 
 export async function paginate<T>(
-  model: { findMany: (args: any) => Promise<T[]>; count: (args: any) => Promise<number> },
+  model: {
+    findMany: (args: any) => Promise<T[]>;
+    count: (args: any) => Promise<number>;
+  },
   query: PaginationQueryDto,
   options: PaginateOptions = {},
 ): Promise<PaginatedResponse<T>> {
@@ -45,7 +48,8 @@ export async function paginate<T>(
       sortBy,
       sortOrder,
       ...(search && { search }),
-      ...(metaFilters && Object.keys(metaFilters).length > 0 && { filters: metaFilters }),
+      ...(metaFilters &&
+        Object.keys(metaFilters).length > 0 && { filters: metaFilters }),
     },
   };
 }

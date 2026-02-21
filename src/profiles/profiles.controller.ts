@@ -1,5 +1,20 @@
-import { Controller, Get, Patch, Delete, Param, Body, UseGuards, Request, ParseIntPipe } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  UseGuards,
+  Request,
+  ParseIntPipe,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { ProfilesService } from './profiles.service.js';
 import { UpdateProfileDto } from './dto/update-profile.dto.js';
 import { ChangePasswordDto } from './dto/change-password.dto.js';
@@ -16,8 +31,11 @@ import { Permissions } from '../auth/permissions.constants.js';
 export class ProfilesController {
   constructor(private profilesService: ProfilesService) {}
 
-  @ApiOperation({ summary: 'Consulter le profil public d\'un utilisateur' })
-  @ApiResponse({ status: 200, description: 'Profil utilisateur (id, name, email, createdAt)' })
+  @ApiOperation({ summary: "Consulter le profil public d'un utilisateur" })
+  @ApiResponse({
+    status: 200,
+    description: 'Profil utilisateur (id, name, email, createdAt)',
+  })
   @ApiResponse({ status: 404, description: 'Utilisateur non trouvé' })
   @RequirePermissions(Permissions.PROFILE_READ)
   @Get(':id')
@@ -34,13 +52,23 @@ export class ProfilesController {
   }
 
   @ApiOperation({ summary: 'Changer son mot de passe' })
-  @ApiResponse({ status: 200, description: 'Mot de passe modifié, toutes les sessions révoquées' })
-  @ApiResponse({ status: 400, description: 'Nouveau mot de passe invalide (format non respecté)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Mot de passe modifié, toutes les sessions révoquées',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Nouveau mot de passe invalide (format non respecté)',
+  })
   @ApiResponse({ status: 401, description: 'Mot de passe actuel incorrect' })
   @RequirePermissions(Permissions.PROFILE_UPDATE_OWN)
   @Patch('me/password')
   changePassword(@Request() req: any, @Body() dto: ChangePasswordDto) {
-    return this.profilesService.changePassword(req.user.id, dto.currentPassword, dto.newPassword);
+    return this.profilesService.changePassword(
+      req.user.id,
+      dto.currentPassword,
+      dto.newPassword,
+    );
   }
 
   @ApiOperation({ summary: 'Supprimer son propre compte' })

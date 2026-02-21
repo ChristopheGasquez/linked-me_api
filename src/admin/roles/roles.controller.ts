@@ -1,5 +1,21 @@
-import { Controller, Get, Post, Delete, Param, Body, Query, UseGuards, ParseIntPipe, Request } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Param,
+  Body,
+  Query,
+  UseGuards,
+  ParseIntPipe,
+  Request,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { AdminRolesService } from './roles.service.js';
 import { CreateRoleDto } from './dto/create-role.dto.js';
 import { AssignPermissionsDto } from './dto/assign-permissions.dto.js';
@@ -45,9 +61,14 @@ export class AdminRolesController {
     return this.rolesService.createRole(req.user.id, dto.name);
   }
 
-  @ApiOperation({ summary: 'Supprimer un rôle (si non assigné à un utilisateur)' })
+  @ApiOperation({
+    summary: 'Supprimer un rôle (si non assigné à un utilisateur)',
+  })
   @ApiResponse({ status: 200, description: 'Rôle supprimé' })
-  @ApiResponse({ status: 400, description: 'Rôle encore assigné à des utilisateurs' })
+  @ApiResponse({
+    status: 400,
+    description: 'Rôle encore assigné à des utilisateurs',
+  })
   @ApiResponse({ status: 404, description: 'Rôle non trouvé' })
   @RequirePermissions(Permissions.ADMIN_ROLE_MANAGE)
   @Delete('roles/:id')
@@ -58,7 +79,10 @@ export class AdminRolesController {
   // ─── Permissions sur un rôle ─────────────────────────────
 
   @ApiOperation({ summary: 'Ajouter des permissions à un rôle' })
-  @ApiResponse({ status: 200, description: 'Permissions ajoutées, retourne le rôle mis à jour' })
+  @ApiResponse({
+    status: 200,
+    description: 'Permissions ajoutées, retourne le rôle mis à jour',
+  })
   @ApiResponse({ status: 400, description: 'Permissions inconnues' })
   @ApiResponse({ status: 404, description: 'Rôle non trouvé' })
   @RequirePermissions(Permissions.ADMIN_ROLE_MANAGE)
@@ -68,7 +92,11 @@ export class AdminRolesController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: AssignPermissionsDto,
   ) {
-    return this.rolesService.addPermissionsToRole(req.user.id, id, dto.permissions);
+    return this.rolesService.addPermissionsToRole(
+      req.user.id,
+      id,
+      dto.permissions,
+    );
   }
 
   @ApiOperation({ summary: "Retirer une permission d'un rôle" })

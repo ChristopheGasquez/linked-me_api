@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { AuditService } from '../../audit/audit.service.js';
 import { paginate } from '../../common/pagination/index.js';
@@ -34,7 +38,7 @@ export class AdminUsersService {
 
     return {
       ...result,
-      data: result.data.map(({ password, ...user }: any) => ({
+      data: result.data.map(({ password: _password, ...user }: any) => ({
         ...user,
         roles: user.roles.map((ur: any) => ur.role),
       })),
@@ -47,7 +51,7 @@ export class AdminUsersService {
       include: { roles: { include: { role: true } } },
     });
     if (!user) throw new NotFoundException('User not found');
-    const { password, ...rest } = user;
+    const { password: _password, ...rest } = user;
     return { ...rest, roles: rest.roles.map((ur) => ur.role) };
   }
 
@@ -55,7 +59,9 @@ export class AdminUsersService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
-    const role = await this.prisma.role.findUnique({ where: { name: roleName } });
+    const role = await this.prisma.role.findUnique({
+      where: { name: roleName },
+    });
     if (!role) throw new NotFoundException(`Role "${roleName}" not found`);
 
     const existing = await this.prisma.userRole.findUnique({
@@ -66,7 +72,9 @@ export class AdminUsersService {
     }
 
     await this.prisma.userRole.create({ data: { userId, roleId: role.id } });
-    await this.auditService.log('user.role.assign', actorId, userId, 'user', { roleName });
+    await this.auditService.log('user.role.assign', actorId, userId, 'user', {
+      roleName,
+    });
     return { message: `Role "${roleName}" assigned to user ${userId}` };
   }
 
@@ -82,7 +90,9 @@ export class AdminUsersService {
     await this.prisma.userRole.delete({
       where: { userId_roleId: { userId, roleId } },
     });
-    await this.auditService.log('user.role.revoke', actorId, userId, 'user', { roleName: link.role.name });
+    await this.auditService.log('user.role.revoke', actorId, userId, 'user', {
+      roleName: link.role.name,
+    });
     return { message: 'Role removed from user' };
   }
 
@@ -100,7 +110,10 @@ export class AdminUsersService {
     }
 
     await this.prisma.user.delete({ where: { id: userId } });
-    await this.auditService.log('user.delete', actorId, userId, 'user', { email: user.email, name: user.name });
+    await this.auditService.log('user.delete', actorId, userId, 'user', {
+      email: user.email,
+      name: user.name,
+    });
     return { message: `User ${userId} deleted` };
   }
 }

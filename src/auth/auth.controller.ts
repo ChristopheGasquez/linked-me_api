@@ -1,5 +1,21 @@
-import { Controller, Post, Body, Get, Delete, Query, Param, ParseIntPipe, UseGuards, Request } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Delete,
+  Query,
+  Param,
+  ParseIntPipe,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service.js';
 import { RegisterDto } from './dto/register.dto.js';
@@ -17,11 +33,17 @@ import { THROTTLE } from '../common/constants.js';
 export class AuthController {
   constructor(private authService: AuthService) {}
 
-  @ApiOperation({ summary: 'Inscription d\'un nouvel utilisateur' })
+  @ApiOperation({ summary: "Inscription d'un nouvel utilisateur" })
   @ApiResponse({ status: 201, description: 'Utilisateur créé' })
-  @ApiResponse({ status: 400, description: 'Données invalides (email, format de mot de passe)' })
+  @ApiResponse({
+    status: 400,
+    description: 'Données invalides (email, format de mot de passe)',
+  })
   @ApiResponse({ status: 409, description: 'Email déjà utilisé' })
-  @ApiResponse({ status: 429, description: 'Trop de tentatives, réessaye dans 15 minutes' })
+  @ApiResponse({
+    status: 429,
+    description: 'Trop de tentatives, réessaye dans 15 minutes',
+  })
   @Throttle({ global: THROTTLE.AUTH })
   @Post('register')
   register(@Body() dto: RegisterDto) {
@@ -32,14 +54,19 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Token JWT retourné' })
   @ApiResponse({ status: 401, description: 'Email ou mot de passe incorrect' })
   @ApiResponse({ status: 403, description: 'Compte temporairement verrouillé' })
-  @ApiResponse({ status: 429, description: 'Trop de tentatives, réessaye dans 15 minutes' })
+  @ApiResponse({
+    status: 429,
+    description: 'Trop de tentatives, réessaye dans 15 minutes',
+  })
   @Throttle({ global: THROTTLE.AUTH })
   @Post('login')
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto.email, dto.password);
   }
 
-  @ApiOperation({ summary: 'Vérifier l\'adresse email via le token reçu par mail' })
+  @ApiOperation({
+    summary: "Vérifier l'adresse email via le token reçu par mail",
+  })
   @ApiResponse({ status: 200, description: 'Email vérifié avec succès' })
   @ApiResponse({ status: 401, description: 'Token invalide ou expiré' })
   @Get('verify-email')
@@ -47,9 +74,15 @@ export class AuthController {
     return this.authService.verifyEmail(token);
   }
 
-  @ApiOperation({ summary: 'Renvoyer l\'email de vérification' })
-  @ApiResponse({ status: 200, description: 'Email renvoyé si le compte existe et n\'est pas vérifié' })
-  @ApiResponse({ status: 429, description: 'Trop de tentatives, réessaye dans 1 heure' })
+  @ApiOperation({ summary: "Renvoyer l'email de vérification" })
+  @ApiResponse({
+    status: 200,
+    description: "Email renvoyé si le compte existe et n'est pas vérifié",
+  })
+  @ApiResponse({
+    status: 429,
+    description: 'Trop de tentatives, réessaye dans 1 heure',
+  })
   @Throttle({ global: THROTTLE.SENSITIVE })
   @Post('resend-verification')
   resendVerification(@Body() dto: ResendVerificationDto) {
@@ -58,16 +91,27 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Demander une réinitialisation de mot de passe' })
   @ApiResponse({ status: 200, description: 'Email envoyé si le compte existe' })
-  @ApiResponse({ status: 429, description: 'Trop de tentatives, réessaye dans 1 heure' })
+  @ApiResponse({
+    status: 429,
+    description: 'Trop de tentatives, réessaye dans 1 heure',
+  })
   @Throttle({ global: THROTTLE.SENSITIVE })
   @Post('forgot-password')
   forgotPassword(@Body() dto: ForgotPasswordDto) {
     return this.authService.forgotPassword(dto.email);
   }
 
-  @ApiOperation({ summary: 'Réinitialiser le mot de passe avec le token reçu par email' })
-  @ApiResponse({ status: 200, description: 'Mot de passe réinitialisé, toutes les sessions révoquées' })
-  @ApiResponse({ status: 400, description: 'Mot de passe invalide (format non respecté)' })
+  @ApiOperation({
+    summary: 'Réinitialiser le mot de passe avec le token reçu par email',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Mot de passe réinitialisé, toutes les sessions révoquées',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Mot de passe invalide (format non respecté)',
+  })
   @ApiResponse({ status: 401, description: 'Token invalide ou expiré' })
   @ApiResponse({ status: 429, description: 'Trop de tentatives' })
   @Throttle({ global: THROTTLE.PASSWORD_RESET })
@@ -76,9 +120,12 @@ export class AuthController {
     return this.authService.resetPassword(dto.token, dto.password);
   }
 
-  @ApiOperation({ summary: 'Profil de l\'utilisateur connecté' })
+  @ApiOperation({ summary: "Profil de l'utilisateur connecté" })
   @ApiBearerAuth()
-  @ApiResponse({ status: 200, description: 'Données de l\'utilisateur avec rôles et permissions' })
+  @ApiResponse({
+    status: 200,
+    description: "Données de l'utilisateur avec rôles et permissions",
+  })
   @ApiResponse({ status: 401, description: 'Non authentifié' })
   @UseGuards(JwtAuthGuard)
   @Get('me')
@@ -87,8 +134,14 @@ export class AuthController {
   }
 
   @ApiOperation({ summary: 'Rafraîchir les tokens (rotation)' })
-  @ApiResponse({ status: 200, description: 'Nouvelle paire access_token + refresh_token' })
-  @ApiResponse({ status: 401, description: 'Refresh token invalide ou révoqué' })
+  @ApiResponse({
+    status: 200,
+    description: 'Nouvelle paire access_token + refresh_token',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Refresh token invalide ou révoqué',
+  })
   @Post('refresh')
   refresh(@Body() dto: RefreshTokenDto) {
     return this.authService.refresh(dto.refresh_token);
@@ -113,7 +166,10 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Lister les sessions actives' })
   @ApiBearerAuth()
-  @ApiResponse({ status: 200, description: 'Liste paginée des sessions actives' })
+  @ApiResponse({
+    status: 200,
+    description: 'Liste paginée des sessions actives',
+  })
   @ApiResponse({ status: 401, description: 'Non authentifié' })
   @UseGuards(JwtAuthGuard)
   @Get('sessions')

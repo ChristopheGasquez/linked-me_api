@@ -50,7 +50,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     const roles = user.roles.map((ur) => ur.role.name);
 
-    const { password, roles: _, ...userWithoutPassword } = user;
+    const { password: _password, roles: _, ...userWithoutPassword } = user;
     return { ...userWithoutPassword, roles, permissions };
   }
 }

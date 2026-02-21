@@ -56,11 +56,18 @@ export class AuthService {
     });
 
     const verificationToken = await this.createVerificationToken(user.id);
-    await this.mailService.sendVerificationEmail(user.email, user.name, verificationToken);
+    await this.mailService.sendVerificationEmail(
+      user.email,
+      user.name,
+      verificationToken,
+    );
 
-    await this.auditService.log('user.create', user.id, user.id, 'user', { email: user.email, name: user.name });
+    await this.auditService.log('user.create', user.id, user.id, 'user', {
+      email: user.email,
+      name: user.name,
+    });
 
-    const { password, ...userWithoutPassword } = user;
+    const { password: _password, ...userWithoutPassword } = user;
     return userWithoutPassword;
   }
 
@@ -74,13 +81,18 @@ export class AuthService {
     const now = new Date();
 
     if (user.lockedUntil && user.lockedUntil > now) {
-      const remaining = Math.ceil((user.lockedUntil.getTime() - now.getTime()) / 60000);
+      const remaining = Math.ceil(
+        (user.lockedUntil.getTime() - now.getTime()) / 60000,
+      );
       throw new ForbiddenException(
         `Account temporarily locked. Try again in ${remaining} minute(s).`,
       );
     }
 
-    const baseAttempts = user.lockedUntil && user.lockedUntil <= now ? 0 : user.failedLoginAttempts;
+    const baseAttempts =
+      user.lockedUntil && user.lockedUntil <= now
+        ? 0
+        : user.failedLoginAttempts;
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
@@ -91,14 +103,20 @@ export class AuthService {
         where: { id: user.id },
         data: {
           failedLoginAttempts: newAttempts,
-          lockedUntil: isNowLocked ? new Date(now.getTime() + this.LOCKOUT_DURATION_MS) : null,
+          lockedUntil: isNowLocked
+            ? new Date(now.getTime() + this.LOCKOUT_DURATION_MS)
+            : null,
         },
       });
       if (isNowLocked) {
         await this.mailService.sendAccountLockedEmail(user.email, user.name);
-        await this.auditService.log('login.locked', null, user.id, 'user', { email: user.email });
+        await this.auditService.log('login.locked', null, user.id, 'user', {
+          email: user.email,
+        });
       } else {
-        await this.auditService.log('login.failed', null, user.id, 'user', { email: user.email });
+        await this.auditService.log('login.failed', null, user.id, 'user', {
+          email: user.email,
+        });
       }
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -109,7 +127,12 @@ export class AuthService {
       data: { failedLoginAttempts: 0, lockedUntil: null },
     });
 
-    const { password: _, failedLoginAttempts: __, lockedUntil: ___, ...userWithoutSensitive } = user;
+    const {
+      password: _,
+      failedLoginAttempts: __,
+      lockedUntil: ___,
+      ...userWithoutSensitive
+    } = user;
     return userWithoutSensitive;
   }
 
@@ -117,7 +140,9 @@ export class AuthService {
     const user = await this.validateUser(email, password);
 
     if (!user.isEmailChecked) {
-      throw new UnauthorizedException('Please verify your email before logging in');
+      throw new UnauthorizedException(
+        'Please verify your email before logging in',
+      );
     }
 
     const tokens = await this.generateTokens(user.id, user.email);
@@ -134,8 +159,11 @@ export class AuthService {
       expiresIn: this.config.get('JWT_REFRESH_EXPIRY', '7d'),
     });
 
-    const hash = crypto.createHash('sha256').update(refresh_token).digest('hex');
-    const decoded = this.jwtService.decode(refresh_token) as { exp: number };
+    const hash = crypto
+      .createHash('sha256')
+      .update(refresh_token)
+      .digest('hex');
+    const decoded = this.jwtService.decode(refresh_token);
 
     await this.prisma.refreshToken.create({
       data: {
@@ -151,7 +179,10 @@ export class AuthService {
       select: { id: true },
     });
     if (userTokens.length > this.MAX_SESSIONS_PER_USER) {
-      const toDelete = userTokens.slice(0, userTokens.length - this.MAX_SESSIONS_PER_USER);
+      const toDelete = userTokens.slice(
+        0,
+        userTokens.length - this.MAX_SESSIONS_PER_USER,
+      );
       await this.prisma.refreshToken.deleteMany({
         where: { id: { in: toDelete.map((t) => t.id) } },
       });
@@ -251,7 +282,12 @@ export class AuthService {
       }),
     ]);
 
-    await this.auditService.log('email.verified', verification.userId, verification.userId, 'user');
+    await this.auditService.log(
+      'email.verified',
+      verification.userId,
+      verification.userId,
+      'user',
+    );
 
     return { message: 'Email verified successfully' };
   }
@@ -261,7 +297,10 @@ export class AuthService {
 
     // Generic response: never reveal whether email exists
     if (!user) {
-      return { message: 'If an account with this email exists, a reset link has been sent' };
+      return {
+        message:
+          'If an account with this email exists, a reset link has been sent',
+      };
     }
 
     await this.prisma.passwordReset.deleteMany({ where: { userId: user.id } });
@@ -277,9 +316,16 @@ export class AuthService {
       },
     });
 
-    await this.mailService.sendPasswordResetEmail(user.email, user.name, rawToken);
+    await this.mailService.sendPasswordResetEmail(
+      user.email,
+      user.name,
+      rawToken,
+    );
 
-    return { message: 'If an account with this email exists, a reset link has been sent' };
+    return {
+      message:
+        'If an account with this email exists, a reset link has been sent',
+    };
   }
 
   async resetPassword(token: string, newPassword: string) {
@@ -304,10 +350,17 @@ export class AuthService {
         data: { password: hashedPassword },
       }),
       this.prisma.passwordReset.delete({ where: { id: resetRecord.id } }),
-      this.prisma.refreshToken.deleteMany({ where: { userId: resetRecord.userId } }),
+      this.prisma.refreshToken.deleteMany({
+        where: { userId: resetRecord.userId },
+      }),
     ]);
 
-    await this.auditService.log('password.reset', resetRecord.userId, resetRecord.userId, 'user');
+    await this.auditService.log(
+      'password.reset',
+      resetRecord.userId,
+      resetRecord.userId,
+      'user',
+    );
 
     return { message: 'Password reset successfully. Please log in again.' };
   }
@@ -316,12 +369,22 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { email } });
 
     if (!user || user.isEmailChecked) {
-      return { message: 'If an unverified account with this email exists, a new link has been sent' };
+      return {
+        message:
+          'If an unverified account with this email exists, a new link has been sent',
+      };
     }
 
     const verificationToken = await this.createVerificationToken(user.id);
-    await this.mailService.sendVerificationEmail(user.email, user.name, verificationToken);
+    await this.mailService.sendVerificationEmail(
+      user.email,
+      user.name,
+      verificationToken,
+    );
 
-    return { message: 'If an unverified account with this email exists, a new link has been sent' };
+    return {
+      message:
+        'If an unverified account with this email exists, a new link has been sent',
+    };
   }
 }
