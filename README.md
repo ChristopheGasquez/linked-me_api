@@ -245,6 +245,12 @@ Deployed on **Railway** via push to `master`.
 - `develop` — integration
 - `feature/*` — feature branches from develop
 
+Branch protection rules:
+- `master`: PR required, CI must pass, branch must be up to date before merging
+- `develop`: PR required, CI must pass
+
+Merge strategy: feature → develop via **squash merge**, develop → master via **merge commit**.
+
 ## Author
 
 **Christophe Gasquez** — [GitHub](https://github.com/ChristopheGasquez)
