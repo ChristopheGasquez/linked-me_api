@@ -13,6 +13,7 @@ API REST pour la plateforme linked-me.
 
 - [Getting started](#getting-started)
 - [Scripts](#scripts)
+- [Testing](#testing)
 - [API Documentation](#api-documentation)
 - [Authentication](#authentication)
 - [Rate Limiting](#rate-limiting)
@@ -98,6 +99,30 @@ npm run start:prod
 | `npm run prisma:seed` | Seed database (upsert roles, permissions, admin) |
 | `npm run prisma:reset` | Full database reset + re-seed |
 | `npm run prisma:studio` | Open Prisma Studio (visual DB browser) |
+| `npm test` | Run unit tests |
+| `npm run test:cov` | Run unit tests with coverage report |
+| `npm run test:e2e` | Run E2E tests |
+
+## Testing
+
+Unit tests cover all service-layer business logic with mocked dependencies (Prisma, JWT, Mail).
+
+```bash
+# Run unit tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Generate coverage report (output: coverage/)
+npm run test:cov
+```
+
+**Coverage:** 95 tests across 8 suites — 100% statement coverage on all services (`auth`, `profiles`, `admin/users`, `admin/roles`, `audit`, `tasks`) and the `paginate` utility.
+
+**Stack:** [jest-mock-extended](https://github.com/marchaos/jest-mock-extended) for type-safe Prisma mocks, `jest.mock()` for external modules (bcrypt, mail).
+
+E2E tests (Phase 2 — requires a dedicated test database) will use Supertest to test HTTP endpoints end-to-end.
 
 ## API Documentation
 
