@@ -9,7 +9,10 @@ import * as bcrypt from 'bcrypt';
 import { ProfilesService } from './profiles.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
-import { createPrismaServiceMock, PrismaServiceMock } from '../prisma/prisma.service.mock.js';
+import {
+  createPrismaServiceMock,
+  PrismaServiceMock,
+} from '../prisma/prisma.service.mock.js';
 
 const mockUser = {
   id: 1,
@@ -82,7 +85,9 @@ describe('ProfilesService', () => {
     it('should throw NotFoundException if user does not exist', async () => {
       prisma.user.findUnique.mockResolvedValue(null);
 
-      await expect(service.update(99, { name: 'New Name' })).rejects.toThrow(NotFoundException);
+      await expect(service.update(99, { name: 'New Name' })).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should update user, log audit and return public fields', async () => {
@@ -96,7 +101,13 @@ describe('ProfilesService', () => {
         where: { id: 1 },
         data: { name: 'New Name' },
       });
-      expect(auditService.log).toHaveBeenCalledWith('profile.update', 1, 1, 'user', expect.any(Object));
+      expect(auditService.log).toHaveBeenCalledWith(
+        'profile.update',
+        1,
+        1,
+        'user',
+        expect.any(Object),
+      );
       expect(result).toMatchObject({ id: 1, name: 'New Name' });
       expect(result).not.toHaveProperty('password');
     });
@@ -119,7 +130,13 @@ describe('ProfilesService', () => {
       const result = await service.remove(1);
 
       expect(prisma.user.delete).toHaveBeenCalledWith({ where: { id: 1 } });
-      expect(auditService.log).toHaveBeenCalledWith('profile.delete', 1, 1, 'user', { email: mockUser.email });
+      expect(auditService.log).toHaveBeenCalledWith(
+        'profile.delete',
+        1,
+        1,
+        'user',
+        { email: mockUser.email },
+      );
       expect(result).toEqual({ message: 'Account deleted' });
     });
   });
@@ -131,16 +148,18 @@ describe('ProfilesService', () => {
     it('should throw NotFoundException if user does not exist', async () => {
       prisma.user.findUnique.mockResolvedValue(null);
 
-      await expect(service.changePassword(99, 'current', 'new')).rejects.toThrow(NotFoundException);
+      await expect(
+        service.changePassword(99, 'current', 'new'),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw UnauthorizedException if current password is wrong', async () => {
       prisma.user.findUnique.mockResolvedValue(mockUser as any);
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
-      await expect(service.changePassword(1, 'wrong_password', 'new')).rejects.toThrow(
-        UnauthorizedException,
-      );
+      await expect(
+        service.changePassword(1, 'wrong_password', 'new'),
+      ).rejects.toThrow(UnauthorizedException);
     });
 
     it('should update password, revoke sessions and log audit on success', async () => {
@@ -153,11 +172,22 @@ describe('ProfilesService', () => {
       prisma.user.update.mockResolvedValue(mockUser as any);
       prisma.refreshToken.deleteMany.mockResolvedValue({ count: 1 });
 
-      const result = await service.changePassword(1, 'current_password', 'new_password');
+      const result = await service.changePassword(
+        1,
+        'current_password',
+        'new_password',
+      );
 
       expect(prisma.$transaction).toHaveBeenCalledTimes(1);
-      expect(auditService.log).toHaveBeenCalledWith('profile.password.change', 1, 1, 'user');
-      expect(result).toEqual({ message: 'Password changed. Please log in again.' });
+      expect(auditService.log).toHaveBeenCalledWith(
+        'profile.password.change',
+        1,
+        1,
+        'user',
+      );
+      expect(result).toEqual({
+        message: 'Password changed. Please log in again.',
+      });
     });
   });
 

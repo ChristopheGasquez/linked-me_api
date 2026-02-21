@@ -3,7 +3,10 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { AdminUsersService } from './users.service.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { AuditService } from '../../audit/audit.service.js';
-import { createPrismaServiceMock, PrismaServiceMock } from '../../prisma/prisma.service.mock.js';
+import {
+  createPrismaServiceMock,
+  PrismaServiceMock,
+} from '../../prisma/prisma.service.mock.js';
 
 const mockRole = { id: 1, name: 'USER', createdAt: new Date() };
 
@@ -20,7 +23,12 @@ const mockUser = {
   roles: [{ role: mockRole }],
 };
 
-const defaultQuery = { page: 1, limit: 20, sortBy: 'createdAt', sortOrder: 'desc' as const };
+const defaultQuery = {
+  page: 1,
+  limit: 20,
+  sortBy: 'createdAt',
+  sortOrder: 'desc' as const,
+};
 
 describe('AdminUsersService', () => {
   let service: AdminUsersService;
@@ -85,7 +93,10 @@ describe('AdminUsersService', () => {
       prisma.user.findMany.mockResolvedValue([] as any);
       prisma.user.count.mockResolvedValue(0);
 
-      await service.findAllUsers({ ...defaultQuery, isEmailChecked: false } as any);
+      await service.findAllUsers({
+        ...defaultQuery,
+        isEmailChecked: false,
+      } as any);
 
       expect(prisma.user.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -122,22 +133,31 @@ describe('AdminUsersService', () => {
     it('should throw NotFoundException if user does not exist', async () => {
       prisma.user.findUnique.mockResolvedValue(null);
 
-      await expect(service.addRoleToUser(1, 99, 'ADMIN')).rejects.toThrow(NotFoundException);
+      await expect(service.addRoleToUser(1, 99, 'ADMIN')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw NotFoundException if role does not exist', async () => {
       prisma.user.findUnique.mockResolvedValue(mockUser as any);
       prisma.role.findUnique.mockResolvedValue(null);
 
-      await expect(service.addRoleToUser(1, 1, 'NONEXISTENT')).rejects.toThrow(NotFoundException);
+      await expect(service.addRoleToUser(1, 1, 'NONEXISTENT')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw BadRequestException if user already has the role', async () => {
       prisma.user.findUnique.mockResolvedValue(mockUser as any);
       prisma.role.findUnique.mockResolvedValue(mockRole as any);
-      prisma.userRole.findUnique.mockResolvedValue({ userId: 1, roleId: 1 } as any);
+      prisma.userRole.findUnique.mockResolvedValue({
+        userId: 1,
+        roleId: 1,
+      } as any);
 
-      await expect(service.addRoleToUser(1, 1, 'USER')).rejects.toThrow(BadRequestException);
+      await expect(service.addRoleToUser(1, 1, 'USER')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should assign role to user and log audit on success', async () => {
@@ -148,8 +168,16 @@ describe('AdminUsersService', () => {
 
       const result = await service.addRoleToUser(2, 1, 'USER');
 
-      expect(prisma.userRole.create).toHaveBeenCalledWith({ data: { userId: 1, roleId: 1 } });
-      expect(auditService.log).toHaveBeenCalledWith('user.role.assign', 2, 1, 'user', { roleName: 'USER' });
+      expect(prisma.userRole.create).toHaveBeenCalledWith({
+        data: { userId: 1, roleId: 1 },
+      });
+      expect(auditService.log).toHaveBeenCalledWith(
+        'user.role.assign',
+        2,
+        1,
+        'user',
+        { roleName: 'USER' },
+      );
       expect(result.message).toContain('assigned');
     });
   });
@@ -161,7 +189,9 @@ describe('AdminUsersService', () => {
     it('should throw NotFoundException if UserRole link does not exist', async () => {
       prisma.userRole.findUnique.mockResolvedValue(null);
 
-      await expect(service.removeRoleFromUser(1, 1, 1)).rejects.toThrow(NotFoundException);
+      await expect(service.removeRoleFromUser(1, 1, 1)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should remove role from user and log audit', async () => {
@@ -174,7 +204,13 @@ describe('AdminUsersService', () => {
       expect(prisma.userRole.delete).toHaveBeenCalledWith({
         where: { userId_roleId: { userId: 1, roleId: 1 } },
       });
-      expect(auditService.log).toHaveBeenCalledWith('user.role.revoke', 2, 1, 'user', { roleName: 'USER' });
+      expect(auditService.log).toHaveBeenCalledWith(
+        'user.role.revoke',
+        2,
+        1,
+        'user',
+        { roleName: 'USER' },
+      );
       expect(result).toEqual({ message: 'Role removed from user' });
     });
   });
@@ -186,14 +222,18 @@ describe('AdminUsersService', () => {
     it('should throw NotFoundException if user does not exist', async () => {
       prisma.user.findUnique.mockResolvedValue(null);
 
-      await expect(service.deleteUser(1, 99)).rejects.toThrow(NotFoundException);
+      await expect(service.deleteUser(1, 99)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw BadRequestException if user still has roles', async () => {
       const userWithRoles = { ...mockUser, roles: [{ roleId: 1 }] };
       prisma.user.findUnique.mockResolvedValue(userWithRoles as any);
 
-      await expect(service.deleteUser(1, 1)).rejects.toThrow(BadRequestException);
+      await expect(service.deleteUser(1, 1)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should delete user and log audit when user has no roles', async () => {
@@ -204,7 +244,13 @@ describe('AdminUsersService', () => {
       const result = await service.deleteUser(2, 1);
 
       expect(prisma.user.delete).toHaveBeenCalledWith({ where: { id: 1 } });
-      expect(auditService.log).toHaveBeenCalledWith('user.delete', 2, 1, 'user', expect.any(Object));
+      expect(auditService.log).toHaveBeenCalledWith(
+        'user.delete',
+        2,
+        1,
+        'user',
+        expect.any(Object),
+      );
       expect(result.message).toContain('deleted');
     });
   });

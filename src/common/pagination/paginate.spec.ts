@@ -5,7 +5,12 @@ const makeModel = (items: unknown[], total: number) => ({
   count: jest.fn().mockResolvedValue(total),
 });
 
-const baseQuery = { page: 1, limit: 20, sortBy: 'createdAt', sortOrder: 'desc' as const };
+const baseQuery = {
+  page: 1,
+  limit: 20,
+  sortBy: 'createdAt',
+  sortOrder: 'desc' as const,
+};
 
 describe('paginate()', () => {
   afterEach(() => {
@@ -20,7 +25,11 @@ describe('paginate()', () => {
       const items = [{ id: 1 }, { id: 2 }];
       const model = makeModel(items, 45);
 
-      const result = await paginate(model, { page: 1, limit: 20, sortBy: 'createdAt', sortOrder: 'desc' }, {});
+      const result = await paginate(
+        model,
+        { page: 1, limit: 20, sortBy: 'createdAt', sortOrder: 'desc' },
+        {},
+      );
 
       expect(result.data).toEqual(items);
       expect(result.meta).toEqual({
@@ -36,7 +45,11 @@ describe('paginate()', () => {
     it('should pass correct skip and take to findMany', async () => {
       const model = makeModel([], 0);
 
-      await paginate(model, { page: 3, limit: 10, sortBy: 'id', sortOrder: 'asc' }, {});
+      await paginate(
+        model,
+        { page: 3, limit: 10, sortBy: 'id', sortOrder: 'asc' },
+        {},
+      );
 
       expect(model.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ skip: 20, take: 10 }),
@@ -46,7 +59,11 @@ describe('paginate()', () => {
     it('should pass orderBy to findMany', async () => {
       const model = makeModel([], 0);
 
-      await paginate(model, { page: 1, limit: 10, sortBy: 'name', sortOrder: 'asc' }, {});
+      await paginate(
+        model,
+        { page: 1, limit: 10, sortBy: 'name', sortOrder: 'asc' },
+        {},
+      );
 
       expect(model.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ orderBy: { name: 'asc' } }),
@@ -98,7 +115,11 @@ describe('paginate()', () => {
     it('should not add OR clause when search is empty', async () => {
       const model = makeModel([], 0);
 
-      await paginate(model, { ...baseQuery, search: undefined }, { searchFields: ['email'] });
+      await paginate(
+        model,
+        { ...baseQuery, search: undefined },
+        { searchFields: ['email'] },
+      );
 
       expect(model.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ where: {} }),
@@ -108,7 +129,11 @@ describe('paginate()', () => {
     it('should not add OR clause when searchFields is empty even with search', async () => {
       const model = makeModel([], 0);
 
-      await paginate(model, { ...baseQuery, search: 'test' }, { searchFields: [] });
+      await paginate(
+        model,
+        { ...baseQuery, search: 'test' },
+        { searchFields: [] },
+      );
 
       const call = model.findMany.mock.calls[0][0];
       expect(call.where).not.toHaveProperty('OR');
@@ -117,7 +142,11 @@ describe('paginate()', () => {
     it('should include search in meta when search is provided', async () => {
       const model = makeModel([], 0);
 
-      const result = await paginate(model, { ...baseQuery, search: 'alice' }, {});
+      const result = await paginate(
+        model,
+        { ...baseQuery, search: 'alice' },
+        {},
+      );
 
       expect(result.meta.search).toBe('alice');
     });
@@ -169,7 +198,9 @@ describe('paginate()', () => {
     it('should include filters in meta when metaFilters are non-empty', async () => {
       const model = makeModel([], 0);
 
-      const result = await paginate(model, baseQuery, { metaFilters: { role: 'ADMIN' } });
+      const result = await paginate(model, baseQuery, {
+        metaFilters: { role: 'ADMIN' },
+      });
 
       expect(result.meta.filters).toEqual({ role: 'ADMIN' });
     });

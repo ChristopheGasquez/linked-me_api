@@ -7,7 +7,9 @@ export class AppService {
   private readonly version: string;
 
   constructor() {
-    const pkg = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf-8'));
+    const pkg = JSON.parse(
+      readFileSync(join(process.cwd(), 'package.json'), 'utf-8'),
+    );
     this.version = pkg.version;
   }
 

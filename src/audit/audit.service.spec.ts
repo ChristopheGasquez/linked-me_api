@@ -1,7 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuditService } from './audit.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { createPrismaServiceMock, PrismaServiceMock } from '../prisma/prisma.service.mock.js';
+import {
+  createPrismaServiceMock,
+  PrismaServiceMock,
+} from '../prisma/prisma.service.mock.js';
 
 const mockAuditLog = {
   id: 1,
@@ -13,7 +16,12 @@ const mockAuditLog = {
   createdAt: new Date('2024-01-01'),
 };
 
-const defaultQuery = { page: 1, limit: 20, sortBy: 'createdAt', sortOrder: 'desc' as const };
+const defaultQuery = {
+  page: 1,
+  limit: 20,
+  sortBy: 'createdAt',
+  sortOrder: 'desc' as const,
+};
 
 describe('AuditService', () => {
   let service: AuditService;
@@ -23,10 +31,7 @@ describe('AuditService', () => {
     prisma = createPrismaServiceMock();
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        AuditService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [AuditService, { provide: PrismaService, useValue: prisma }],
     }).compile();
 
     service = module.get<AuditService>(AuditService);
@@ -43,7 +48,9 @@ describe('AuditService', () => {
     it('should create an audit log entry with the correct fields', async () => {
       prisma.auditLog.create.mockResolvedValue(mockAuditLog as any);
 
-      await service.log('user.create', 1, 1, 'user', { email: 'test@example.com' });
+      await service.log('user.create', 1, 1, 'user', {
+        email: 'test@example.com',
+      });
 
       expect(prisma.auditLog.create).toHaveBeenCalledWith({
         data: {

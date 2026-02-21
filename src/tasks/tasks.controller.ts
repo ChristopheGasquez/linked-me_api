@@ -1,5 +1,10 @@
 import { Controller, Post, Body, UseGuards, HttpCode } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { TasksService } from './tasks.service.js';
 import { CleanupAuditLogsDto } from './dto/cleanup-audit-logs.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
@@ -24,7 +29,10 @@ export class TasksController {
     return this.tasksService.cleanupUnverifiedUsers();
   }
 
-  @ApiOperation({ summary: 'Forcer le nettoyage des tokens expirés (refresh + password reset)' })
+  @ApiOperation({
+    summary:
+      'Forcer le nettoyage des tokens expirés (refresh + password reset)',
+  })
   @ApiResponse({ status: 200, description: 'Tokens expirés supprimés' })
   @RequirePermissions(Permissions.TASK_CLEAN_TOKENS)
   @Post('cleanup-expired-tokens')
@@ -33,8 +41,13 @@ export class TasksController {
     return this.tasksService.cleanupExpiredTokens();
   }
 
-  @ApiOperation({ summary: 'Supprimer les permissions orphelines (absentes des constantes)' })
-  @ApiResponse({ status: 200, description: 'Permissions orphelines supprimées' })
+  @ApiOperation({
+    summary: 'Supprimer les permissions orphelines (absentes des constantes)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Permissions orphelines supprimées',
+  })
   @RequirePermissions(Permissions.TASK_CLEAN_PERMISSIONS)
   @Post('cleanup-orphaned-permissions')
   @HttpCode(200)
@@ -42,9 +55,14 @@ export class TasksController {
     return this.tasksService.cleanupOrphanedPermissions();
   }
 
-  @ApiOperation({ summary: 'Supprimer les logs d\'audit plus vieux que N jours' })
+  @ApiOperation({
+    summary: "Supprimer les logs d'audit plus vieux que N jours",
+  })
   @ApiResponse({ status: 200, description: 'Logs supprimés' })
-  @ApiResponse({ status: 400, description: 'Paramètre invalide (minimum 1 jour)' })
+  @ApiResponse({
+    status: 400,
+    description: 'Paramètre invalide (minimum 1 jour)',
+  })
   @RequirePermissions(Permissions.TASK_CLEAN_AUDIT)
   @Post('cleanup-audit-logs')
   @HttpCode(200)

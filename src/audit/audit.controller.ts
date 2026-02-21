@@ -1,5 +1,10 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { AuditService } from './audit.service.js';
 import { FindAuditLogsQueryDto } from './dto/find-audit-logs-query.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
@@ -15,8 +20,8 @@ import { Permissions } from '../auth/permissions.constants.js';
 export class AuditController {
   constructor(private auditService: AuditService) {}
 
-  @ApiOperation({ summary: 'Lister les logs d\'audit' })
-  @ApiResponse({ status: 200, description: 'Liste paginée des logs d\'audit' })
+  @ApiOperation({ summary: "Lister les logs d'audit" })
+  @ApiResponse({ status: 200, description: "Liste paginée des logs d'audit" })
   @ApiResponse({ status: 401, description: 'Non authentifié' })
   @ApiResponse({ status: 403, description: 'Permission insuffisante' })
   @Get()

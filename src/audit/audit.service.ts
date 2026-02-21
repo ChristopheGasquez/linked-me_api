@@ -16,7 +16,13 @@ export class AuditService {
     metadata?: Record<string, unknown>,
   ): Promise<void> {
     await this.prisma.auditLog.create({
-      data: { action, actorId, targetId, targetType, metadata: metadata as Prisma.InputJsonValue },
+      data: {
+        action,
+        actorId,
+        targetId,
+        targetType,
+        metadata: metadata as Prisma.InputJsonValue,
+      },
     });
   }
 

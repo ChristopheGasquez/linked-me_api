@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { AuditService } from '../../audit/audit.service.js';
 import { paginate } from '../../common/pagination/index.js';
@@ -21,8 +25,7 @@ export class AdminRolesService {
       ...result,
       data: result.data.map((role: any) => ({
         ...role,
-        permissions: role.permissions.map((rp: any) => rp.permission,
-        ),
+        permissions: role.permissions.map((rp: any) => rp.permission),
       })),
     };
   }
@@ -33,7 +36,10 @@ export class AdminRolesService {
       include: { permissions: { include: { permission: true } } },
     });
     if (!role) throw new NotFoundException('Role not found');
-    return { ...role, permissions: role.permissions.map((rp) => rp.permission) };
+    return {
+      ...role,
+      permissions: role.permissions.map((rp) => rp.permission),
+    };
   }
 
   async createRole(actorId: number, name: string) {
@@ -42,7 +48,9 @@ export class AdminRolesService {
       throw new BadRequestException(`Role "${name}" already exists`);
     }
     const role = await this.prisma.role.create({ data: { name } });
-    await this.auditService.log('role.create', actorId, role.id, 'role', { name });
+    await this.auditService.log('role.create', actorId, role.id, 'role', {
+      name,
+    });
     return role;
   }
 
@@ -58,11 +66,17 @@ export class AdminRolesService {
     }
 
     await this.prisma.role.delete({ where: { id: roleId } });
-    await this.auditService.log('role.delete', actorId, roleId, 'role', { name: role.name });
+    await this.auditService.log('role.delete', actorId, roleId, 'role', {
+      name: role.name,
+    });
     return { message: `Role "${role.name}" deleted` };
   }
 
-  async addPermissionsToRole(actorId: number, roleId: number, permissionNames: string[]) {
+  async addPermissionsToRole(
+    actorId: number,
+    roleId: number,
+    permissionNames: string[],
+  ) {
     const role = await this.prisma.role.findUnique({ where: { id: roleId } });
     if (!role) throw new NotFoundException('Role not found');
 
@@ -73,7 +87,9 @@ export class AdminRolesService {
     const foundNames = permissions.map((p) => p.name);
     const unknown = permissionNames.filter((n) => !foundNames.includes(n));
     if (unknown.length > 0) {
-      throw new BadRequestException(`Unknown permissions: ${unknown.join(', ')}`);
+      throw new BadRequestException(
+        `Unknown permissions: ${unknown.join(', ')}`,
+      );
     }
 
     for (const perm of permissions) {
@@ -84,16 +100,29 @@ export class AdminRolesService {
       });
     }
 
-    await this.auditService.log('role.permission.assign', actorId, roleId, 'role', { roleName: role.name, permissions: permissionNames });
+    await this.auditService.log(
+      'role.permission.assign',
+      actorId,
+      roleId,
+      'role',
+      { roleName: role.name, permissions: permissionNames },
+    );
 
     const updated = await this.prisma.role.findUnique({
       where: { id: roleId },
       include: { permissions: { include: { permission: true } } },
     });
-    return { ...updated!, permissions: updated!.permissions.map((rp) => rp.permission) };
+    return {
+      ...updated!,
+      permissions: updated!.permissions.map((rp) => rp.permission),
+    };
   }
 
-  async removePermissionFromRole(actorId: number, roleId: number, permissionId: number) {
+  async removePermissionFromRole(
+    actorId: number,
+    roleId: number,
+    permissionId: number,
+  ) {
     const link = await this.prisma.rolePermission.findUnique({
       where: { roleId_permissionId: { roleId, permissionId } },
       include: { role: true, permission: true },
@@ -105,7 +134,13 @@ export class AdminRolesService {
     await this.prisma.rolePermission.delete({
       where: { roleId_permissionId: { roleId, permissionId } },
     });
-    await this.auditService.log('role.permission.revoke', actorId, roleId, 'role', { roleName: link.role.name, permissionName: link.permission.name });
+    await this.auditService.log(
+      'role.permission.revoke',
+      actorId,
+      roleId,
+      'role',
+      { roleName: link.role.name, permissionName: link.permission.name },
+    );
     return { message: 'Permission removed from role' };
   }
 

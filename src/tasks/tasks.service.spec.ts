@@ -3,7 +3,10 @@ import { ConfigService } from '@nestjs/config';
 import { TasksService } from './tasks.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { ProfilesService } from '../profiles/profiles.service.js';
-import { createPrismaServiceMock, PrismaServiceMock } from '../prisma/prisma.service.mock.js';
+import {
+  createPrismaServiceMock,
+  PrismaServiceMock,
+} from '../prisma/prisma.service.mock.js';
 
 describe('TasksService', () => {
   let service: TasksService;
@@ -49,7 +52,9 @@ describe('TasksService', () => {
 
       const result = await service.cleanupUnverifiedUsers();
 
-      expect(configService.getOrThrow).toHaveBeenCalledWith('UNVERIFIED_USER_TTL_HOURS');
+      expect(configService.getOrThrow).toHaveBeenCalledWith(
+        'UNVERIFIED_USER_TTL_HOURS',
+      );
       expect(profilesService.deleteUnverified).toHaveBeenCalledWith(24);
       expect(result.message).toContain('5');
     });
@@ -75,10 +80,14 @@ describe('TasksService', () => {
       const result = await service.cleanupExpiredTokens();
 
       expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { expiresAt: { lt: expect.any(Date) } } }),
+        expect.objectContaining({
+          where: { expiresAt: { lt: expect.any(Date) } },
+        }),
       );
       expect(prisma.passwordReset.deleteMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { expiresAt: { lt: expect.any(Date) } } }),
+        expect.objectContaining({
+          where: { expiresAt: { lt: expect.any(Date) } },
+        }),
       );
       expect(result.refreshTokens).toBe(3);
       expect(result.passwordResets).toBe(1);
@@ -96,7 +105,9 @@ describe('TasksService', () => {
       const result = await service.cleanupAuditLogs(7);
 
       expect(prisma.auditLog.deleteMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { createdAt: { lt: expect.any(Date) } } }),
+        expect.objectContaining({
+          where: { createdAt: { lt: expect.any(Date) } },
+        }),
       );
       expect(result.olderThanDays).toBe(7);
       expect(result.message).toContain('10');
@@ -154,7 +165,10 @@ describe('TasksService', () => {
       expect(prisma.permission.deleteMany).toHaveBeenCalledWith({
         where: { id: { in: [10, 11] } },
       });
-      expect(result.deleted).toEqual(['obsolete:permission', 'old:feature:access']);
+      expect(result.deleted).toEqual([
+        'obsolete:permission',
+        'old:feature:access',
+      ]);
       expect(result.message).toContain('2');
     });
   });

@@ -3,9 +3,16 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { AdminRolesService } from './roles.service.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { AuditService } from '../../audit/audit.service.js';
-import { createPrismaServiceMock, PrismaServiceMock } from '../../prisma/prisma.service.mock.js';
+import {
+  createPrismaServiceMock,
+  PrismaServiceMock,
+} from '../../prisma/prisma.service.mock.js';
 
-const mockPermission = { id: 1, name: 'admin:user:read', createdAt: new Date() };
+const mockPermission = {
+  id: 1,
+  name: 'admin:user:read',
+  createdAt: new Date(),
+};
 
 const mockRole = {
   id: 1,
@@ -14,7 +21,12 @@ const mockRole = {
   permissions: [{ permission: mockPermission }],
 };
 
-const defaultQuery = { page: 1, limit: 20, sortBy: 'createdAt', sortOrder: 'desc' as const };
+const defaultQuery = {
+  page: 1,
+  limit: 20,
+  sortBy: 'createdAt',
+  sortOrder: 'desc' as const,
+};
 
 describe('AdminRolesService', () => {
   let service: AdminRolesService;
@@ -86,7 +98,9 @@ describe('AdminRolesService', () => {
     it('should throw BadRequestException if role already exists', async () => {
       prisma.role.findUnique.mockResolvedValue(mockRole as any);
 
-      await expect(service.createRole(1, 'ADMIN')).rejects.toThrow(BadRequestException);
+      await expect(service.createRole(1, 'ADMIN')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should create role and log audit on success', async () => {
@@ -96,8 +110,16 @@ describe('AdminRolesService', () => {
 
       const result = await service.createRole(1, 'MODERATOR');
 
-      expect(prisma.role.create).toHaveBeenCalledWith({ data: { name: 'MODERATOR' } });
-      expect(auditService.log).toHaveBeenCalledWith('role.create', 1, 2, 'role', { name: 'MODERATOR' });
+      expect(prisma.role.create).toHaveBeenCalledWith({
+        data: { name: 'MODERATOR' },
+      });
+      expect(auditService.log).toHaveBeenCalledWith(
+        'role.create',
+        1,
+        2,
+        'role',
+        { name: 'MODERATOR' },
+      );
       expect(result.name).toBe('MODERATOR');
     });
   });
@@ -109,14 +131,18 @@ describe('AdminRolesService', () => {
     it('should throw NotFoundException if role does not exist', async () => {
       prisma.role.findUnique.mockResolvedValue(null);
 
-      await expect(service.deleteRole(1, 99)).rejects.toThrow(NotFoundException);
+      await expect(service.deleteRole(1, 99)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw BadRequestException if role is still assigned to users', async () => {
       prisma.role.findUnique.mockResolvedValue(mockRole as any);
       prisma.userRole.count.mockResolvedValue(3);
 
-      await expect(service.deleteRole(1, 1)).rejects.toThrow(BadRequestException);
+      await expect(service.deleteRole(1, 1)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should delete role and log audit when no users assigned', async () => {
@@ -128,7 +154,13 @@ describe('AdminRolesService', () => {
       const result = await service.deleteRole(1, 2);
 
       expect(prisma.role.delete).toHaveBeenCalledWith({ where: { id: 2 } });
-      expect(auditService.log).toHaveBeenCalledWith('role.delete', 1, 2, 'role', { name: 'MODERATOR' });
+      expect(auditService.log).toHaveBeenCalledWith(
+        'role.delete',
+        1,
+        2,
+        'role',
+        { name: 'MODERATOR' },
+      );
       expect(result.message).toContain('MODERATOR');
     });
   });
@@ -140,14 +172,16 @@ describe('AdminRolesService', () => {
     it('should throw NotFoundException if role does not exist', async () => {
       prisma.role.findUnique.mockResolvedValue(null);
 
-      await expect(service.addPermissionsToRole(1, 99, ['admin:user:read'])).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.addPermissionsToRole(1, 99, ['admin:user:read']),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw BadRequestException if some permissions are unknown', async () => {
       const roleWithoutPermissions = { ...mockRole, permissions: [] };
-      prisma.role.findUnique.mockResolvedValueOnce(roleWithoutPermissions as any);
+      prisma.role.findUnique.mockResolvedValueOnce(
+        roleWithoutPermissions as any,
+      );
       prisma.permission.findMany.mockResolvedValue([]);
 
       await expect(
@@ -157,12 +191,16 @@ describe('AdminRolesService', () => {
 
     it('should upsert permissions, log audit and return updated role', async () => {
       const roleWithoutPermissions = { ...mockRole, permissions: [] };
-      prisma.role.findUnique.mockResolvedValueOnce(roleWithoutPermissions as any);
+      prisma.role.findUnique.mockResolvedValueOnce(
+        roleWithoutPermissions as any,
+      );
       prisma.permission.findMany.mockResolvedValue([mockPermission] as any);
       prisma.rolePermission.upsert.mockResolvedValue({} as any);
       prisma.role.findUnique.mockResolvedValueOnce(mockRole as any);
 
-      const result = await service.addPermissionsToRole(1, 1, ['admin:user:read']);
+      const result = await service.addPermissionsToRole(1, 1, [
+        'admin:user:read',
+      ]);
 
       expect(prisma.rolePermission.upsert).toHaveBeenCalledTimes(1);
       expect(auditService.log).toHaveBeenCalledWith(
@@ -183,11 +221,18 @@ describe('AdminRolesService', () => {
     it('should throw NotFoundException if permission not assigned to role', async () => {
       prisma.rolePermission.findUnique.mockResolvedValue(null);
 
-      await expect(service.removePermissionFromRole(1, 1, 99)).rejects.toThrow(NotFoundException);
+      await expect(service.removePermissionFromRole(1, 1, 99)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should remove permission from role and log audit', async () => {
-      const link = { roleId: 1, permissionId: 1, role: { name: 'ADMIN' }, permission: mockPermission };
+      const link = {
+        roleId: 1,
+        permissionId: 1,
+        role: { name: 'ADMIN' },
+        permission: mockPermission,
+      };
       prisma.rolePermission.findUnique.mockResolvedValue(link as any);
       prisma.rolePermission.delete.mockResolvedValue(link as any);
 

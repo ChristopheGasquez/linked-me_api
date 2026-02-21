@@ -18,7 +18,9 @@ export class TasksService {
 
   @Cron('0 */6 * * *')
   async cleanupUnverifiedUsers() {
-    const ttl = +this.configService.getOrThrow<string>('UNVERIFIED_USER_TTL_HOURS');
+    const ttl = +this.configService.getOrThrow<string>(
+      'UNVERIFIED_USER_TTL_HOURS',
+    );
     const count = await this.profilesService.deleteUnverified(ttl);
     if (count > 0) {
       this.logger.log(`Deleted ${count} unverified user(s)`);
@@ -30,8 +32,12 @@ export class TasksService {
   async cleanupExpiredTokens() {
     const now = new Date();
     const [refreshResult, resetResult] = await Promise.all([
-      this.prisma.refreshToken.deleteMany({ where: { expiresAt: { lt: now } } }),
-      this.prisma.passwordReset.deleteMany({ where: { expiresAt: { lt: now } } }),
+      this.prisma.refreshToken.deleteMany({
+        where: { expiresAt: { lt: now } },
+      }),
+      this.prisma.passwordReset.deleteMany({
+        where: { expiresAt: { lt: now } },
+      }),
     ]);
     const total = refreshResult.count + resetResult.count;
     if (total > 0) {
@@ -48,13 +54,22 @@ export class TasksService {
 
   @Cron('0 3 * * *')
   async cleanupAuditLogs(olderThanDays?: number) {
-    const days = olderThanDays ?? +(this.configService.get<string>('AUDIT_LOG_TTL_DAYS') ?? '30');
+    const days =
+      olderThanDays ??
+      +(this.configService.get<string>('AUDIT_LOG_TTL_DAYS') ?? '30');
     const cutoff = new Date(Date.now() - days * MS_PER_DAY);
-    const result = await this.prisma.auditLog.deleteMany({ where: { createdAt: { lt: cutoff } } });
+    const result = await this.prisma.auditLog.deleteMany({
+      where: { createdAt: { lt: cutoff } },
+    });
     if (result.count > 0) {
-      this.logger.log(`Deleted ${result.count} audit log(s) older than ${days} days`);
+      this.logger.log(
+        `Deleted ${result.count} audit log(s) older than ${days} days`,
+      );
     }
-    return { message: `${result.count} audit log(s) deleted`, olderThanDays: days };
+    return {
+      message: `${result.count} audit log(s) deleted`,
+      olderThanDays: days,
+    };
   }
 
   async cleanupOrphanedPermissions() {
@@ -68,7 +83,9 @@ export class TasksService {
     }
 
     const ids = orphaned.map((p) => p.id);
-    await this.prisma.rolePermission.deleteMany({ where: { permissionId: { in: ids } } });
+    await this.prisma.rolePermission.deleteMany({
+      where: { permissionId: { in: ids } },
+    });
     await this.prisma.permission.deleteMany({ where: { id: { in: ids } } });
 
     return {
