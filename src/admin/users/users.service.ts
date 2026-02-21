@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { AuditService } from '../../audit/audit.service.js';
+import { UserCacheService } from '../../auth/cache/user-cache.service.js';
 import { paginate } from '../../common/pagination/index.js';
 import { FindUsersQueryDto } from './dto/find-users-query.dto.js';
 
@@ -13,6 +14,7 @@ export class AdminUsersService {
   constructor(
     private prisma: PrismaService,
     private auditService: AuditService,
+    private userCache: UserCacheService,
   ) {}
 
   async findAllUsers(query: FindUsersQueryDto) {
@@ -75,6 +77,7 @@ export class AdminUsersService {
     await this.auditService.log('user.role.assign', actorId, userId, 'user', {
       roleName,
     });
+    this.userCache.invalidate(userId);
     return { message: `Role "${roleName}" assigned to user ${userId}` };
   }
 
@@ -93,6 +96,7 @@ export class AdminUsersService {
     await this.auditService.log('user.role.revoke', actorId, userId, 'user', {
       roleName: link.role.name,
     });
+    this.userCache.invalidate(userId);
     return { message: 'Role removed from user' };
   }
 
@@ -114,6 +118,7 @@ export class AdminUsersService {
       email: user.email,
       name: user.name,
     });
+    this.userCache.invalidate(userId);
     return { message: `User ${userId} deleted` };
   }
 }

@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { AuditService } from '../../audit/audit.service.js';
+import { UserCacheService } from '../../auth/cache/user-cache.service.js';
 import { paginate } from '../../common/pagination/index.js';
 import { FindRolesQueryDto } from './dto/find-roles-query.dto.js';
 import { FindPermissionsQueryDto } from './dto/find-permissions-query.dto.js';
@@ -14,6 +15,7 @@ export class AdminRolesService {
   constructor(
     private prisma: PrismaService,
     private auditService: AuditService,
+    private userCache: UserCacheService,
   ) {}
 
   async findAllRoles(query: FindRolesQueryDto) {
@@ -69,6 +71,7 @@ export class AdminRolesService {
     await this.auditService.log('role.delete', actorId, roleId, 'role', {
       name: role.name,
     });
+    this.userCache.invalidateAll();
     return { message: `Role "${role.name}" deleted` };
   }
 
@@ -107,6 +110,7 @@ export class AdminRolesService {
       'role',
       { roleName: role.name, permissions: permissionNames },
     );
+    this.userCache.invalidateAll();
 
     const updated = await this.prisma.role.findUnique({
       where: { id: roleId },
@@ -141,6 +145,7 @@ export class AdminRolesService {
       'role',
       { roleName: link.role.name, permissionName: link.permission.name },
     );
+    this.userCache.invalidateAll();
     return { message: 'Permission removed from role' };
   }
 
