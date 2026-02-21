@@ -1,10 +1,18 @@
-import { Controller, Post, Body, UseGuards, HttpCode } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  HttpCode,
+  Req,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import { Request } from 'express';
 import { TasksService } from './tasks.service.js';
 import { CleanupAuditLogsDto } from './dto/cleanup-audit-logs.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
@@ -25,8 +33,10 @@ export class TasksController {
   @RequirePermissions(Permissions.TASK_CLEAN_USERS)
   @Post('cleanup-unverified-users')
   @HttpCode(200)
-  cleanupUnverifiedUsers() {
-    return this.tasksService.cleanupUnverifiedUsers();
+  cleanupUnverifiedUsers(@Req() req: Request) {
+    return this.tasksService.cleanupUnverifiedUsers(
+      (req.user as any).id as number,
+    );
   }
 
   @ApiOperation({
@@ -37,8 +47,10 @@ export class TasksController {
   @RequirePermissions(Permissions.TASK_CLEAN_TOKENS)
   @Post('cleanup-expired-tokens')
   @HttpCode(200)
-  cleanupExpiredTokens() {
-    return this.tasksService.cleanupExpiredTokens();
+  cleanupExpiredTokens(@Req() req: Request) {
+    return this.tasksService.cleanupExpiredTokens(
+      (req.user as any).id as number,
+    );
   }
 
   @ApiOperation({
@@ -51,8 +63,10 @@ export class TasksController {
   @RequirePermissions(Permissions.TASK_CLEAN_PERMISSIONS)
   @Post('cleanup-orphaned-permissions')
   @HttpCode(200)
-  cleanupOrphanedPermissions() {
-    return this.tasksService.cleanupOrphanedPermissions();
+  cleanupOrphanedPermissions(@Req() req: Request) {
+    return this.tasksService.cleanupOrphanedPermissions(
+      (req.user as any).id as number,
+    );
   }
 
   @ApiOperation({
@@ -66,7 +80,10 @@ export class TasksController {
   @RequirePermissions(Permissions.TASK_CLEAN_AUDIT)
   @Post('cleanup-audit-logs')
   @HttpCode(200)
-  cleanupAuditLogs(@Body() dto: CleanupAuditLogsDto) {
-    return this.tasksService.cleanupAuditLogs(dto.olderThanDays);
+  cleanupAuditLogs(@Req() req: Request, @Body() dto: CleanupAuditLogsDto) {
+    return this.tasksService.cleanupAuditLogs(
+      dto.olderThanDays,
+      (req.user as any).id as number,
+    );
   }
 }
