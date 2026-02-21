@@ -18,7 +18,9 @@ model User {
   name      String       @db.VarChar(100)              // Nom affiché
   createdAt DateTime     @default(now())               // Date de création automatique
   updatedAt DateTime     @updatedAt                    // Mis à jour automatiquement à chaque modification
-  isEmailChecked Boolean @default(false)               // True après vérification de l'email (link on mail)
+  isEmailChecked      Boolean   @default(false)               // True après vérification de l'email (link on mail)
+  failedLoginAttempts Int       @default(0)                   // Compteur de tentatives de connexion échouées
+  lockedUntil         DateTime?                               // Verrouillé jusqu'à cette date (null = non verrouillé)
 
   // Relation : un User peut avoir plusieurs Rôles
   roles UserRole[]

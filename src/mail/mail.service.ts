@@ -33,6 +33,21 @@ export class MailService {
     });
   }
 
+  async sendAccountLockedEmail(to: string, name: string) {
+    await this.resend.emails.send({
+      from: this.fromEmail,
+      to,
+      subject: 'Votre compte a été temporairement verrouillé - Linked Me',
+      html: `
+        <h1>Compte verrouillé</h1>
+        <p>Bonjour ${name},</p>
+        <p>5 tentatives de connexion échouées ont été détectées sur votre compte.</p>
+        <p>Votre compte est verrouillé pour <strong>15 minutes</strong>.</p>
+        <p>Si vous n'êtes pas à l'origine de ces tentatives, nous vous recommandons de changer votre mot de passe dès que vous pouvez vous reconnecter.</p>
+      `,
+    });
+  }
+
   async sendVerificationEmail(to: string, name: string, token: string) {
     const appUrl = this.config.getOrThrow('APP_URL');
     const verifyUrl = `${appUrl}/auth/verify-email?token=${token}`;
