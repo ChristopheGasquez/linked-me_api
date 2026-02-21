@@ -30,6 +30,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Connexion (retourne un JWT)' })
   @ApiResponse({ status: 200, description: 'Token JWT retourné' })
   @ApiResponse({ status: 401, description: 'Email ou mot de passe incorrect' })
+  @ApiResponse({ status: 403, description: 'Compte temporairement verrouillé' })
   @ApiResponse({ status: 429, description: 'Trop de tentatives, réessaye dans 15 minutes' })
   @Throttle({ global: { limit: 10, ttl: 900_000 } })
   @Post('login')

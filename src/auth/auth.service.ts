@@ -1,6 +1,7 @@
 import {
   Injectable,
   ConflictException,
+  ForbiddenException,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -16,6 +17,9 @@ import { paginate } from '../common/pagination/index.js';
 
 @Injectable()
 export class AuthService {
+  private readonly MAX_FAILED_ATTEMPTS = 5;
+  private readonly LOCKOUT_DURATION_MS = 15 * 60 * 1000;
+
   // Injection de dépendance : NestJS fournit automatiquement PrismaService et JwtService
   constructor(
     private prisma: PrismaService,
@@ -66,26 +70,52 @@ export class AuthService {
 
   // Vérification des identifiants (utilisé par le login)
   async validateUser(email: string, password: string) {
-    // 1. Chercher l'utilisateur par email
-    const user = await this.prisma.user.findUnique({
-      where: { email },
-    });
+    const user = await this.prisma.user.findUnique({ where: { email } });
 
     if (!user) {
       throw new UnauthorizedException('Identifiants incorrects');
     }
 
-    // 2. Comparer le mot de passe envoyé avec le hash en base
+    const now = new Date();
+
+    // Compte verrouillé ?
+    if (user.lockedUntil && user.lockedUntil > now) {
+      const remaining = Math.ceil((user.lockedUntil.getTime() - now.getTime()) / 60000);
+      throw new ForbiddenException(
+        `Compte temporairement verrouillé. Réessayez dans ${remaining} minute(s).`,
+      );
+    }
+
+    // Si lockout expiré, repartir de 0
+    const baseAttempts = user.lockedUntil && user.lockedUntil <= now ? 0 : user.failedLoginAttempts;
+
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      // Même message que "user not found" pour ne pas révéler si l'email existe
+      const newAttempts = baseAttempts + 1;
+      const isNowLocked = newAttempts >= this.MAX_FAILED_ATTEMPTS;
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          failedLoginAttempts: newAttempts,
+          lockedUntil: isNowLocked ? new Date(now.getTime() + this.LOCKOUT_DURATION_MS) : null,
+        },
+      });
+      if (isNowLocked) {
+        await this.mailService.sendAccountLockedEmail(user.email, user.name);
+      }
       throw new UnauthorizedException('Identifiants incorrects');
     }
 
-    // 3. Retourner l'utilisateur SANS le mot de passe
-    const { password: _, ...userWithoutPassword } = user;
-    return userWithoutPassword;
+    // Succès : reset compteur
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { failedLoginAttempts: 0, lockedUntil: null },
+    });
+
+    // Exclure les champs sensibles de la réponse
+    const { password: _, failedLoginAttempts: __, lockedUntil: ___, ...userWithoutSensitive } = user;
+    return userWithoutSensitive;
   }
 
   // Connexion : vérifie les identifiants puis génère les tokens
