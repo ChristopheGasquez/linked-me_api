@@ -7,21 +7,15 @@ import { AppModule } from './app.module.js';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Helmet : ajoute des headers HTTP de sécurité (X-Frame-Options, CSP, etc.)
   app.use(helmet());
 
-  // CORS : restreint les origines autorisées à appeler l'API
-  // En dev : tout est autorisé — en prod : seule l'origine définie dans CORS_ORIGIN
   app.enableCors({
-    origin: process.env.CORS_ORIGIN || true,  // true = toutes les origines (dev)
+    origin: process.env.CORS_ORIGIN || true, // true = all origins allowed (dev only)
     credentials: true,
   });
 
-  // Active la validation automatique des DTOs (class-validator)
-  // whitelist: true → ignore les propriétés non décorées dans le DTO
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
-  // Swagger : documentation de l'API, activée uniquement si SWAGGER_ENABLED=true
   if (process.env.SWAGGER_ENABLED === 'true') {
     const config = new DocumentBuilder()
       .setTitle('linked-me API')

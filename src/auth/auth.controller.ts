@@ -10,8 +10,9 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto.js';
 import { ResetPasswordDto } from './dto/reset-password.dto.js';
 import { FindSessionsQueryDto } from './dto/find-sessions-query.dto.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
+import { THROTTLE } from '../common/constants.js';
 
-@ApiTags('Auth')  // Regroupe les routes sous "Auth" dans Swagger
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
@@ -21,7 +22,7 @@ export class AuthController {
   @ApiResponse({ status: 400, description: 'Données invalides (email, format de mot de passe)' })
   @ApiResponse({ status: 409, description: 'Email déjà utilisé' })
   @ApiResponse({ status: 429, description: 'Trop de tentatives, réessaye dans 15 minutes' })
-  @Throttle({ global: { limit: 10, ttl: 900_000 } })
+  @Throttle({ global: THROTTLE.AUTH })
   @Post('register')
   register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
@@ -32,7 +33,7 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Email ou mot de passe incorrect' })
   @ApiResponse({ status: 403, description: 'Compte temporairement verrouillé' })
   @ApiResponse({ status: 429, description: 'Trop de tentatives, réessaye dans 15 minutes' })
-  @Throttle({ global: { limit: 10, ttl: 900_000 } })
+  @Throttle({ global: THROTTLE.AUTH })
   @Post('login')
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto.email, dto.password);
@@ -49,7 +50,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Renvoyer l\'email de vérification' })
   @ApiResponse({ status: 200, description: 'Email renvoyé si le compte existe et n\'est pas vérifié' })
   @ApiResponse({ status: 429, description: 'Trop de tentatives, réessaye dans 1 heure' })
-  @Throttle({ global: { limit: 3, ttl: 3_600_000 } })
+  @Throttle({ global: THROTTLE.SENSITIVE })
   @Post('resend-verification')
   resendVerification(@Body() dto: ResendVerificationDto) {
     return this.authService.resendVerificationEmail(dto.email);
@@ -58,7 +59,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Demander une réinitialisation de mot de passe' })
   @ApiResponse({ status: 200, description: 'Email envoyé si le compte existe' })
   @ApiResponse({ status: 429, description: 'Trop de tentatives, réessaye dans 1 heure' })
-  @Throttle({ global: { limit: 3, ttl: 3_600_000 } })
+  @Throttle({ global: THROTTLE.SENSITIVE })
   @Post('forgot-password')
   forgotPassword(@Body() dto: ForgotPasswordDto) {
     return this.authService.forgotPassword(dto.email);
@@ -69,7 +70,7 @@ export class AuthController {
   @ApiResponse({ status: 400, description: 'Mot de passe invalide (format non respecté)' })
   @ApiResponse({ status: 401, description: 'Token invalide ou expiré' })
   @ApiResponse({ status: 429, description: 'Trop de tentatives' })
-  @Throttle({ global: { limit: 5, ttl: 900_000 } })
+  @Throttle({ global: THROTTLE.PASSWORD_RESET })
   @Post('reset-password')
   resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto.token, dto.password);

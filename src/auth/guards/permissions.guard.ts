@@ -7,21 +7,17 @@ export class PermissionsGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    // 1. Lire les permissions requises par le décorateur @RequirePermissions()
     const requiredPermissions = this.reflector.getAllAndMerge<string[]>(
       PERMISSIONS_KEY,
       [context.getHandler(), context.getClass()],
     );
 
-    // Si aucune permission requise → accès libre
     if (requiredPermissions.length === 0) {
       return true;
     }
 
-    // 2. Récupérer l'utilisateur (rempli par JwtStrategy.validate())
     const { user } = context.switchToHttp().getRequest();
 
-    // 3. Vérifier que l'utilisateur possède TOUTES les permissions requises
     return requiredPermissions.every((permission) =>
       user.permissions?.includes(permission),
     );

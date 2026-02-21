@@ -1,18 +1,17 @@
-// Toutes les permissions de l'application
-// Utilisé par le seed, les guards et les controllers
+// All application permissions — used by seed, guards and controllers
 export const Permissions = {
-  // Realms (niveau controller)
+  // Realms (controller-level gate)
   REALM_ADMIN:    'realm:admin',
   REALM_PROFILE:  'realm:profile',
 
-  // Admin — Rôles
+  // Admin — Roles
   ADMIN_ROLE_READ:   'admin:role:read',
   ADMIN_ROLE_MANAGE: 'admin:role:manage',
 
   // Admin — Permissions
   ADMIN_PERMISSION_READ: 'admin:permission:read',
 
-  // Admin — Utilisateurs
+  // Admin — Users
   ADMIN_USER_READ:        'admin:user:read',
   ADMIN_USER_ASSIGN_ROLE: 'admin:user:assign-role',
   ADMIN_USER_DELETE:      'admin:user:delete',
@@ -34,5 +33,5 @@ export const Permissions = {
   PROFILE_DELETE_OWN: 'profile:delete:own',
 } as const;
 
-// Type utilitaire : extrait les valeurs possibles ('realm:admin' | 'user:read' | ...)
+// Utility type: union of all permission values
 export type Permission = (typeof Permissions)[keyof typeof Permissions];
