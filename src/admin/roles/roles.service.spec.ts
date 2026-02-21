@@ -3,6 +3,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { AdminRolesService } from './roles.service.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { AuditService } from '../../audit/audit.service.js';
+import { UserCacheService } from '../../auth/cache/user-cache.service.js';
 import {
   createPrismaServiceMock,
   PrismaServiceMock,
@@ -32,6 +33,9 @@ describe('AdminRolesService', () => {
   let service: AdminRolesService;
   let prisma: PrismaServiceMock;
   let auditService: jest.Mocked<Pick<AuditService, 'log'>>;
+  let userCache: jest.Mocked<
+    Pick<UserCacheService, 'invalidate' | 'invalidateAll'>
+  >;
 
   beforeEach(async () => {
     prisma = createPrismaServiceMock();
@@ -40,11 +44,17 @@ describe('AdminRolesService', () => {
       log: jest.fn().mockResolvedValue(undefined),
     };
 
+    userCache = {
+      invalidate: jest.fn(),
+      invalidateAll: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AdminRolesService,
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: auditService },
+        { provide: UserCacheService, useValue: userCache },
       ],
     }).compile();
 
