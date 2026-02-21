@@ -280,10 +280,22 @@
 								"sessions"
 							],
 							"query": [
-								{ "key": "page", "value": "1" },
-								{ "key": "limit", "value": "20" },
-								{ "key": "sortBy", "value": "createdAt" },
-								{ "key": "sortOrder", "value": "desc" }
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								},
+								{
+									"key": "sortBy",
+									"value": "createdAt"
+								},
+								{
+									"key": "sortOrder",
+									"value": "desc"
+								}
 							]
 						}
 					},
@@ -1094,6 +1106,121 @@
 									"path": [
 										"tasks",
 										"cleanup-orphaned-permissions"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "tasks/cleanup-audit-logs",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{subTocken}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n\t\"olderThanDays\": 30\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/tasks/cleanup-audit-logs",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"tasks",
+										"cleanup-audit-logs"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "audit-logs",
+					"item": [
+						{
+							"name": "admin/audit-logs",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{subTocken}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/admin/audit-logs?page=1&limit=20&sortBy=createdAt&sortOrder=desc",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"audit-logs"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "1",
+											"description": "Numéro de page"
+										},
+										{
+											"key": "limit",
+											"value": "20",
+											"description": "Nombre d'éléments par page (max 100)"
+										},
+										{
+											"key": "sortBy",
+											"value": "createdAt",
+											"description": "Champ de tri (id, createdAt)"
+										},
+										{
+											"key": "sortOrder",
+											"value": "desc",
+											"description": "Ordre de tri (asc/desc)"
+										},
+										{
+											"key": "action",
+											"value": "",
+											"description": "Filtrer par action (ex: user.delete)",
+											"disabled": true
+										},
+										{
+											"key": "actorId",
+											"value": "",
+											"description": "Filtrer par acteur (id)",
+											"disabled": true
+										},
+										{
+											"key": "targetType",
+											"value": "",
+											"description": "Filtrer par type (user, role)",
+											"disabled": true
+										}
 									]
 								}
 							},

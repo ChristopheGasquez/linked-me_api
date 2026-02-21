@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Param, Body, Query, UseGuards, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Param, Body, Query, UseGuards, ParseIntPipe, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AdminUsersService } from './users.service.js';
 import { AssignRoleDto } from './dto/assign-role.dto.js';
@@ -40,10 +40,11 @@ export class AdminUsersController {
   @RequirePermissions(Permissions.ADMIN_USER_ASSIGN_ROLE)
   @Post('users/:id/roles')
   addRoleToUser(
+    @Request() req: any,
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: AssignRoleDto,
   ) {
-    return this.usersService.addRoleToUser(id, dto.role);
+    return this.usersService.addRoleToUser(req.user.id, id, dto.role);
   }
 
   @ApiOperation({ summary: "Retirer un rôle d'un utilisateur" })
@@ -52,10 +53,11 @@ export class AdminUsersController {
   @RequirePermissions(Permissions.ADMIN_USER_ASSIGN_ROLE)
   @Delete('users/:id/roles/:roleId')
   removeRoleFromUser(
+    @Request() req: any,
     @Param('id', ParseIntPipe) userId: number,
     @Param('roleId', ParseIntPipe) roleId: number,
   ) {
-    return this.usersService.removeRoleFromUser(userId, roleId);
+    return this.usersService.removeRoleFromUser(req.user.id, userId, roleId);
   }
 
   @ApiOperation({ summary: 'Supprimer un utilisateur' })
@@ -63,7 +65,7 @@ export class AdminUsersController {
   @ApiResponse({ status: 404, description: 'Utilisateur non trouvé' })
   @RequirePermissions(Permissions.ADMIN_USER_DELETE)
   @Delete('users/:id')
-  deleteUser(@Param('id', ParseIntPipe) id: number) {
-    return this.usersService.deleteUser(id);
+  deleteUser(@Request() req: any, @Param('id', ParseIntPipe) id: number) {
+    return this.usersService.deleteUser(req.user.id, id);
   }
 }

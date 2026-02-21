@@ -11,6 +11,7 @@ import { ProfilesModule } from './profiles/profiles.module.js';
 import { AdminModule } from './admin/admin.module.js';
 import { MailModule } from './mail/mail.module.js';
 import { TasksModule } from './tasks/tasks.module.js';
+import { AuditModule } from './audit/audit.module.js';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { TasksModule } from './tasks/tasks.module.js';
     ProfilesModule,
     AdminModule,
     TasksModule,
+    AuditModule,
   ],
   controllers: [AppController],
   providers: [

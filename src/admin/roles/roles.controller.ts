@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Param, Body, Query, UseGuards, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Param, Body, Query, UseGuards, ParseIntPipe, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AdminRolesService } from './roles.service.js';
 import { CreateRoleDto } from './dto/create-role.dto.js';
@@ -41,8 +41,8 @@ export class AdminRolesController {
   @ApiResponse({ status: 400, description: 'Le rôle existe déjà' })
   @RequirePermissions(Permissions.ADMIN_ROLE_MANAGE)
   @Post('roles')
-  createRole(@Body() dto: CreateRoleDto) {
-    return this.rolesService.createRole(dto.name);
+  createRole(@Request() req: any, @Body() dto: CreateRoleDto) {
+    return this.rolesService.createRole(req.user.id, dto.name);
   }
 
   @ApiOperation({ summary: 'Supprimer un rôle (si non assigné à un utilisateur)' })
@@ -51,8 +51,8 @@ export class AdminRolesController {
   @ApiResponse({ status: 404, description: 'Rôle non trouvé' })
   @RequirePermissions(Permissions.ADMIN_ROLE_MANAGE)
   @Delete('roles/:id')
-  deleteRole(@Param('id', ParseIntPipe) id: number) {
-    return this.rolesService.deleteRole(id);
+  deleteRole(@Request() req: any, @Param('id', ParseIntPipe) id: number) {
+    return this.rolesService.deleteRole(req.user.id, id);
   }
 
   // ─── Permissions sur un rôle ─────────────────────────────
@@ -64,10 +64,11 @@ export class AdminRolesController {
   @RequirePermissions(Permissions.ADMIN_ROLE_MANAGE)
   @Post('roles/:id/permissions')
   addPermissions(
+    @Request() req: any,
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: AssignPermissionsDto,
   ) {
-    return this.rolesService.addPermissionsToRole(id, dto.permissions);
+    return this.rolesService.addPermissionsToRole(req.user.id, id, dto.permissions);
   }
 
   @ApiOperation({ summary: "Retirer une permission d'un rôle" })
@@ -76,10 +77,11 @@ export class AdminRolesController {
   @RequirePermissions(Permissions.ADMIN_ROLE_MANAGE)
   @Delete('roles/:id/permissions/:permId')
   removePermission(
+    @Request() req: any,
     @Param('id', ParseIntPipe) id: number,
     @Param('permId', ParseIntPipe) permId: number,
   ) {
-    return this.rolesService.removePermissionFromRole(id, permId);
+    return this.rolesService.removePermissionFromRole(req.user.id, id, permId);
   }
 
   // ─── Permissions (consultation) ──────────────────────────

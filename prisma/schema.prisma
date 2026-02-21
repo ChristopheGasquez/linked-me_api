@@ -107,3 +107,16 @@ model UserRole {
   @@id([userId, roleId])
   @@map("user_roles")
 }
+
+// Table des logs d'audit (actions importantes tracées)
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  action     String   @db.VarChar(100)
+  actorId    Int?
+  targetId   Int?
+  targetType String?  @db.VarChar(50)
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@map("audit_logs")
+}
