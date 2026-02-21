@@ -22,6 +22,11 @@ export const Permissions = {
   TASK_CLEAN_USERS:       'task:clean-users',
   TASK_CLEAN_TOKENS:      'task:clean-tokens',
   TASK_CLEAN_PERMISSIONS: 'task:clean-permissions',
+  TASK_CLEAN_AUDIT:       'task:clean-audit',
+
+  // Audit
+  REALM_AUDIT:      'realm:audit',
+  AUDIT_LOG_READ:   'audit:log:read',
 
   // Profiles
   PROFILE_READ:       'profile:read',

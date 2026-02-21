@@ -1,11 +1,15 @@
 import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { AuditService } from '../audit/audit.service.js';
 import { UpdateProfileDto } from './dto/update-profile.dto.js';
 
 @Injectable()
 export class ProfilesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private auditService: AuditService,
+  ) {}
 
   async findOne(id: number) {
     const user = await this.prisma.user.findUnique({ where: { id } });
@@ -26,6 +30,8 @@ export class ProfilesService {
       data: dto,
     });
 
+    await this.auditService.log('profile.update', id, id, 'user', { fields: Object.keys(dto) });
+
     return { id: updated.id, name: updated.name, email: updated.email, createdAt: updated.createdAt };
   }
 
@@ -33,6 +39,7 @@ export class ProfilesService {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new NotFoundException('Utilisateur non trouvé');
     await this.prisma.user.delete({ where: { id } });
+    await this.auditService.log('profile.delete', id, id, 'user', { email: user.email });
     return { message: 'Compte supprimé' };
   }
 
@@ -49,6 +56,8 @@ export class ProfilesService {
       this.prisma.user.update({ where: { id: userId }, data: { password: hashed } }),
       this.prisma.refreshToken.deleteMany({ where: { userId } }),
     ]);
+
+    await this.auditService.log('profile.password.change', userId, userId, 'user');
 
     return { message: 'Mot de passe modifié. Veuillez vous reconnecter.' };
   }

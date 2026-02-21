@@ -1,12 +1,16 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { AuditService } from '../../audit/audit.service.js';
 import { paginate } from '../../common/pagination/index.js';
 import { FindRolesQueryDto } from './dto/find-roles-query.dto.js';
 import { FindPermissionsQueryDto } from './dto/find-permissions-query.dto.js';
 
 @Injectable()
 export class AdminRolesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private auditService: AuditService,
+  ) {}
 
   async findAllRoles(query: FindRolesQueryDto) {
     const result = await paginate(this.prisma.role, query, {
@@ -32,15 +36,17 @@ export class AdminRolesService {
     return { ...role, permissions: role.permissions.map((rp) => rp.permission) };
   }
 
-  async createRole(name: string) {
+  async createRole(actorId: number, name: string) {
     const existing = await this.prisma.role.findUnique({ where: { name } });
     if (existing) {
       throw new BadRequestException(`Le rôle "${name}" existe déjà`);
     }
-    return this.prisma.role.create({ data: { name } });
+    const role = await this.prisma.role.create({ data: { name } });
+    await this.auditService.log('role.create', actorId, role.id, 'role', { name });
+    return role;
   }
 
-  async deleteRole(roleId: number) {
+  async deleteRole(actorId: number, roleId: number) {
     const role = await this.prisma.role.findUnique({ where: { id: roleId } });
     if (!role) throw new NotFoundException('Rôle non trouvé');
 
@@ -52,10 +58,11 @@ export class AdminRolesService {
     }
 
     await this.prisma.role.delete({ where: { id: roleId } });
+    await this.auditService.log('role.delete', actorId, roleId, 'role', { name: role.name });
     return { message: `Rôle "${role.name}" supprimé` };
   }
 
-  async addPermissionsToRole(roleId: number, permissionNames: string[]) {
+  async addPermissionsToRole(actorId: number, roleId: number, permissionNames: string[]) {
     const role = await this.prisma.role.findUnique({ where: { id: roleId } });
     if (!role) throw new NotFoundException('Rôle non trouvé');
 
@@ -77,6 +84,8 @@ export class AdminRolesService {
       });
     }
 
+    await this.auditService.log('role.permission.assign', actorId, roleId, 'role', { roleName: role.name, permissions: permissionNames });
+
     const updated = await this.prisma.role.findUnique({
       where: { id: roleId },
       include: { permissions: { include: { permission: true } } },
@@ -84,9 +93,10 @@ export class AdminRolesService {
     return { ...updated!, permissions: updated!.permissions.map((rp) => rp.permission) };
   }
 
-  async removePermissionFromRole(roleId: number, permissionId: number) {
+  async removePermissionFromRole(actorId: number, roleId: number, permissionId: number) {
     const link = await this.prisma.rolePermission.findUnique({
       where: { roleId_permissionId: { roleId, permissionId } },
+      include: { role: true, permission: true },
     });
     if (!link) {
       throw new NotFoundException("Cette permission n'est pas assignée à ce rôle");
@@ -95,6 +105,7 @@ export class AdminRolesService {
     await this.prisma.rolePermission.delete({
       where: { roleId_permissionId: { roleId, permissionId } },
     });
+    await this.auditService.log('role.permission.revoke', actorId, roleId, 'role', { roleName: link.role.name, permissionName: link.permission.name });
     return { message: 'Permission retirée du rôle' };
   }
 

@@ -11,6 +11,7 @@ import * as crypto from 'crypto';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { MailService } from '../mail/mail.service.js';
+import { AuditService } from '../audit/audit.service.js';
 import { RegisterDto } from './dto/register.dto.js';
 import { FindSessionsQueryDto } from './dto/find-sessions-query.dto.js';
 import { paginate } from '../common/pagination/index.js';
@@ -26,6 +27,7 @@ export class AuthService {
     private jwtService: JwtService,
     private config: ConfigService,
     private mailService: MailService,
+    private auditService: AuditService,
   ) {}
 
   // Inscription d'un nouvel utilisateur
@@ -62,6 +64,8 @@ export class AuthService {
     // 4. Envoyer l'email de vérification
     const verificationToken = await this.createVerificationToken(user.id);
     await this.mailService.sendVerificationEmail(user.email, user.name, verificationToken);
+
+    await this.auditService.log('user.create', user.id, user.id, 'user', { email: user.email, name: user.name });
 
     // 5. Retourner l'utilisateur SANS le mot de passe
     const { password, ...userWithoutPassword } = user;
@@ -103,6 +107,9 @@ export class AuthService {
       });
       if (isNowLocked) {
         await this.mailService.sendAccountLockedEmail(user.email, user.name);
+        await this.auditService.log('login.locked', null, user.id, 'user', { email: user.email });
+      } else {
+        await this.auditService.log('login.failed', null, user.id, 'user', { email: user.email });
       }
       throw new UnauthorizedException('Identifiants incorrects');
     }
@@ -271,6 +278,8 @@ export class AuthService {
       }),
     ]);
 
+    await this.auditService.log('email.verified', verification.userId, verification.userId, 'user');
+
     return { message: 'Email vérifié avec succès' };
   }
 
@@ -327,6 +336,8 @@ export class AuthService {
       this.prisma.passwordReset.delete({ where: { id: resetRecord.id } }),
       this.prisma.refreshToken.deleteMany({ where: { userId: resetRecord.userId } }),
     ]);
+
+    await this.auditService.log('password.reset', resetRecord.userId, resetRecord.userId, 'user');
 
     return { message: 'Mot de passe réinitialisé avec succès. Veuillez vous reconnecter.' };
   }

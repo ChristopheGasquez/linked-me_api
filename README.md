@@ -60,6 +60,7 @@ cp .env.example .env
 | `ADMIN_EMAIL` | Initial admin account email |
 | `ADMIN_PASSWORD` | Initial admin account password |
 | `UNVERIFIED_USER_TTL_HOURS` | Hours before unverified accounts are deleted (default: `24`) |
+| `AUDIT_LOG_TTL_DAYS` | Days before audit logs are deleted by the nightly cron (default: `30`) |
 | `SWAGGER_ENABLED` | Set to `true` to enable Swagger UI |
 
 ### Database
@@ -167,6 +168,7 @@ Scheduled tasks run automatically via `TasksModule`:
 |------|----------|--------|
 | Cleanup unverified users | Every 6 hours | Deletes unverified accounts older than `UNVERIFIED_USER_TTL_HOURS` |
 | Cleanup expired tokens | Daily at 2:00 AM | Deletes expired rows in `refresh_tokens` and `password_resets` |
+| Cleanup audit logs | Daily at 3:00 AM | Deletes audit logs older than `AUDIT_LOG_TTL_DAYS` (default: 30 days) |
 
 All tasks can also be triggered manually via `POST /tasks/*` (requires `realm:task` permission).
 

@@ -45,6 +45,17 @@ export class TasksService {
     };
   }
 
+  @Cron('0 3 * * *')
+  async cleanupAuditLogs(olderThanDays?: number) {
+    const days = olderThanDays ?? +(this.configService.get<string>('AUDIT_LOG_TTL_DAYS') ?? '30');
+    const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    const result = await this.prisma.auditLog.deleteMany({ where: { createdAt: { lt: cutoff } } });
+    if (result.count > 0) {
+      this.logger.log(`Deleted ${result.count} audit log(s) older than ${days} days`);
+    }
+    return { message: `${result.count} log(s) d'audit supprimé(s)`, olderThanDays: days };
+  }
+
   async cleanupOrphanedPermissions() {
     const valid = Object.values(Permissions) as string[];
     const orphaned = await this.prisma.permission.findMany({
