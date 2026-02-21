@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { ProfilesService } from '../profiles/profiles.service.js';
 import { Permissions } from '../auth/permissions.constants.js';
+import { MS_PER_DAY } from '../common/constants.js';
 
 @Injectable()
 export class TasksService {
@@ -22,7 +23,7 @@ export class TasksService {
     if (count > 0) {
       this.logger.log(`Deleted ${count} unverified user(s)`);
     }
-    return { message: `${count} compte(s) non vérifié(s) supprimé(s)` };
+    return { message: `${count} unverified account(s) deleted` };
   }
 
   @Cron('0 2 * * *')
@@ -39,7 +40,7 @@ export class TasksService {
       );
     }
     return {
-      message: `${total} token(s) expiré(s) supprimé(s)`,
+      message: `${total} expired token(s) deleted`,
       refreshTokens: refreshResult.count,
       passwordResets: resetResult.count,
     };
@@ -48,12 +49,12 @@ export class TasksService {
   @Cron('0 3 * * *')
   async cleanupAuditLogs(olderThanDays?: number) {
     const days = olderThanDays ?? +(this.configService.get<string>('AUDIT_LOG_TTL_DAYS') ?? '30');
-    const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    const cutoff = new Date(Date.now() - days * MS_PER_DAY);
     const result = await this.prisma.auditLog.deleteMany({ where: { createdAt: { lt: cutoff } } });
     if (result.count > 0) {
       this.logger.log(`Deleted ${result.count} audit log(s) older than ${days} days`);
     }
-    return { message: `${result.count} log(s) d'audit supprimé(s)`, olderThanDays: days };
+    return { message: `${result.count} audit log(s) deleted`, olderThanDays: days };
   }
 
   async cleanupOrphanedPermissions() {
@@ -63,7 +64,7 @@ export class TasksService {
     });
 
     if (orphaned.length === 0) {
-      return { message: 'Aucune permission orpheline trouvée', deleted: [] };
+      return { message: 'No orphaned permissions found', deleted: [] };
     }
 
     const ids = orphaned.map((p) => p.id);
@@ -71,7 +72,7 @@ export class TasksService {
     await this.prisma.permission.deleteMany({ where: { id: { in: ids } } });
 
     return {
-      message: `${orphaned.length} permission(s) orpheline(s) supprimée(s)`,
+      message: `${orphaned.length} orphaned permission(s) deleted`,
       deleted: orphaned.map((p) => p.name),
     };
   }

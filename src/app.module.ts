@@ -12,13 +12,13 @@ import { AdminModule } from './admin/admin.module.js';
 import { MailModule } from './mail/mail.module.js';
 import { TasksModule } from './tasks/tasks.module.js';
 import { AuditModule } from './audit/audit.module.js';
+import { THROTTLE } from './common/constants.js';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ScheduleModule.forRoot(),
-    // Rate limiting : max 60 requêtes par minute par IP
-    ThrottlerModule.forRoot([{ name: 'global', ttl: 60000, limit: 60 }]),
+    ThrottlerModule.forRoot([{ name: 'global', ...THROTTLE.GLOBAL }]),
     PrismaModule,
     MailModule,
     AuthModule,
@@ -30,7 +30,6 @@ import { AuditModule } from './audit/audit.module.js';
   controllers: [AppController],
   providers: [
     AppService,
-    // Applique le rate limiting globalement sur toutes les routes
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })

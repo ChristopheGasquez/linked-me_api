@@ -46,28 +46,28 @@ export class AdminUsersService {
       where: { id: userId },
       include: { roles: { include: { role: true } } },
     });
-    if (!user) throw new NotFoundException('Utilisateur non trouvé');
+    if (!user) throw new NotFoundException('User not found');
     const { password, ...rest } = user;
     return { ...rest, roles: rest.roles.map((ur) => ur.role) };
   }
 
   async addRoleToUser(actorId: number, userId: number, roleName: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new NotFoundException('Utilisateur non trouvé');
+    if (!user) throw new NotFoundException('User not found');
 
     const role = await this.prisma.role.findUnique({ where: { name: roleName } });
-    if (!role) throw new NotFoundException(`Rôle "${roleName}" non trouvé`);
+    if (!role) throw new NotFoundException(`Role "${roleName}" not found`);
 
     const existing = await this.prisma.userRole.findUnique({
       where: { userId_roleId: { userId, roleId: role.id } },
     });
     if (existing) {
-      throw new BadRequestException(`L'utilisateur a déjà le rôle "${roleName}"`);
+      throw new BadRequestException(`User already has role "${roleName}"`);
     }
 
     await this.prisma.userRole.create({ data: { userId, roleId: role.id } });
     await this.auditService.log('user.role.assign', actorId, userId, 'user', { roleName });
-    return { message: `Rôle "${roleName}" assigné à l'utilisateur ${userId}` };
+    return { message: `Role "${roleName}" assigned to user ${userId}` };
   }
 
   async removeRoleFromUser(actorId: number, userId: number, roleId: number) {
@@ -76,14 +76,14 @@ export class AdminUsersService {
       include: { role: true },
     });
     if (!link) {
-      throw new NotFoundException("Ce rôle n'est pas assigné à cet utilisateur");
+      throw new NotFoundException('Role not assigned to this user');
     }
 
     await this.prisma.userRole.delete({
       where: { userId_roleId: { userId, roleId } },
     });
     await this.auditService.log('user.role.revoke', actorId, userId, 'user', { roleName: link.role.name });
-    return { message: "Rôle retiré de l'utilisateur" };
+    return { message: 'Role removed from user' };
   }
 
   async deleteUser(actorId: number, userId: number) {
@@ -91,16 +91,16 @@ export class AdminUsersService {
       where: { id: userId },
       include: { roles: true },
     });
-    if (!user) throw new NotFoundException('Utilisateur non trouvé');
+    if (!user) throw new NotFoundException('User not found');
 
     if (user.roles.length > 0) {
       throw new BadRequestException(
-        "Impossible de supprimer : retirez d'abord tous les rôles de cet utilisateur",
+        'Cannot delete: remove all roles from this user first',
       );
     }
 
     await this.prisma.user.delete({ where: { id: userId } });
     await this.auditService.log('user.delete', actorId, userId, 'user', { email: user.email, name: user.name });
-    return { message: `Utilisateur ${userId} supprimé` };
+    return { message: `User ${userId} deleted` };
   }
 }
