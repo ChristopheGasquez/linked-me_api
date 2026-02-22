@@ -5,13 +5,13 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
-import { PrismaModule } from './prisma/prisma.module.js';
-import { AuthModule } from './auth/auth.module.js';
-import { ProfilesModule } from './profiles/profiles.module.js';
-import { AdminModule } from './admin/admin.module.js';
-import { MailModule } from './mail/mail.module.js';
-import { TasksModule } from './tasks/tasks.module.js';
-import { AuditModule } from './audit/audit.module.js';
+import { PrismaModule } from './core/prisma/prisma.module.js';
+import { AuthModule } from './core/auth/auth.module.js';
+import { ProfilesModule } from './core/profiles/profiles.module.js';
+import { AdminModule } from './core/admin/admin.module.js';
+import { MailModule } from './core/mail/mail.module.js';
+import { TasksModule } from './core/tasks/tasks.module.js';
+import { AuditModule } from './core/audit/audit.module.js';
 import { THROTTLE } from './common/constants.js';
 
 @Module({

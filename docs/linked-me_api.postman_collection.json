@@ -44,19 +44,19 @@
 							"listen": "test",
 							"script": {
 								"exec": [
-									"// Récupère le body de la réponse",
+									"// R\u00e9cup\u00e8re le body de la r\u00e9ponse",
 									"const response = pm.response.json();",
 									"",
 									"// Stocke le token dans la variable de collection \"subTocken\"",
 									"if (response.access_token) {",
 									"    pm.collectionVariables.set(\"subTocken\", response.access_token);",
-									"    console.log(\"Token stocké :\", response.access_token);",
+									"    console.log(\"Token stock\u00e9 :\", response.access_token);",
 									"}",
 									"",
 									"// Stocke le token dans la variable de collection \"subTocken\"",
 									"if (response.refresh_token) {",
 									"    pm.collectionVariables.set(\"subRefreshTocken\", response.refresh_token);",
-									"    console.log(\"Refresh Token stocké :\", response.refresh_token);",
+									"    console.log(\"Refresh Token stock\u00e9 :\", response.refresh_token);",
 									"}"
 								],
 								"type": "text/javascript",
@@ -133,19 +133,19 @@
 							"listen": "test",
 							"script": {
 								"exec": [
-									"// Récupère le body de la réponse",
+									"// R\u00e9cup\u00e8re le body de la r\u00e9ponse",
 									"const response = pm.response.json();",
 									"",
 									"// Stocke le token dans la variable de collection \"subTocken\"",
 									"if (response.access_token) {",
 									"    pm.collectionVariables.set(\"subTocken\", response.access_token);",
-									"    console.log(\"Token stocké :\", response.access_token);",
+									"    console.log(\"Token stock\u00e9 :\", response.access_token);",
 									"}",
 									"",
 									"// Stocke le token dans la variable de collection \"subTocken\"",
 									"if (response.refresh_token) {",
 									"    pm.collectionVariables.set(\"subRefreshTocken\", response.refresh_token);",
-									"    console.log(\"Refresh Token stocké :\", response.refresh_token);",
+									"    console.log(\"Refresh Token stock\u00e9 :\", response.refresh_token);",
 									"}"
 								],
 								"type": "text/javascript",
@@ -359,7 +359,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"token\": \"<token reçu par email>\",\n    \"password\": \"NouveauMotDePasse123\"\n}",
+							"raw": "{\n    \"token\": \"<token re\u00e7u par email>\",\n    \"password\": \"NouveauMotDePasse123\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -567,12 +567,12 @@
 										{
 											"key": "page",
 											"value": "1",
-											"description": "Numéro de page"
+											"description": "Num\u00e9ro de page"
 										},
 										{
 											"key": "limit",
 											"value": "20",
-											"description": "Nombre d'éléments par page (max 100)"
+											"description": "Nombre d'\u00e9l\u00e9ments par page (max 100)"
 										},
 										{
 											"key": "sortBy",
@@ -587,7 +587,7 @@
 										{
 											"key": "search",
 											"value": "",
-											"description": "Recherche sur le nom du rôle",
+											"description": "Recherche sur le nom du r\u00f4le",
 											"disabled": true
 										}
 									]
@@ -793,12 +793,12 @@
 										{
 											"key": "page",
 											"value": "1",
-											"description": "Numéro de page"
+											"description": "Num\u00e9ro de page"
 										},
 										{
 											"key": "limit",
 											"value": "20",
-											"description": "Nombre d'éléments par page (max 100)"
+											"description": "Nombre d'\u00e9l\u00e9ments par page (max 100)"
 										},
 										{
 											"key": "sortBy",
@@ -854,12 +854,12 @@
 										{
 											"key": "page",
 											"value": "1",
-											"description": "Numéro de page"
+											"description": "Num\u00e9ro de page"
 										},
 										{
 											"key": "limit",
 											"value": "20",
-											"description": "Nombre d'éléments par page (max 100)"
+											"description": "Nombre d'\u00e9l\u00e9ments par page (max 100)"
 										},
 										{
 											"key": "sortBy",
@@ -880,13 +880,13 @@
 										{
 											"key": "role",
 											"value": "",
-											"description": "Filtrer par rôle (ex: ADMIN)",
+											"description": "Filtrer par r\u00f4le (ex: ADMIN)",
 											"disabled": true
 										},
 										{
 											"key": "isEmailChecked",
 											"value": "",
-											"description": "Filtrer par email vérifié (true/false)",
+											"description": "Filtrer par email v\u00e9rifi\u00e9 (true/false)",
 											"disabled": true
 										}
 									]
@@ -1186,12 +1186,12 @@
 										{
 											"key": "page",
 											"value": "1",
-											"description": "Numéro de page"
+											"description": "Num\u00e9ro de page"
 										},
 										{
 											"key": "limit",
 											"value": "20",
-											"description": "Nombre d'éléments par page (max 100)"
+											"description": "Nombre d'\u00e9l\u00e9ments par page (max 100)"
 										},
 										{
 											"key": "sortBy",
@@ -1234,51 +1234,87 @@
 			"name": "Swagger",
 			"item": [
 				{
-					"name": "api-json",
+					"name": "docs",
 					"request": {
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api-json",
+							"raw": "{{baseUrl}}/docs",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
-								"api-json"
+								"docs"
 							]
 						}
 					},
 					"response": []
 				},
 				{
-					"name": "api-yml",
+					"name": "docs-json",
 					"request": {
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api-yaml",
+							"raw": "{{baseUrl}}/docs-json",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
-								"api-yaml"
+								"docs-json"
 							]
 						}
 					},
 					"response": []
 				},
 				{
-					"name": "api",
+					"name": "docs-yaml",
 					"request": {
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api",
+							"raw": "{{baseUrl}}/docs-yaml",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
-								"api"
+								"docs-yaml"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "docs/core",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/docs/core",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"docs",
+								"core"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "docs/core-json",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/docs/core-json",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"docs",
+								"core-json"
 							]
 						}
 					},
