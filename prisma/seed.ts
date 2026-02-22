@@ -1,7 +1,7 @@
 import 'dotenv/config';  // Charge .env AVANT tout le reste
 import { PrismaClient } from '../generated/prisma/client.js';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { Permissions } from '../src/auth/permissions.constants.js';
+import { Permissions } from '../src/core/auth/permissions.constants.js';
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL as string });
 const prisma = new PrismaClient({ adapter });

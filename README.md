@@ -126,7 +126,9 @@ E2E tests (Phase 2 — requires a dedicated test database) will use Supertest to
 
 ## API Documentation
 
-Swagger is available at `/api` when `SWAGGER_ENABLED=true` (disabled by default).
+Swagger is available when `SWAGGER_ENABLED=true` (disabled by default):
+- `/docs` — full API documentation
+- `/docs/core` — core (auth, profiles, admin, audit, tasks)
 
 A Postman collection is available in [`docs/`](docs/) for testing all endpoints.
 
@@ -172,17 +174,19 @@ Access control is based on **RBAC** (Role-Based Access Control):
 
 ```
 src/
-├── auth/           # Authentication (JWT, guards, decorators, permissions)
-├── admin/          # Administration
-│   ├── roles/      #   Roles + permissions management
-│   └── users/      #   Full user management (with roles)
-├── profiles/       # Public user profiles (limited fields)
-├── common/         # Shared utilities (pagination, DTOs)
-├── mail/           # Email service (Resend)
-├── tasks/          # Scheduled tasks (cron jobs + manual trigger endpoints)
-├── prisma/         # PrismaModule (service + connection)
-├── app.module.ts   # Root module
-└── main.ts         # Bootstrap
+├── core/               # Core modules shared across all apps
+│   ├── auth/           #   Authentication (JWT, guards, decorators, permissions)
+│   ├── admin/          #   Administration
+│   │   ├── roles/      #     Roles + permissions management
+│   │   └── users/      #     Full user management (with roles)
+│   ├── profiles/       #   Public user profiles (limited fields)
+│   ├── mail/           #   Email service (Resend)
+│   ├── tasks/          #   Scheduled tasks (cron jobs + manual trigger endpoints)
+│   └── prisma/         #   PrismaModule (service + connection)
+├── apps/               # Business app modules (future — each with its own route prefix)
+├── common/             # Shared utilities (pagination, DTOs)
+├── app.module.ts       # Root module
+└── main.ts             # Bootstrap
 ```
 
 ## Cron Jobs
