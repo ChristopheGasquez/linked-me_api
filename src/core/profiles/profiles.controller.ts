@@ -18,10 +18,12 @@ import {
 import { ProfilesService } from './profiles.service.js';
 import { UpdateProfileDto } from './dto/update-profile.dto.js';
 import { ChangePasswordDto } from './dto/change-password.dto.js';
+import { ProfileResponseDto } from './dto/profile-response.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { PermissionsGuard } from '../auth/guards/permissions.guard.js';
 import { RequirePermissions } from '../auth/decorators/permissions.decorator.js';
 import { Permissions } from '../auth/permissions.constants.js';
+import { MessageResponseDto } from '../../common/dto/message-response.dto.js';
 
 @ApiTags('Profiles')
 @ApiBearerAuth()
@@ -34,6 +36,7 @@ export class ProfilesController {
   @ApiOperation({ summary: "Consulter le profil public d'un utilisateur" })
   @ApiResponse({
     status: 200,
+    type: ProfileResponseDto,
     description: 'Profil utilisateur (id, name, email, createdAt)',
   })
   @ApiResponse({ status: 404, description: 'Utilisateur non trouvé' })
@@ -44,7 +47,7 @@ export class ProfilesController {
   }
 
   @ApiOperation({ summary: 'Modifier son propre profil' })
-  @ApiResponse({ status: 200, description: 'Profil mis à jour' })
+  @ApiResponse({ status: 200, type: ProfileResponseDto, description: 'Profil mis à jour' })
   @RequirePermissions(Permissions.PROFILE_UPDATE_OWN)
   @Patch('me')
   update(@Request() req: any, @Body() dto: UpdateProfileDto) {
@@ -54,6 +57,7 @@ export class ProfilesController {
   @ApiOperation({ summary: 'Changer son mot de passe' })
   @ApiResponse({
     status: 200,
+    type: MessageResponseDto,
     description: 'Mot de passe modifié, toutes les sessions révoquées',
   })
   @ApiResponse({
@@ -72,7 +76,7 @@ export class ProfilesController {
   }
 
   @ApiOperation({ summary: 'Supprimer son propre compte' })
-  @ApiResponse({ status: 200, description: 'Compte supprimé' })
+  @ApiResponse({ status: 200, type: MessageResponseDto, description: 'Compte supprimé' })
   @RequirePermissions(Permissions.PROFILE_DELETE_OWN)
   @Delete('me')
   remove(@Request() req: any) {

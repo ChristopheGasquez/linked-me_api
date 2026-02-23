@@ -25,8 +25,17 @@ import { ResendVerificationDto } from './dto/resend-verification.dto.js';
 import { ForgotPasswordDto } from './dto/forgot-password.dto.js';
 import { ResetPasswordDto } from './dto/reset-password.dto.js';
 import { FindSessionsQueryDto } from './dto/find-sessions-query.dto.js';
+import { RegisterResponseDto } from './dto/register-response.dto.js';
+import {
+  LoginResponseDto,
+  TokensResponseDto,
+} from './dto/login-response.dto.js';
+import { MeResponseDto } from './dto/me-response.dto.js';
+import { SessionResponseDto } from './dto/session-response.dto.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
 import { THROTTLE } from '../../common/constants.js';
+import { MessageResponseDto } from '../../common/dto/message-response.dto.js';
+import { ApiPaginatedResponse } from '../../common/pagination/index.js';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -34,7 +43,7 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @ApiOperation({ summary: "Inscription d'un nouvel utilisateur" })
-  @ApiResponse({ status: 201, description: 'Utilisateur créé' })
+  @ApiResponse({ status: 201, type: RegisterResponseDto, description: 'Utilisateur créé' })
   @ApiResponse({
     status: 400,
     description: 'Données invalides (email, format de mot de passe)',
@@ -51,7 +60,7 @@ export class AuthController {
   }
 
   @ApiOperation({ summary: 'Connexion (retourne un JWT)' })
-  @ApiResponse({ status: 200, description: 'Token JWT retourné' })
+  @ApiResponse({ status: 200, type: LoginResponseDto, description: 'Token JWT retourné' })
   @ApiResponse({ status: 401, description: 'Email ou mot de passe incorrect' })
   @ApiResponse({ status: 403, description: 'Compte temporairement verrouillé' })
   @ApiResponse({
@@ -67,7 +76,7 @@ export class AuthController {
   @ApiOperation({
     summary: "Vérifier l'adresse email via le token reçu par mail",
   })
-  @ApiResponse({ status: 200, description: 'Email vérifié avec succès' })
+  @ApiResponse({ status: 200, type: MessageResponseDto, description: 'Email vérifié avec succès' })
   @ApiResponse({ status: 401, description: 'Token invalide ou expiré' })
   @Get('verify-email')
   verifyEmail(@Query('token') token: string) {
@@ -77,6 +86,7 @@ export class AuthController {
   @ApiOperation({ summary: "Renvoyer l'email de vérification" })
   @ApiResponse({
     status: 200,
+    type: MessageResponseDto,
     description: "Email renvoyé si le compte existe et n'est pas vérifié",
   })
   @ApiResponse({
@@ -90,7 +100,7 @@ export class AuthController {
   }
 
   @ApiOperation({ summary: 'Demander une réinitialisation de mot de passe' })
-  @ApiResponse({ status: 200, description: 'Email envoyé si le compte existe' })
+  @ApiResponse({ status: 200, type: MessageResponseDto, description: 'Email envoyé si le compte existe' })
   @ApiResponse({
     status: 429,
     description: 'Trop de tentatives, réessaye dans 1 heure',
@@ -106,6 +116,7 @@ export class AuthController {
   })
   @ApiResponse({
     status: 200,
+    type: MessageResponseDto,
     description: 'Mot de passe réinitialisé, toutes les sessions révoquées',
   })
   @ApiResponse({
@@ -124,6 +135,7 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiResponse({
     status: 200,
+    type: MeResponseDto,
     description: "Données de l'utilisateur avec rôles et permissions",
   })
   @ApiResponse({ status: 401, description: 'Non authentifié' })
@@ -136,6 +148,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Rafraîchir les tokens (rotation)' })
   @ApiResponse({
     status: 200,
+    type: TokensResponseDto,
     description: 'Nouvelle paire access_token + refresh_token',
   })
   @ApiResponse({
@@ -148,7 +161,7 @@ export class AuthController {
   }
 
   @ApiOperation({ summary: 'Déconnexion (révoque le refresh token)' })
-  @ApiResponse({ status: 200, description: 'Refresh token révoqué' })
+  @ApiResponse({ status: 200, type: MessageResponseDto, description: 'Refresh token révoqué' })
   @Post('logout')
   logout(@Body() dto: RefreshTokenDto) {
     return this.authService.logout(dto.refresh_token);
@@ -156,7 +169,7 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Révoquer toutes les sessions' })
   @ApiBearerAuth()
-  @ApiResponse({ status: 200, description: 'Tous les refresh tokens révoqués' })
+  @ApiResponse({ status: 200, type: MessageResponseDto, description: 'Tous les refresh tokens révoqués' })
   @ApiResponse({ status: 401, description: 'Non authentifié' })
   @UseGuards(JwtAuthGuard)
   @Post('logout-all')
@@ -166,10 +179,7 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Lister les sessions actives' })
   @ApiBearerAuth()
-  @ApiResponse({
-    status: 200,
-    description: 'Liste paginée des sessions actives',
-  })
+  @ApiPaginatedResponse(SessionResponseDto, 'Liste paginée des sessions actives')
   @ApiResponse({ status: 401, description: 'Non authentifié' })
   @UseGuards(JwtAuthGuard)
   @Get('sessions')
@@ -179,7 +189,7 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Révoquer une session spécifique' })
   @ApiBearerAuth()
-  @ApiResponse({ status: 200, description: 'Session révoquée' })
+  @ApiResponse({ status: 200, type: MessageResponseDto, description: 'Session révoquée' })
   @ApiResponse({ status: 401, description: 'Non authentifié' })
   @ApiResponse({ status: 404, description: 'Session introuvable' })
   @UseGuards(JwtAuthGuard)

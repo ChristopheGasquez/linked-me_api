@@ -19,10 +19,13 @@ import {
 import { AdminUsersService } from './users.service.js';
 import { AssignRoleDto } from './dto/assign-role.dto.js';
 import { FindUsersQueryDto } from './dto/find-users-query.dto.js';
+import { UserAdminResponseDto } from './dto/user-admin-response.dto.js';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard.js';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard.js';
 import { RequirePermissions } from '../../auth/decorators/permissions.decorator.js';
 import { Permissions } from '../../auth/permissions.constants.js';
+import { MessageResponseDto } from '../../../common/dto/message-response.dto.js';
+import { ApiPaginatedResponse } from '../../../common/pagination/index.js';
 
 @ApiTags('Admin / Users')
 @ApiBearerAuth()
@@ -35,7 +38,7 @@ export class AdminUsersController {
   @ApiOperation({
     summary: 'Lister les utilisateurs avec pagination, tri et filtres',
   })
-  @ApiResponse({ status: 200, description: 'Liste paginée des utilisateurs' })
+  @ApiPaginatedResponse(UserAdminResponseDto, 'Liste paginée des utilisateurs')
   @RequirePermissions(Permissions.ADMIN_USER_READ)
   @Get('users')
   findAllUsers(@Query() query: FindUsersQueryDto) {
@@ -43,7 +46,7 @@ export class AdminUsersController {
   }
 
   @ApiOperation({ summary: 'Récupérer un utilisateur par son ID' })
-  @ApiResponse({ status: 200, description: 'Utilisateur trouvé' })
+  @ApiResponse({ status: 200, type: UserAdminResponseDto, description: 'Utilisateur trouvé' })
   @ApiResponse({ status: 404, description: 'Utilisateur non trouvé' })
   @RequirePermissions(Permissions.ADMIN_USER_READ)
   @Get('users/:id')
@@ -52,7 +55,7 @@ export class AdminUsersController {
   }
 
   @ApiOperation({ summary: 'Assigner un rôle à un utilisateur' })
-  @ApiResponse({ status: 201, description: 'Rôle assigné' })
+  @ApiResponse({ status: 201, type: MessageResponseDto, description: 'Rôle assigné' })
   @ApiResponse({ status: 400, description: "L'utilisateur a déjà ce rôle" })
   @ApiResponse({ status: 404, description: 'Utilisateur ou rôle non trouvé' })
   @RequirePermissions(Permissions.ADMIN_USER_ASSIGN_ROLE)
@@ -66,7 +69,7 @@ export class AdminUsersController {
   }
 
   @ApiOperation({ summary: "Retirer un rôle d'un utilisateur" })
-  @ApiResponse({ status: 200, description: 'Rôle retiré' })
+  @ApiResponse({ status: 200, type: MessageResponseDto, description: 'Rôle retiré' })
   @ApiResponse({ status: 404, description: 'Association non trouvée' })
   @RequirePermissions(Permissions.ADMIN_USER_ASSIGN_ROLE)
   @Delete('users/:id/roles/:roleId')
@@ -79,7 +82,7 @@ export class AdminUsersController {
   }
 
   @ApiOperation({ summary: 'Supprimer un utilisateur' })
-  @ApiResponse({ status: 200, description: 'Utilisateur supprimé' })
+  @ApiResponse({ status: 200, type: MessageResponseDto, description: 'Utilisateur supprimé' })
   @ApiResponse({ status: 404, description: 'Utilisateur non trouvé' })
   @RequirePermissions(Permissions.ADMIN_USER_DELETE)
   @Delete('users/:id')

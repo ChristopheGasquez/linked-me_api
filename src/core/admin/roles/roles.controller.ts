@@ -21,10 +21,17 @@ import { CreateRoleDto } from './dto/create-role.dto.js';
 import { AssignPermissionsDto } from './dto/assign-permissions.dto.js';
 import { FindRolesQueryDto } from './dto/find-roles-query.dto.js';
 import { FindPermissionsQueryDto } from './dto/find-permissions-query.dto.js';
+import {
+  PermissionResponseDto,
+  RoleBasicResponseDto,
+  RoleResponseDto,
+} from './dto/role-response.dto.js';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard.js';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard.js';
 import { RequirePermissions } from '../../auth/decorators/permissions.decorator.js';
 import { Permissions } from '../../auth/permissions.constants.js';
+import { MessageResponseDto } from '../../../common/dto/message-response.dto.js';
+import { ApiPaginatedResponse } from '../../../common/pagination/index.js';
 
 @ApiTags('Admin / Roles')
 @ApiBearerAuth()
@@ -37,6 +44,7 @@ export class AdminRolesController {
   // ─── Rôles ───────────────────────────────────────────────
 
   @ApiOperation({ summary: 'Lister tous les rôles avec leurs permissions' })
+  @ApiPaginatedResponse(RoleResponseDto, 'Liste paginée des rôles')
   @RequirePermissions(Permissions.ADMIN_ROLE_READ)
   @Get('roles')
   findAllRoles(@Query() query: FindRolesQueryDto) {
@@ -44,7 +52,7 @@ export class AdminRolesController {
   }
 
   @ApiOperation({ summary: 'Récupérer un rôle par son ID' })
-  @ApiResponse({ status: 200, description: 'Rôle trouvé' })
+  @ApiResponse({ status: 200, type: RoleResponseDto, description: 'Rôle trouvé' })
   @ApiResponse({ status: 404, description: 'Rôle non trouvé' })
   @RequirePermissions(Permissions.ADMIN_ROLE_READ)
   @Get('roles/:id')
@@ -53,7 +61,7 @@ export class AdminRolesController {
   }
 
   @ApiOperation({ summary: 'Créer un nouveau rôle' })
-  @ApiResponse({ status: 201, description: 'Rôle créé' })
+  @ApiResponse({ status: 201, type: RoleBasicResponseDto, description: 'Rôle créé' })
   @ApiResponse({ status: 400, description: 'Le rôle existe déjà' })
   @RequirePermissions(Permissions.ADMIN_ROLE_MANAGE)
   @Post('roles')
@@ -64,7 +72,7 @@ export class AdminRolesController {
   @ApiOperation({
     summary: 'Supprimer un rôle (si non assigné à un utilisateur)',
   })
-  @ApiResponse({ status: 200, description: 'Rôle supprimé' })
+  @ApiResponse({ status: 200, type: MessageResponseDto, description: 'Rôle supprimé' })
   @ApiResponse({
     status: 400,
     description: 'Rôle encore assigné à des utilisateurs',
@@ -81,6 +89,7 @@ export class AdminRolesController {
   @ApiOperation({ summary: 'Ajouter des permissions à un rôle' })
   @ApiResponse({
     status: 200,
+    type: RoleResponseDto,
     description: 'Permissions ajoutées, retourne le rôle mis à jour',
   })
   @ApiResponse({ status: 400, description: 'Permissions inconnues' })
@@ -100,7 +109,7 @@ export class AdminRolesController {
   }
 
   @ApiOperation({ summary: "Retirer une permission d'un rôle" })
-  @ApiResponse({ status: 200, description: 'Permission retirée' })
+  @ApiResponse({ status: 200, type: MessageResponseDto, description: 'Permission retirée' })
   @ApiResponse({ status: 404, description: 'Association non trouvée' })
   @RequirePermissions(Permissions.ADMIN_ROLE_MANAGE)
   @Delete('roles/:id/permissions/:permId')
@@ -115,6 +124,7 @@ export class AdminRolesController {
   // ─── Permissions (consultation) ──────────────────────────
 
   @ApiOperation({ summary: 'Lister toutes les permissions disponibles' })
+  @ApiPaginatedResponse(PermissionResponseDto, 'Liste paginée des permissions')
   @RequirePermissions(Permissions.ADMIN_PERMISSION_READ)
   @Get('permissions')
   findAllPermissions(@Query() query: FindPermissionsQueryDto) {
