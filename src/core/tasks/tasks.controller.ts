@@ -15,10 +15,16 @@ import {
 import type { Request } from 'express';
 import { TasksService } from './tasks.service.js';
 import { CleanupAuditLogsDto } from './dto/cleanup-audit-logs.dto.js';
+import {
+  CleanupTokensResponseDto,
+  CleanupAuditLogsResponseDto,
+  CleanupOrphanedPermissionsResponseDto,
+} from './dto/cleanup-response.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { PermissionsGuard } from '../auth/guards/permissions.guard.js';
 import { RequirePermissions } from '../auth/decorators/permissions.decorator.js';
 import { Permissions } from '../auth/permissions.constants.js';
+import { MessageResponseDto } from '../../common/dto/message-response.dto.js';
 
 @ApiTags('Tasks')
 @ApiBearerAuth()
@@ -29,7 +35,7 @@ export class TasksController {
   constructor(private tasksService: TasksService) {}
 
   @ApiOperation({ summary: 'Forcer le nettoyage des comptes non vérifiés' })
-  @ApiResponse({ status: 200, description: 'Nettoyage effectué' })
+  @ApiResponse({ status: 200, type: MessageResponseDto, description: 'Nettoyage effectué' })
   @RequirePermissions(Permissions.TASK_CLEAN_USERS)
   @Post('cleanup-unverified-users')
   @HttpCode(200)
@@ -43,7 +49,7 @@ export class TasksController {
     summary:
       'Forcer le nettoyage des tokens expirés (refresh + password reset)',
   })
-  @ApiResponse({ status: 200, description: 'Tokens expirés supprimés' })
+  @ApiResponse({ status: 200, type: CleanupTokensResponseDto, description: 'Tokens expirés supprimés' })
   @RequirePermissions(Permissions.TASK_CLEAN_TOKENS)
   @Post('cleanup-expired-tokens')
   @HttpCode(200)
@@ -58,6 +64,7 @@ export class TasksController {
   })
   @ApiResponse({
     status: 200,
+    type: CleanupOrphanedPermissionsResponseDto,
     description: 'Permissions orphelines supprimées',
   })
   @RequirePermissions(Permissions.TASK_CLEAN_PERMISSIONS)
@@ -72,7 +79,7 @@ export class TasksController {
   @ApiOperation({
     summary: "Supprimer les logs d'audit plus vieux que N jours",
   })
-  @ApiResponse({ status: 200, description: 'Logs supprimés' })
+  @ApiResponse({ status: 200, type: CleanupAuditLogsResponseDto, description: 'Logs supprimés' })
   @ApiResponse({
     status: 400,
     description: 'Paramètre invalide (minimum 1 jour)',
