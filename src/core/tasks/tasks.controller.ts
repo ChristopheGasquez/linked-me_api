@@ -15,16 +15,16 @@ import {
 import type { Request } from 'express';
 import { TasksService } from './tasks.service.js';
 import { CleanupAuditLogsDto } from './dto/cleanup-audit-logs.dto.js';
-import {
-  CleanupTokensResponseDto,
-  CleanupAuditLogsResponseDto,
-  CleanupOrphanedPermissionsResponseDto,
-} from './dto/cleanup-response.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { PermissionsGuard } from '../auth/guards/permissions.guard.js';
 import { RequirePermissions } from '../auth/decorators/permissions.decorator.js';
 import { Permissions } from '../auth/permissions.constants.js';
-import { MessageResponseDto } from '../../common/dto/message-response.dto.js';
+import {
+  CleanupUnverifiedUsersResponseDto,
+  CleanupExpiredTokensResponseDto,
+  CleanupOrphanedPermissionsResponseDto,
+  CleanupAuditLogsResponseDto,
+} from './dto/cleanup-response.dto.js';
 import { ErrorResponseDto } from '../../common/dto/error-response.dto.js';
 
 @ApiTags('Tasks')
@@ -36,7 +36,7 @@ export class TasksController {
   constructor(private tasksService: TasksService) {}
 
   @ApiOperation({ summary: 'Force cleanup of unverified accounts' })
-  @ApiResponse({ status: 200, type: MessageResponseDto, description: 'Cleanup done' })
+  @ApiResponse({ status: 200, type: CleanupUnverifiedUsersResponseDto, description: 'Cleanup done' })
   @RequirePermissions(Permissions.TASK_CLEAN_USERS)
   @Post('cleanup-unverified-users')
   @HttpCode(200)
@@ -47,7 +47,7 @@ export class TasksController {
   }
 
   @ApiOperation({ summary: 'Force cleanup of expired tokens (refresh + password reset)' })
-  @ApiResponse({ status: 200, type: CleanupTokensResponseDto, description: 'Expired tokens deleted' })
+  @ApiResponse({ status: 200, type: CleanupExpiredTokensResponseDto, description: 'Expired tokens deleted' })
   @RequirePermissions(Permissions.TASK_CLEAN_TOKENS)
   @Post('cleanup-expired-tokens')
   @HttpCode(200)

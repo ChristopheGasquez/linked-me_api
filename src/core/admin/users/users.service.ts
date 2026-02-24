@@ -65,13 +65,13 @@ export class AdminUsersService {
     const role = await this.prisma.role.findUnique({
       where: { name: roleName },
     });
-    if (!role) throw new NotFoundException({ message: `Role "${roleName}" not found`, code: ResponseCodes.ADMIN_ROLE_NOT_FOUND });
+    if (!role) throw new NotFoundException({ message: 'Role not found', code: ResponseCodes.ADMIN_ROLE_NOT_FOUND, params: { roleName } });
 
     const existing = await this.prisma.userRole.findUnique({
       where: { userId_roleId: { userId, roleId: role.id } },
     });
     if (existing) {
-      throw new BadRequestException({ message: `User already has role "${roleName}"`, code: ResponseCodes.ADMIN_USER_ROLE_ALREADY_ASSIGNED });
+      throw new BadRequestException({ message: 'User already has this role', code: ResponseCodes.ADMIN_USER_ROLE_ALREADY_ASSIGNED, params: { roleName } });
     }
 
     await this.prisma.userRole.create({ data: { userId, roleId: role.id } });
@@ -79,7 +79,7 @@ export class AdminUsersService {
       roleName,
     });
     this.userCache.invalidate(userId);
-    return { message: `Role "${roleName}" assigned to user ${userId}`, code: ResponseCodes.ADMIN_USER_ROLE_ASSIGNED };
+    return { message: 'Role assigned to user', code: ResponseCodes.ADMIN_USER_ROLE_ASSIGNED, params: { roleName, userId } };
   }
 
   async removeRoleFromUser(actorId: number, userId: number, roleId: number) {
@@ -118,6 +118,6 @@ export class AdminUsersService {
       name: user.name,
     });
     this.userCache.invalidate(userId);
-    return { message: `User ${userId} deleted`, code: ResponseCodes.ADMIN_USER_DELETED };
+    return { message: 'User deleted', code: ResponseCodes.ADMIN_USER_DELETED, params: { userId } };
   }
 }

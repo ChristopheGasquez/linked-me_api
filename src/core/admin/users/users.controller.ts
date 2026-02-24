@@ -24,8 +24,9 @@ import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard.js';
 import { PermissionsGuard } from '../../auth/guards/permissions.guard.js';
 import { RequirePermissions } from '../../auth/decorators/permissions.decorator.js';
 import { Permissions } from '../../auth/permissions.constants.js';
-import { MessageResponseDto } from '../../../common/dto/message-response.dto.js';
 import { ErrorResponseDto } from '../../../common/dto/error-response.dto.js';
+import { UserRoleAssignedResponseDto, UserRoleRemovedResponseDto, UserDeletedResponseDto } from './dto/user-success.dto.js';
+import { UserRoleAlreadyAssignedErrorDto } from './dto/user-error.dto.js';
 import { ApiPaginatedResponse } from '../../../common/pagination/index.js';
 
 @ApiTags('Admin / Users')
@@ -54,8 +55,8 @@ export class AdminUsersController {
   }
 
   @ApiOperation({ summary: 'Assign a role to a user' })
-  @ApiResponse({ status: 201, type: MessageResponseDto, description: 'Role assigned' })
-  @ApiResponse({ status: 400, description: 'User already has this role', type: ErrorResponseDto })
+  @ApiResponse({ status: 201, type: UserRoleAssignedResponseDto, description: 'Role assigned' })
+  @ApiResponse({ status: 400, description: 'User already has this role', type: UserRoleAlreadyAssignedErrorDto })
   @ApiResponse({ status: 404, description: 'User or role not found', type: ErrorResponseDto })
   @RequirePermissions(Permissions.ADMIN_USER_ASSIGN_ROLE)
   @Post('users/:id/roles')
@@ -68,7 +69,7 @@ export class AdminUsersController {
   }
 
   @ApiOperation({ summary: 'Remove a role from a user' })
-  @ApiResponse({ status: 200, type: MessageResponseDto, description: 'Role removed' })
+  @ApiResponse({ status: 200, type: UserRoleRemovedResponseDto, description: 'Role removed' })
   @ApiResponse({ status: 404, description: 'Association not found', type: ErrorResponseDto })
   @RequirePermissions(Permissions.ADMIN_USER_ASSIGN_ROLE)
   @Delete('users/:id/roles/:roleId')
@@ -81,7 +82,7 @@ export class AdminUsersController {
   }
 
   @ApiOperation({ summary: 'Delete a user' })
-  @ApiResponse({ status: 200, type: MessageResponseDto, description: 'User deleted' })
+  @ApiResponse({ status: 200, type: UserDeletedResponseDto, description: 'User deleted' })
   @ApiResponse({ status: 404, description: 'User not found', type: ErrorResponseDto })
   @RequirePermissions(Permissions.ADMIN_USER_DELETE)
   @Delete('users/:id')

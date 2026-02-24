@@ -48,7 +48,7 @@ export class AdminRolesService {
   async createRole(actorId: number, name: string) {
     const existing = await this.prisma.role.findUnique({ where: { name } });
     if (existing) {
-      throw new BadRequestException({ message: `Role "${name}" already exists`, code: ResponseCodes.ADMIN_ROLE_ALREADY_EXISTS });
+      throw new BadRequestException({ message: 'Role already exists', code: ResponseCodes.ADMIN_ROLE_ALREADY_EXISTS, params: { name } });
     }
     const role = await this.prisma.role.create({ data: { name } });
     await this.auditService.log('role.create', actorId, role.id, 'role', {
@@ -63,7 +63,7 @@ export class AdminRolesService {
 
     const usersCount = await this.prisma.userRole.count({ where: { roleId } });
     if (usersCount > 0) {
-      throw new BadRequestException({ message: `Cannot delete: role is still assigned to ${usersCount} user(s)`, code: ResponseCodes.ADMIN_ROLE_HAS_USERS });
+      throw new BadRequestException({ message: 'Cannot delete: role is still assigned to users', code: ResponseCodes.ADMIN_ROLE_HAS_USERS, params: { count: usersCount } });
     }
 
     await this.prisma.role.delete({ where: { id: roleId } });
@@ -71,7 +71,7 @@ export class AdminRolesService {
       name: role.name,
     });
     this.userCache.invalidateAll();
-    return { message: `Role "${role.name}" deleted`, code: ResponseCodes.ADMIN_ROLE_DELETED };
+    return { message: 'Role deleted', code: ResponseCodes.ADMIN_ROLE_DELETED, params: { name: role.name } };
   }
 
   async addPermissionsToRole(
@@ -89,7 +89,7 @@ export class AdminRolesService {
     const foundNames = permissions.map((p) => p.name);
     const unknown = permissionNames.filter((n) => !foundNames.includes(n));
     if (unknown.length > 0) {
-      throw new BadRequestException({ message: `Unknown permissions: ${unknown.join(', ')}`, code: ResponseCodes.ADMIN_PERMISSION_UNKNOWN });
+      throw new BadRequestException({ message: 'Some permissions are unknown', code: ResponseCodes.ADMIN_PERMISSION_UNKNOWN, params: { permissions: unknown } });
     }
 
     for (const perm of permissions) {

@@ -171,7 +171,7 @@ describe('AdminRolesService', () => {
         'role',
         { name: 'MODERATOR' },
       );
-      expect(result.message).toContain('MODERATOR');
+      expect(result).toMatchObject({ code: 'admin.role.deleted', params: { name: 'MODERATOR' } });
     });
   });
 
@@ -258,7 +258,7 @@ describe('AdminRolesService', () => {
         'role',
         expect.any(Object),
       );
-      expect(result).toEqual({ message: 'Permission removed from role', code: 'admin.role.permission.removed' });
+      expect(result).toMatchObject({ code: 'admin.role.permission.removed' });
     });
   });
 

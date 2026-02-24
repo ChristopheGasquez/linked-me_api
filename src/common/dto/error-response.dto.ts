@@ -6,4 +6,7 @@ export class ErrorResponseDto {
   @ApiProperty({ example: 'Unauthorized' }) error: string;
   @ApiPropertyOptional({ example: 'auth.login.invalid_credentials' })
   code?: string;
+
+  @ApiPropertyOptional({ type: Object })
+  params?: object;
 }

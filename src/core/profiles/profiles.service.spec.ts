@@ -137,7 +137,7 @@ describe('ProfilesService', () => {
         'user',
         { email: mockUser.email },
       );
-      expect(result).toEqual({ message: 'Account deleted', code: 'profile.deleted' });
+      expect(result).toMatchObject({ code: 'profile.deleted' });
     });
   });
 
@@ -185,10 +185,7 @@ describe('ProfilesService', () => {
         1,
         'user',
       );
-      expect(result).toEqual({
-        message: 'Password changed. Please log in again.',
-        code: 'profile.password.changed',
-      });
+      expect(result).toMatchObject({ code: 'profile.password.changed' });
     });
   });
 

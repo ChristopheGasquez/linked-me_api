@@ -1,20 +1,51 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { MessageResponseDto } from '../../../common/dto/message-response.dto.js';
 
-export class CleanupTokensResponseDto {
-  @ApiProperty({ example: '5 expired token(s) deleted' }) message: string;
-  @ApiProperty({ example: 'task.cleanup.expired_tokens.done' }) code: string;
-  @ApiProperty() refreshTokens: number;
-  @ApiProperty() passwordResets: number;
+// ─── Cleanup unverified users ─────────────────────────────────────────────────
+
+class CleanupUnverifiedUsersParamsDto {
+  @ApiProperty({ example: 5 }) count: number;
 }
 
-export class CleanupAuditLogsResponseDto {
-  @ApiProperty({ example: '120 audit log(s) deleted' }) message: string;
-  @ApiProperty({ example: 'task.cleanup.audit_logs.done' }) code: string;
-  @ApiProperty() olderThanDays: number;
+export class CleanupUnverifiedUsersResponseDto extends MessageResponseDto {
+  @ApiProperty({ type: CleanupUnverifiedUsersParamsDto })
+  declare params: CleanupUnverifiedUsersParamsDto;
 }
 
-export class CleanupOrphanedPermissionsResponseDto {
-  @ApiProperty({ example: '2 orphaned permission(s) deleted' }) message: string;
-  @ApiProperty({ example: 'task.cleanup.orphaned_permissions.done' }) code: string;
-  @ApiProperty({ type: [String] }) deleted: string[];
+// ─── Cleanup expired tokens ───────────────────────────────────────────────────
+
+class CleanupExpiredTokensParamsDto {
+  @ApiProperty({ example: 8 }) count: number;
+  @ApiProperty({ example: 6 }) refreshTokens: number;
+  @ApiProperty({ example: 2 }) passwordResets: number;
+}
+
+export class CleanupExpiredTokensResponseDto extends MessageResponseDto {
+  @ApiProperty({ type: CleanupExpiredTokensParamsDto })
+  declare params: CleanupExpiredTokensParamsDto;
+}
+
+// ─── Cleanup audit logs ───────────────────────────────────────────────────────
+
+class CleanupAuditLogsParamsDto {
+  @ApiProperty({ example: 120 }) count: number;
+  @ApiProperty({ example: 30 }) olderThanDays: number;
+}
+
+export class CleanupAuditLogsResponseDto extends MessageResponseDto {
+  @ApiProperty({ type: CleanupAuditLogsParamsDto })
+  declare params: CleanupAuditLogsParamsDto;
+}
+
+// ─── Cleanup orphaned permissions ─────────────────────────────────────────────
+
+class CleanupOrphanedPermissionsParamsDto {
+  @ApiProperty({ example: 2 }) count: number;
+  @ApiProperty({ type: [String], example: ['obsolete:permission'] })
+  deleted: string[];
+}
+
+export class CleanupOrphanedPermissionsResponseDto extends MessageResponseDto {
+  @ApiProperty({ type: CleanupOrphanedPermissionsParamsDto })
+  declare params: CleanupOrphanedPermissionsParamsDto;
 }

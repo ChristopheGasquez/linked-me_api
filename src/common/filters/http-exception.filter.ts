@@ -23,12 +23,13 @@ export class HttpExceptionFilter implements ExceptionFilter {
     if (typeof exceptionResponse === 'string') {
       body = { statusCode: status, message: exceptionResponse, error: errorText };
     } else {
-      const { message, code, ...rest } = exceptionResponse as Record<string, unknown>;
+      const { message, code, params, ...rest } = exceptionResponse as Record<string, unknown>;
       body = {
         statusCode: status,
         error: errorText,
         message: message ?? errorText,
         ...(code !== undefined && { code }),
+        ...(params !== undefined && { params }),
         ...rest,
       };
     }
