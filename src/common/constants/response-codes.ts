@@ -1,4 +1,7 @@
 export const ResponseCodes = {
+  // ─── Validation ──────────────────────────────────────────
+  VALIDATION_FAILED:                      'validation.failed',
+
   // ─── Auth — errors ───────────────────────────────────────
   AUTH_REGISTER_CONFLICT:               'auth.register.conflict',
   AUTH_LOGIN_INVALID_CREDENTIALS:       'auth.login.invalid_credentials',

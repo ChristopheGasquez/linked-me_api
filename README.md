@@ -130,6 +130,7 @@ E2E tests (Phase 2 — requires a dedicated test database) will use Supertest to
 Swagger is available when `SWAGGER_ENABLED=true` (disabled by default):
 - `/docs` — full API documentation
 - `/docs/core` — core (auth, profiles, admin, audit, tasks)
+- `/docs/constants` — response codes (for client-side i18n)
 
 A Postman collection is available in [`docs/`](docs/) for testing all endpoints.
 
@@ -170,7 +171,7 @@ All success responses include a machine-readable `code` field for client-side i1
 { "message": "Logged out successfully", "code": "auth.logout.success" }
 ```
 
-### Error responses
+### Business error responses
 
 All HTTP errors are normalized to:
 
@@ -183,9 +184,29 @@ All HTTP errors are normalized to:
 }
 ```
 
-The `code` field follows the format `module.action.result`. It is always present on business errors and success messages. It may be absent on framework-level errors (e.g. validation 400).
+The `code` field follows the format `module.action.result`. All available codes are defined in [`src/common/constants/response-codes.ts`](src/common/constants/response-codes.ts).
 
-All available codes are defined in [`src/common/constants/response-codes.ts`](src/common/constants/response-codes.ts).
+### Validation error responses (400)
+
+When request body validation fails, the response includes a structured `params` object:
+
+```json
+{
+  "statusCode": 400,
+  "error": "BAD_REQUEST",
+  "message": "Password must contain at least one uppercase letter, one number and one special character",
+  "code": "validation.failed",
+  "params": {
+    "fields": [
+      { "key": "password", "code": "validation.password.matches" },
+      { "key": "email", "code": "validation.email.isEmail" }
+    ]
+  }
+}
+```
+
+- `params.fields[n].key` — the invalid field name
+- `params.fields[n].code` — machine-readable code following `validation.{field}.{constraint}`, usable for client-side i18n
 
 ## Rate Limiting
 
@@ -282,6 +303,44 @@ Branch protection rules:
 - `develop`: PR required, CI must pass
 
 Merge strategy: feature → develop via **squash merge**, develop → master via **merge commit**.
+
+## Release workflow
+
+Steps to release a new version to production:
+
+**1. Bump the version on `develop`**
+
+```bash
+git checkout develop
+git pull origin develop
+npm version patch --no-git-tag-version   # or minor / major
+git add package.json
+git commit -m "chore: bump version to x.y.z"
+git push origin develop
+```
+
+Use `patch` for bug fixes, `minor` for new features, `major` for breaking changes.
+
+**2. Open a PR from `develop` → `master` and merge (merge commit)**
+
+**3. Tag `master`**
+
+```bash
+git checkout master
+git pull origin master
+git tag vx.y.z
+git push origin vx.y.z
+```
+
+**4. Resync `develop` with `master`**
+
+```bash
+git checkout develop
+git pull origin master --no-rebase
+git push origin develop
+```
+
+**5. Create a GitHub Release** from the tag `vx.y.z` via the GitHub UI.
 
 ## Author
 
