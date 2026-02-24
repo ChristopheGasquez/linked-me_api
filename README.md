@@ -130,6 +130,7 @@ E2E tests (Phase 2 — requires a dedicated test database) will use Supertest to
 Swagger is available when `SWAGGER_ENABLED=true` (disabled by default):
 - `/docs` — full API documentation
 - `/docs/core` — core (auth, profiles, admin, audit, tasks)
+- `/docs/constants` — response codes (for client-side i18n)
 
 A Postman collection is available in [`docs/`](docs/) for testing all endpoints.
 
