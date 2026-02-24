@@ -16,6 +16,7 @@ API REST pour la plateforme linked-me.
 - [Testing](#testing)
 - [API Documentation](#api-documentation)
 - [Authentication](#authentication)
+- [Response format](#response-format)
 - [Rate Limiting](#rate-limiting)
 - [Architecture](#architecture)
 - [Cron Jobs](#cron-jobs)
@@ -158,6 +159,33 @@ flowchart TD
     M --> N[POST /auth/reset-password]
     N --> O[All sessions revoked]
 ```
+
+## Response format
+
+### Success responses
+
+All success responses include a machine-readable `code` field for client-side i18n:
+
+```json
+{ "message": "Logged out successfully", "code": "auth.logout.success" }
+```
+
+### Error responses
+
+All HTTP errors are normalized to:
+
+```json
+{
+  "statusCode": 401,
+  "error": "Unauthorized",
+  "message": "Invalid credentials",
+  "code": "auth.login.invalid_credentials"
+}
+```
+
+The `code` field follows the format `module.action.result`. It is always present on business errors and success messages. It may be absent on framework-level errors (e.g. validation 400).
+
+All available codes are defined in [`src/common/constants/response-codes.ts`](src/common/constants/response-codes.ts).
 
 ## Rate Limiting
 

@@ -20,6 +20,7 @@ import {
   MS_PER_DAY,
   MS_PER_HOUR,
 } from '../../common/constants.js';
+import { ResponseCodes } from '../../common/constants/response-codes.js';
 
 @Injectable()
 export class AuthService {
@@ -41,7 +42,10 @@ export class AuthService {
     });
 
     if (existingUser) {
-      throw new ConflictException('Email already in use');
+      throw new ConflictException({
+        message: 'Email already in use',
+        code: ResponseCodes.AUTH_REGISTER_CONFLICT,
+      });
     }
 
     const hashedPassword = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);
@@ -79,7 +83,10 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { email } });
 
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException({
+        message: 'Invalid credentials',
+        code: ResponseCodes.AUTH_LOGIN_INVALID_CREDENTIALS,
+      });
     }
 
     const now = new Date();
@@ -88,9 +95,10 @@ export class AuthService {
       const remaining = Math.ceil(
         (user.lockedUntil.getTime() - now.getTime()) / 60000,
       );
-      throw new ForbiddenException(
-        `Account temporarily locked. Try again in ${remaining} minute(s).`,
-      );
+      throw new ForbiddenException({
+        message: `Account temporarily locked. Try again in ${remaining} minute(s).`,
+        code: ResponseCodes.AUTH_LOGIN_ACCOUNT_LOCKED,
+      });
     }
 
     const baseAttempts =
@@ -122,7 +130,10 @@ export class AuthService {
           email: user.email,
         });
       }
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException({
+        message: 'Invalid credentials',
+        code: ResponseCodes.AUTH_LOGIN_INVALID_CREDENTIALS,
+      });
     }
 
     // Success: reset failure counter
@@ -144,9 +155,10 @@ export class AuthService {
     const user = await this.validateUser(email, password);
 
     if (!user.isEmailChecked) {
-      throw new UnauthorizedException(
-        'Please verify your email before logging in',
-      );
+      throw new UnauthorizedException({
+        message: 'Please verify your email before logging in',
+        code: ResponseCodes.AUTH_LOGIN_EMAIL_NOT_VERIFIED,
+      });
     }
 
     const tokens = await this.generateTokens(user.id, user.email);
@@ -202,7 +214,10 @@ export class AuthService {
         secret: this.config.getOrThrow('JWT_REFRESH_SECRET'),
       });
     } catch {
-      throw new UnauthorizedException('Invalid or expired refresh token');
+      throw new UnauthorizedException({
+        message: 'Invalid or expired refresh token',
+        code: ResponseCodes.AUTH_REFRESH_INVALID_TOKEN,
+      });
     }
 
     const hash = crypto.createHash('sha256').update(refreshToken).digest('hex');
@@ -211,7 +226,10 @@ export class AuthService {
     });
 
     if (!stored) {
-      throw new UnauthorizedException('Refresh token revoked');
+      throw new UnauthorizedException({
+        message: 'Refresh token revoked',
+        code: ResponseCodes.AUTH_REFRESH_TOKEN_REVOKED,
+      });
     }
 
     await this.prisma.refreshToken.delete({ where: { id: stored.id } });
@@ -222,7 +240,7 @@ export class AuthService {
   async logout(refreshToken: string) {
     const hash = crypto.createHash('sha256').update(refreshToken).digest('hex');
     await this.prisma.refreshToken.deleteMany({ where: { token: hash } });
-    return { message: 'Logged out successfully' };
+    return { message: 'Logged out successfully', code: ResponseCodes.AUTH_LOGOUT_SUCCESS };
   }
 
   async getSessions(userId: number, query: FindSessionsQueryDto) {
@@ -235,14 +253,19 @@ export class AuthService {
     const session = await this.prisma.refreshToken.findFirst({
       where: { id: sessionId, userId },
     });
-    if (!session) throw new NotFoundException('Session not found');
+    if (!session) {
+      throw new NotFoundException({
+        message: 'Session not found',
+        code: ResponseCodes.AUTH_SESSION_NOT_FOUND,
+      });
+    }
     await this.prisma.refreshToken.delete({ where: { id: sessionId } });
-    return { message: 'Session revoked' };
+    return { message: 'Session revoked', code: ResponseCodes.AUTH_SESSION_REVOKED };
   }
 
   async logoutAll(userId: number) {
     await this.prisma.refreshToken.deleteMany({ where: { userId } });
-    return { message: 'All sessions revoked' };
+    return { message: 'All sessions revoked', code: ResponseCodes.AUTH_LOGOUT_ALL_SUCCESS };
   }
 
   private async createVerificationToken(userId: number): Promise<string> {
@@ -273,7 +296,10 @@ export class AuthService {
     });
 
     if (!verification) {
-      throw new UnauthorizedException('Invalid or expired verification token');
+      throw new UnauthorizedException({
+        message: 'Invalid or expired verification token',
+        code: ResponseCodes.AUTH_EMAIL_INVALID_TOKEN,
+      });
     }
 
     await this.prisma.$transaction([
@@ -293,7 +319,7 @@ export class AuthService {
       'user',
     );
 
-    return { message: 'Email verified successfully' };
+    return { message: 'Email verified successfully', code: ResponseCodes.AUTH_EMAIL_VERIFIED };
   }
 
   async forgotPassword(email: string) {
@@ -302,8 +328,8 @@ export class AuthService {
     // Generic response: never reveal whether email exists
     if (!user) {
       return {
-        message:
-          'If an account with this email exists, a reset link has been sent',
+        message: 'If an account with this email exists, a reset link has been sent',
+        code: ResponseCodes.AUTH_FORGOT_PASSWORD_SENT,
       };
     }
 
@@ -327,8 +353,8 @@ export class AuthService {
     );
 
     return {
-      message:
-        'If an account with this email exists, a reset link has been sent',
+      message: 'If an account with this email exists, a reset link has been sent',
+      code: ResponseCodes.AUTH_FORGOT_PASSWORD_SENT,
     };
   }
 
@@ -343,7 +369,10 @@ export class AuthService {
     });
 
     if (!resetRecord) {
-      throw new UnauthorizedException('Invalid or expired reset token');
+      throw new UnauthorizedException({
+        message: 'Invalid or expired reset token',
+        code: ResponseCodes.AUTH_PASSWORD_RESET_INVALID,
+      });
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
@@ -366,7 +395,10 @@ export class AuthService {
       'user',
     );
 
-    return { message: 'Password reset successfully. Please log in again.' };
+    return {
+      message: 'Password reset successfully. Please log in again.',
+      code: ResponseCodes.AUTH_PASSWORD_RESET_SUCCESS,
+    };
   }
 
   async resendVerificationEmail(email: string) {
@@ -374,8 +406,8 @@ export class AuthService {
 
     if (!user || user.isEmailChecked) {
       return {
-        message:
-          'If an unverified account with this email exists, a new link has been sent',
+        message: 'If an unverified account with this email exists, a new link has been sent',
+        code: ResponseCodes.AUTH_EMAIL_RESEND_SENT,
       };
     }
 
@@ -387,8 +419,8 @@ export class AuthService {
     );
 
     return {
-      message:
-        'If an unverified account with this email exists, a new link has been sent',
+      message: 'If an unverified account with this email exists, a new link has been sent',
+      code: ResponseCodes.AUTH_EMAIL_RESEND_SENT,
     };
   }
 }

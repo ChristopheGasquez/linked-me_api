@@ -341,7 +341,7 @@ describe('AuthService', () => {
       const result = await service.logout('some_refresh_token');
 
       expect(prisma.refreshToken.deleteMany).toHaveBeenCalledTimes(1);
-      expect(result).toEqual({ message: 'Logged out successfully' });
+      expect(result).toMatchObject({ code: 'auth.logout.success' });
     });
   });
 
@@ -357,7 +357,7 @@ describe('AuthService', () => {
       expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
         where: { userId: 1 },
       });
-      expect(result).toEqual({ message: 'All sessions revoked' });
+      expect(result).toMatchObject({ code: 'auth.logout_all.success' });
     });
   });
 
@@ -419,7 +419,7 @@ describe('AuthService', () => {
       expect(prisma.refreshToken.delete).toHaveBeenCalledWith({
         where: { id: 5 },
       });
-      expect(result).toEqual({ message: 'Session revoked' });
+      expect(result).toMatchObject({ code: 'auth.session.revoked' });
     });
   });
 
@@ -458,7 +458,7 @@ describe('AuthService', () => {
         1,
         'user',
       );
-      expect(result).toEqual({ message: 'Email verified successfully' });
+      expect(result).toMatchObject({ code: 'auth.email.verified' });
     });
   });
 
@@ -472,7 +472,7 @@ describe('AuthService', () => {
       const result = await service.forgotPassword('unknown@example.com');
 
       expect(mailService.sendPasswordResetEmail).not.toHaveBeenCalled();
-      expect(result.message).toContain('If an account');
+      expect(result).toMatchObject({ code: 'auth.forgot_password.sent' });
     });
 
     it('should create reset token and send email when user exists', async () => {
@@ -488,7 +488,7 @@ describe('AuthService', () => {
         mockUser.name,
         expect.any(String),
       );
-      expect(result.message).toContain('If an account');
+      expect(result).toMatchObject({ code: 'auth.forgot_password.sent' });
     });
   });
 
@@ -529,9 +529,7 @@ describe('AuthService', () => {
         1,
         'user',
       );
-      expect(result).toEqual({
-        message: 'Password reset successfully. Please log in again.',
-      });
+      expect(result).toMatchObject({ code: 'auth.password_reset.success' });
     });
   });
 
@@ -547,7 +545,7 @@ describe('AuthService', () => {
       );
 
       expect(mailService.sendVerificationEmail).not.toHaveBeenCalled();
-      expect(result.message).toContain('If an unverified account');
+      expect(result).toMatchObject({ code: 'auth.email.resend_sent' });
     });
 
     it('should return generic message when email is already verified', async () => {
@@ -557,7 +555,7 @@ describe('AuthService', () => {
       const result = await service.resendVerificationEmail('test@example.com');
 
       expect(mailService.sendVerificationEmail).not.toHaveBeenCalled();
-      expect(result.message).toContain('If an unverified account');
+      expect(result).toMatchObject({ code: 'auth.email.resend_sent' });
     });
 
     it('should send new verification email for unverified user', async () => {
@@ -573,7 +571,7 @@ describe('AuthService', () => {
         unverifiedUser.name,
         expect.any(String),
       );
-      expect(result.message).toContain('If an unverified account');
+      expect(result).toMatchObject({ code: 'auth.email.resend_sent' });
     });
   });
 });

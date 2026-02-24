@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module.js';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter.js';
 import { AuthModule } from './core/auth/auth.module.js';
 import { ProfilesModule } from './core/profiles/profiles.module.js';
 import { AdminModule } from './core/admin/admin.module.js';
@@ -19,13 +20,14 @@ async function bootstrap() {
     credentials: true,
   });
 
+  app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
   if (process.env.SWAGGER_ENABLED === 'true') {
     // Global doc — all endpoints
     const globalConfig = new DocumentBuilder()
       .setTitle('linked-me API')
-      .setDescription('API de la plateforme linked-me — documentation complète')
+      .setDescription('linked-me platform API — full documentation')
       .setVersion('1.0')
       .addBearerAuth()
       .build();
@@ -35,7 +37,7 @@ async function bootstrap() {
     // Core doc — auth, profiles, admin, audit, tasks
     const coreConfig = new DocumentBuilder()
       .setTitle('linked-me — Core API')
-      .setDescription('Auth, profils, administration, audit')
+      .setDescription('Auth, profiles, administration, audit, tasks')
       .setVersion('1.0')
       .addBearerAuth()
       .build();

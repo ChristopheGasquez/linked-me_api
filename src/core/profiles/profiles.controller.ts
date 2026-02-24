@@ -24,6 +24,7 @@ import { PermissionsGuard } from '../auth/guards/permissions.guard.js';
 import { RequirePermissions } from '../auth/decorators/permissions.decorator.js';
 import { Permissions } from '../auth/permissions.constants.js';
 import { MessageResponseDto } from '../../common/dto/message-response.dto.js';
+import { ErrorResponseDto } from '../../common/dto/error-response.dto.js';
 
 @ApiTags('Profiles')
 @ApiBearerAuth()
@@ -33,38 +34,27 @@ import { MessageResponseDto } from '../../common/dto/message-response.dto.js';
 export class ProfilesController {
   constructor(private profilesService: ProfilesService) {}
 
-  @ApiOperation({ summary: "Consulter le profil public d'un utilisateur" })
-  @ApiResponse({
-    status: 200,
-    type: ProfileResponseDto,
-    description: 'Profil utilisateur (id, name, email, createdAt)',
-  })
-  @ApiResponse({ status: 404, description: 'Utilisateur non trouvé' })
+  @ApiOperation({ summary: 'Get the public profile of a user' })
+  @ApiResponse({ status: 200, type: ProfileResponseDto, description: 'User profile (id, name, email, createdAt)' })
+  @ApiResponse({ status: 404, description: 'User not found', type: ErrorResponseDto })
   @RequirePermissions(Permissions.PROFILE_READ)
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.profilesService.findOne(id);
   }
 
-  @ApiOperation({ summary: 'Modifier son propre profil' })
-  @ApiResponse({ status: 200, type: ProfileResponseDto, description: 'Profil mis à jour' })
+  @ApiOperation({ summary: 'Update your own profile' })
+  @ApiResponse({ status: 200, type: ProfileResponseDto, description: 'Profile updated' })
   @RequirePermissions(Permissions.PROFILE_UPDATE_OWN)
   @Patch('me')
   update(@Request() req: any, @Body() dto: UpdateProfileDto) {
     return this.profilesService.update(req.user.id, dto);
   }
 
-  @ApiOperation({ summary: 'Changer son mot de passe' })
-  @ApiResponse({
-    status: 200,
-    type: MessageResponseDto,
-    description: 'Mot de passe modifié, toutes les sessions révoquées',
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Nouveau mot de passe invalide (format non respecté)',
-  })
-  @ApiResponse({ status: 401, description: 'Mot de passe actuel incorrect' })
+  @ApiOperation({ summary: 'Change your password' })
+  @ApiResponse({ status: 200, type: MessageResponseDto, description: 'Password changed, all sessions revoked' })
+  @ApiResponse({ status: 400, description: 'Invalid new password (format not respected)', type: ErrorResponseDto })
+  @ApiResponse({ status: 401, description: 'Current password incorrect', type: ErrorResponseDto })
   @RequirePermissions(Permissions.PROFILE_UPDATE_OWN)
   @Patch('me/password')
   changePassword(@Request() req: any, @Body() dto: ChangePasswordDto) {
@@ -75,8 +65,8 @@ export class ProfilesController {
     );
   }
 
-  @ApiOperation({ summary: 'Supprimer son propre compte' })
-  @ApiResponse({ status: 200, type: MessageResponseDto, description: 'Compte supprimé' })
+  @ApiOperation({ summary: 'Delete your own account' })
+  @ApiResponse({ status: 200, type: MessageResponseDto, description: 'Account deleted' })
   @RequirePermissions(Permissions.PROFILE_DELETE_OWN)
   @Delete('me')
   remove(@Request() req: any) {

@@ -63,7 +63,7 @@ describe('TasksService', () => {
         'UNVERIFIED_USER_TTL_HOURS',
       );
       expect(profilesService.deleteUnverified).toHaveBeenCalledWith(24);
-      expect(result.message).toContain('5');
+      expect(result).toMatchObject({ code: 'task.cleanup.unverified_users.done', params: { count: 5 } });
     });
 
     it('should return 0 deleted when no unverified users exist', async () => {
@@ -72,7 +72,7 @@ describe('TasksService', () => {
 
       const result = await service.cleanupUnverifiedUsers();
 
-      expect(result.message).toContain('0');
+      expect(result).toMatchObject({ params: { count: 0 } });
     });
 
     it('should log audit with actorId null when called by cron', async () => {
@@ -126,9 +126,7 @@ describe('TasksService', () => {
           where: { expiresAt: { lt: expect.any(Date) } },
         }),
       );
-      expect(result.refreshTokens).toBe(3);
-      expect(result.passwordResets).toBe(1);
-      expect(result.message).toContain('4');
+      expect(result).toMatchObject({ code: 'task.cleanup.expired_tokens.done', params: { count: 4, refreshTokens: 3, passwordResets: 1 } });
     });
 
     it('should log audit with counts', async () => {
@@ -161,8 +159,7 @@ describe('TasksService', () => {
           where: { createdAt: { lt: expect.any(Date) } },
         }),
       );
-      expect(result.olderThanDays).toBe(7);
-      expect(result.message).toContain('10');
+      expect(result).toMatchObject({ params: { count: 10, olderThanDays: 7 } });
     });
 
     it('should fall back to AUDIT_LOG_TTL_DAYS from config when no param', async () => {
@@ -172,7 +169,7 @@ describe('TasksService', () => {
       const result = await service.cleanupAuditLogs();
 
       expect(configService.get).toHaveBeenCalledWith('AUDIT_LOG_TTL_DAYS');
-      expect(result.olderThanDays).toBe(14);
+      expect(result).toMatchObject({ params: { olderThanDays: 14 } });
     });
 
     it('should default to 30 days when AUDIT_LOG_TTL_DAYS is not set', async () => {
@@ -181,7 +178,7 @@ describe('TasksService', () => {
 
       const result = await service.cleanupAuditLogs();
 
-      expect(result.olderThanDays).toBe(30);
+      expect(result).toMatchObject({ params: { olderThanDays: 30 } });
     });
 
     it('should log audit with count and olderThanDays', async () => {
@@ -208,8 +205,7 @@ describe('TasksService', () => {
 
       const result = await service.cleanupOrphanedPermissions();
 
-      expect(result.deleted).toEqual([]);
-      expect(result.message).toContain('No orphaned');
+      expect(result).toMatchObject({ code: 'task.cleanup.orphaned_permissions.none_found', params: { count: 0, deleted: [] } });
       expect(prisma.rolePermission.deleteMany).not.toHaveBeenCalled();
       expect(prisma.permission.deleteMany).not.toHaveBeenCalled();
     });
@@ -245,11 +241,7 @@ describe('TasksService', () => {
       expect(prisma.permission.deleteMany).toHaveBeenCalledWith({
         where: { id: { in: [10, 11] } },
       });
-      expect(result.deleted).toEqual([
-        'obsolete:permission',
-        'old:feature:access',
-      ]);
-      expect(result.message).toContain('2');
+      expect(result).toMatchObject({ params: { count: 2, deleted: ['obsolete:permission', 'old:feature:access'] } });
     });
 
     it('should log audit with deleted permission names', async () => {

@@ -12,6 +12,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { PermissionsGuard } from '../auth/guards/permissions.guard.js';
 import { RequirePermissions } from '../auth/decorators/permissions.decorator.js';
 import { Permissions } from '../auth/permissions.constants.js';
+import { ErrorResponseDto } from '../../common/dto/error-response.dto.js';
 import { ApiPaginatedResponse } from '../../common/pagination/index.js';
 
 @ApiTags('Admin — Audit')
@@ -22,10 +23,10 @@ import { ApiPaginatedResponse } from '../../common/pagination/index.js';
 export class AuditController {
   constructor(private auditService: AuditService) {}
 
-  @ApiOperation({ summary: "Lister les logs d'audit" })
-  @ApiPaginatedResponse(AuditLogResponseDto, "Liste paginée des logs d'audit")
-  @ApiResponse({ status: 401, description: 'Non authentifié' })
-  @ApiResponse({ status: 403, description: 'Permission insuffisante' })
+  @ApiOperation({ summary: 'List audit logs' })
+  @ApiPaginatedResponse(AuditLogResponseDto, 'Paginated list of audit logs')
+  @ApiResponse({ status: 401, description: 'Not authenticated', type: ErrorResponseDto })
+  @ApiResponse({ status: 403, description: 'Insufficient permissions', type: ErrorResponseDto })
   @Get()
   findAll(@Query() query: FindAuditLogsQueryDto) {
     return this.auditService.findAll(query);

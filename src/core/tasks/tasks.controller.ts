@@ -15,16 +15,17 @@ import {
 import type { Request } from 'express';
 import { TasksService } from './tasks.service.js';
 import { CleanupAuditLogsDto } from './dto/cleanup-audit-logs.dto.js';
-import {
-  CleanupTokensResponseDto,
-  CleanupAuditLogsResponseDto,
-  CleanupOrphanedPermissionsResponseDto,
-} from './dto/cleanup-response.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { PermissionsGuard } from '../auth/guards/permissions.guard.js';
 import { RequirePermissions } from '../auth/decorators/permissions.decorator.js';
 import { Permissions } from '../auth/permissions.constants.js';
-import { MessageResponseDto } from '../../common/dto/message-response.dto.js';
+import {
+  CleanupUnverifiedUsersResponseDto,
+  CleanupExpiredTokensResponseDto,
+  CleanupOrphanedPermissionsResponseDto,
+  CleanupAuditLogsResponseDto,
+} from './dto/cleanup-response.dto.js';
+import { ErrorResponseDto } from '../../common/dto/error-response.dto.js';
 
 @ApiTags('Tasks')
 @ApiBearerAuth()
@@ -34,8 +35,8 @@ import { MessageResponseDto } from '../../common/dto/message-response.dto.js';
 export class TasksController {
   constructor(private tasksService: TasksService) {}
 
-  @ApiOperation({ summary: 'Forcer le nettoyage des comptes non vérifiés' })
-  @ApiResponse({ status: 200, type: MessageResponseDto, description: 'Nettoyage effectué' })
+  @ApiOperation({ summary: 'Force cleanup of unverified accounts' })
+  @ApiResponse({ status: 200, type: CleanupUnverifiedUsersResponseDto, description: 'Cleanup done' })
   @RequirePermissions(Permissions.TASK_CLEAN_USERS)
   @Post('cleanup-unverified-users')
   @HttpCode(200)
@@ -45,11 +46,8 @@ export class TasksController {
     );
   }
 
-  @ApiOperation({
-    summary:
-      'Forcer le nettoyage des tokens expirés (refresh + password reset)',
-  })
-  @ApiResponse({ status: 200, type: CleanupTokensResponseDto, description: 'Tokens expirés supprimés' })
+  @ApiOperation({ summary: 'Force cleanup of expired tokens (refresh + password reset)' })
+  @ApiResponse({ status: 200, type: CleanupExpiredTokensResponseDto, description: 'Expired tokens deleted' })
   @RequirePermissions(Permissions.TASK_CLEAN_TOKENS)
   @Post('cleanup-expired-tokens')
   @HttpCode(200)
@@ -59,14 +57,8 @@ export class TasksController {
     );
   }
 
-  @ApiOperation({
-    summary: 'Supprimer les permissions orphelines (absentes des constantes)',
-  })
-  @ApiResponse({
-    status: 200,
-    type: CleanupOrphanedPermissionsResponseDto,
-    description: 'Permissions orphelines supprimées',
-  })
+  @ApiOperation({ summary: 'Delete orphaned permissions (absent from constants)' })
+  @ApiResponse({ status: 200, type: CleanupOrphanedPermissionsResponseDto, description: 'Orphaned permissions deleted' })
   @RequirePermissions(Permissions.TASK_CLEAN_PERMISSIONS)
   @Post('cleanup-orphaned-permissions')
   @HttpCode(200)
@@ -76,14 +68,9 @@ export class TasksController {
     );
   }
 
-  @ApiOperation({
-    summary: "Supprimer les logs d'audit plus vieux que N jours",
-  })
-  @ApiResponse({ status: 200, type: CleanupAuditLogsResponseDto, description: 'Logs supprimés' })
-  @ApiResponse({
-    status: 400,
-    description: 'Paramètre invalide (minimum 1 jour)',
-  })
+  @ApiOperation({ summary: 'Delete audit logs older than N days' })
+  @ApiResponse({ status: 200, type: CleanupAuditLogsResponseDto, description: 'Logs deleted' })
+  @ApiResponse({ status: 400, description: 'Invalid parameter (minimum 1 day)', type: ErrorResponseDto })
   @RequirePermissions(Permissions.TASK_CLEAN_AUDIT)
   @Post('cleanup-audit-logs')
   @HttpCode(200)

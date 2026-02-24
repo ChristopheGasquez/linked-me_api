@@ -8,6 +8,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
 import { UpdateProfileDto } from './dto/update-profile.dto.js';
 import { BCRYPT_ROUNDS, MS_PER_HOUR } from '../../common/constants.js';
+import { ResponseCodes } from '../../common/constants/response-codes.js';
 
 @Injectable()
 export class ProfilesService {
@@ -20,7 +21,7 @@ export class ProfilesService {
     const user = await this.prisma.user.findUnique({ where: { id } });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException({ message: 'User not found', code: ResponseCodes.PROFILE_USER_NOT_FOUND });
     }
 
     return {
@@ -33,7 +34,7 @@ export class ProfilesService {
 
   async update(id: number, dto: UpdateProfileDto) {
     const user = await this.prisma.user.findUnique({ where: { id } });
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new NotFoundException({ message: 'User not found', code: ResponseCodes.PROFILE_USER_NOT_FOUND });
 
     const updated = await this.prisma.user.update({
       where: { id },
@@ -54,12 +55,12 @@ export class ProfilesService {
 
   async remove(id: number) {
     const user = await this.prisma.user.findUnique({ where: { id } });
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new NotFoundException({ message: 'User not found', code: ResponseCodes.PROFILE_USER_NOT_FOUND });
     await this.prisma.user.delete({ where: { id } });
     await this.auditService.log('profile.delete', id, id, 'user', {
       email: user.email,
     });
-    return { message: 'Account deleted' };
+    return { message: 'Account deleted', code: ResponseCodes.PROFILE_DELETED };
   }
 
   async changePassword(
@@ -68,11 +69,11 @@ export class ProfilesService {
     newPassword: string,
   ) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new NotFoundException({ message: 'User not found', code: ResponseCodes.PROFILE_USER_NOT_FOUND });
 
     const isValid = await bcrypt.compare(currentPassword, user.password);
     if (!isValid)
-      throw new UnauthorizedException('Current password is incorrect');
+      throw new UnauthorizedException({ message: 'Current password is incorrect', code: ResponseCodes.PROFILE_PASSWORD_INCORRECT });
 
     const hashed = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
 
@@ -91,7 +92,7 @@ export class ProfilesService {
       'user',
     );
 
-    return { message: 'Password changed. Please log in again.' };
+    return { message: 'Password changed. Please log in again.', code: ResponseCodes.PROFILE_PASSWORD_CHANGED };
   }
 
   async deleteUnverified(ttlHours: number): Promise<number> {

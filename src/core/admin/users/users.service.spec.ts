@@ -188,7 +188,7 @@ describe('AdminUsersService', () => {
         'user',
         { roleName: 'USER' },
       );
-      expect(result.message).toContain('assigned');
+      expect(result).toMatchObject({ code: 'admin.user.role.assigned', params: { roleName: 'USER', userId: 1 } });
     });
   });
 
@@ -221,7 +221,7 @@ describe('AdminUsersService', () => {
         'user',
         { roleName: 'USER' },
       );
-      expect(result).toEqual({ message: 'Role removed from user' });
+      expect(result).toMatchObject({ code: 'admin.user.role.removed' });
     });
   });
 
@@ -261,7 +261,7 @@ describe('AdminUsersService', () => {
         'user',
         expect.any(Object),
       );
-      expect(result.message).toContain('deleted');
+      expect(result).toMatchObject({ code: 'admin.user.deleted', params: { userId: 1 } });
     });
   });
 });
