@@ -36,6 +36,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
 import { THROTTLE } from '../../common/constants.js';
 import { MessageResponseDto } from '../../common/dto/message-response.dto.js';
 import { ErrorResponseDto } from '../../common/dto/error-response.dto.js';
+import { ValidationErrorResponseDto } from '../../common/dto/validation-error-response.dto.js';
 import { ApiPaginatedResponse } from '../../common/pagination/index.js';
 
 @ApiTags('Auth')
@@ -45,7 +46,7 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({ status: 201, type: RegisterResponseDto, description: 'User created' })
-  @ApiResponse({ status: 400, description: 'Invalid data (email format, password format)', type: ErrorResponseDto })
+  @ApiResponse({ status: 400, description: 'Validation failed (email format, password format)', type: ValidationErrorResponseDto })
   @ApiResponse({ status: 409, description: 'Email already in use', type: ErrorResponseDto })
   @ApiResponse({ status: 429, description: 'Too many attempts, try again in 15 minutes', type: ErrorResponseDto })
   @Throttle({ global: THROTTLE.AUTH })
@@ -93,7 +94,7 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Reset password with the token received by email' })
   @ApiResponse({ status: 200, type: MessageResponseDto, description: 'Password reset, all sessions revoked' })
-  @ApiResponse({ status: 400, description: 'Invalid password (format not respected)', type: ErrorResponseDto })
+  @ApiResponse({ status: 400, description: 'Validation failed (password format)', type: ValidationErrorResponseDto })
   @ApiResponse({ status: 401, description: 'Invalid or expired token', type: ErrorResponseDto })
   @ApiResponse({ status: 429, description: 'Too many attempts', type: ErrorResponseDto })
   @Throttle({ global: THROTTLE.PASSWORD_RESET })

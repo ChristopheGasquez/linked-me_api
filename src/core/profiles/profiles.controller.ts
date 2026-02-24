@@ -25,6 +25,7 @@ import { RequirePermissions } from '../auth/decorators/permissions.decorator.js'
 import { Permissions } from '../auth/permissions.constants.js';
 import { MessageResponseDto } from '../../common/dto/message-response.dto.js';
 import { ErrorResponseDto } from '../../common/dto/error-response.dto.js';
+import { ValidationErrorResponseDto } from '../../common/dto/validation-error-response.dto.js';
 
 @ApiTags('Profiles')
 @ApiBearerAuth()
@@ -53,7 +54,7 @@ export class ProfilesController {
 
   @ApiOperation({ summary: 'Change your password' })
   @ApiResponse({ status: 200, type: MessageResponseDto, description: 'Password changed, all sessions revoked' })
-  @ApiResponse({ status: 400, description: 'Invalid new password (format not respected)', type: ErrorResponseDto })
+  @ApiResponse({ status: 400, description: 'Validation failed (password format)', type: ValidationErrorResponseDto })
   @ApiResponse({ status: 401, description: 'Current password incorrect', type: ErrorResponseDto })
   @RequirePermissions(Permissions.PROFILE_UPDATE_OWN)
   @Patch('me/password')

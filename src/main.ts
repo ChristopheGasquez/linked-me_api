@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module.js';
@@ -22,7 +22,26 @@ async function bootstrap() {
   });
 
   app.useGlobalFilters(new HttpExceptionFilter());
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      exceptionFactory: (errors) => {
+        const first = errors[0];
+        const firstConstraint = Object.keys(first.constraints ?? {})[0];
+        return new BadRequestException({
+          message: first.constraints?.[firstConstraint] ?? 'Validation failed',
+          code: ResponseCodes.VALIDATION_FAILED,
+          params: {
+            fields: errors.map((e) => {
+              const constraint = Object.keys(e.constraints ?? {})[0];
+              return { key: e.property, code: `validation.${e.property}.${constraint}` };
+            }),
+          },
+        });
+      },
+    }),
+  );
 
   if (process.env.SWAGGER_ENABLED === 'true') {
     // Global doc — all endpoints

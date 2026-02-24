@@ -171,7 +171,7 @@ All success responses include a machine-readable `code` field for client-side i1
 { "message": "Logged out successfully", "code": "auth.logout.success" }
 ```
 
-### Error responses
+### Business error responses
 
 All HTTP errors are normalized to:
 
@@ -184,9 +184,29 @@ All HTTP errors are normalized to:
 }
 ```
 
-The `code` field follows the format `module.action.result`. It is always present on business errors and success messages. It may be absent on framework-level errors (e.g. validation 400).
+The `code` field follows the format `module.action.result`. All available codes are defined in [`src/common/constants/response-codes.ts`](src/common/constants/response-codes.ts).
 
-All available codes are defined in [`src/common/constants/response-codes.ts`](src/common/constants/response-codes.ts).
+### Validation error responses (400)
+
+When request body validation fails, the response includes a structured `params` object:
+
+```json
+{
+  "statusCode": 400,
+  "error": "BAD_REQUEST",
+  "message": "Password must contain at least one uppercase letter, one number and one special character",
+  "code": "validation.failed",
+  "params": {
+    "fields": [
+      { "key": "password", "code": "validation.password.matches" },
+      { "key": "email", "code": "validation.email.isEmail" }
+    ]
+  }
+}
+```
+
+- `params.fields[n].key` — the invalid field name
+- `params.fields[n].code` — machine-readable code following `validation.{field}.{constraint}`, usable for client-side i18n
 
 ## Rate Limiting
 
