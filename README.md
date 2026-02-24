@@ -283,6 +283,44 @@ Branch protection rules:
 
 Merge strategy: feature → develop via **squash merge**, develop → master via **merge commit**.
 
+## Release workflow
+
+Steps to release a new version to production:
+
+**1. Bump the version on `develop`**
+
+```bash
+git checkout develop
+git pull origin develop
+npm version patch --no-git-tag-version   # or minor / major
+git add package.json
+git commit -m "chore: bump version to x.y.z"
+git push origin develop
+```
+
+Use `patch` for bug fixes, `minor` for new features, `major` for breaking changes.
+
+**2. Open a PR from `develop` → `master` and merge (merge commit)**
+
+**3. Tag `master`**
+
+```bash
+git checkout master
+git pull origin master
+git tag vx.y.z
+git push origin vx.y.z
+```
+
+**4. Resync `develop` with `master`**
+
+```bash
+git checkout develop
+git pull origin master --no-rebase
+git push origin develop
+```
+
+**5. Create a GitHub Release** from the tag `vx.y.z` via the GitHub UI.
+
 ## Author
 
 **Christophe Gasquez** — [GitHub](https://github.com/ChristopheGasquez)
