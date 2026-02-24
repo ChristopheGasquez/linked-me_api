@@ -17,7 +17,7 @@ export class AppService {
     return {
       status: 'ok',
       version: this.version,
-      documentation: '/api',
+      documentation: '/docs',
     };
   }
 }

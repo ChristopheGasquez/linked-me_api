@@ -221,7 +221,7 @@ describe('AdminUsersService', () => {
         'user',
         { roleName: 'USER' },
       );
-      expect(result).toEqual({ message: 'Role removed from user' });
+      expect(result).toEqual({ message: 'Role removed from user', code: 'admin.user.role.removed' });
     });
   });
 

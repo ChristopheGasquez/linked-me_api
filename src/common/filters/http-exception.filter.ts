@@ -16,7 +16,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const exceptionResponse = exception.getResponse();
 
     const errorText =
-      HttpStatus[status as keyof typeof HttpStatus] ?? 'Internal Server Error';
+      HttpStatus[status as unknown as keyof typeof HttpStatus] ?? 'Internal Server Error';
 
     let body: Record<string, unknown>;
 

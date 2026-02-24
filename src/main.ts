@@ -27,7 +27,7 @@ async function bootstrap() {
     // Global doc — all endpoints
     const globalConfig = new DocumentBuilder()
       .setTitle('linked-me API')
-      .setDescription('API de la plateforme linked-me — documentation complète')
+      .setDescription('linked-me platform API — full documentation')
       .setVersion('1.0')
       .addBearerAuth()
       .build();
@@ -37,7 +37,7 @@ async function bootstrap() {
     // Core doc — auth, profiles, admin, audit, tasks
     const coreConfig = new DocumentBuilder()
       .setTitle('linked-me — Core API')
-      .setDescription('Auth, profils, administration, audit')
+      .setDescription('Auth, profiles, administration, audit, tasks')
       .setVersion('1.0')
       .addBearerAuth()
       .build();

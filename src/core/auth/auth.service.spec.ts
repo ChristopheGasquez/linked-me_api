@@ -341,7 +341,7 @@ describe('AuthService', () => {
       const result = await service.logout('some_refresh_token');
 
       expect(prisma.refreshToken.deleteMany).toHaveBeenCalledTimes(1);
-      expect(result).toEqual({ message: 'Logged out successfully' });
+      expect(result).toEqual({ message: 'Logged out successfully', code: 'auth.logout.success' });
     });
   });
 
@@ -357,7 +357,7 @@ describe('AuthService', () => {
       expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
         where: { userId: 1 },
       });
-      expect(result).toEqual({ message: 'All sessions revoked' });
+      expect(result).toEqual({ message: 'All sessions revoked', code: 'auth.logout_all.success' });
     });
   });
 
@@ -419,7 +419,7 @@ describe('AuthService', () => {
       expect(prisma.refreshToken.delete).toHaveBeenCalledWith({
         where: { id: 5 },
       });
-      expect(result).toEqual({ message: 'Session revoked' });
+      expect(result).toEqual({ message: 'Session revoked', code: 'auth.session.revoked' });
     });
   });
 
@@ -458,7 +458,7 @@ describe('AuthService', () => {
         1,
         'user',
       );
-      expect(result).toEqual({ message: 'Email verified successfully' });
+      expect(result).toEqual({ message: 'Email verified successfully', code: 'auth.email.verified' });
     });
   });
 
@@ -531,6 +531,7 @@ describe('AuthService', () => {
       );
       expect(result).toEqual({
         message: 'Password reset successfully. Please log in again.',
+        code: 'auth.password_reset.success',
       });
     });
   });

@@ -258,7 +258,7 @@ describe('AdminRolesService', () => {
         'role',
         expect.any(Object),
       );
-      expect(result).toEqual({ message: 'Permission removed from role' });
+      expect(result).toEqual({ message: 'Permission removed from role', code: 'admin.role.permission.removed' });
     });
   });
 

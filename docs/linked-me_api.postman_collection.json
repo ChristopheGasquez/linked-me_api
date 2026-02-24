@@ -2,6 +2,7 @@
 	"info": {
 		"_postman_id": "9c3140ab-f4c7-4e33-a173-01a1f3ff4187",
 		"name": "linked-me_api",
+		"description": "linked-me REST API\n\n## Response format\n\nAll success responses include a machine-readable `code` field for client-side i18n:\n```json\n{ \"message\": \"Logged out successfully\", \"code\": \"auth.logout.success\" }\n```\n\nAll error responses are normalized to:\n```json\n{\n  \"statusCode\": 401,\n  \"error\": \"Unauthorized\",\n  \"message\": \"Invalid credentials\",\n  \"code\": \"auth.login.invalid_credentials\"\n}\n```\n\nThe `code` field follows the format `module.action.result`. It is always present on business errors and success messages. It may be absent on framework-level errors (e.g. validation 400).\n\nAll available codes are defined in `src/common/constants/response-codes.ts`.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "2920763"
 	},
@@ -121,6 +122,57 @@
 							"path": [
 								"auth",
 								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "auth/verify-email",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auth/verify-email?token=<token_received_by_email>",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"verify-email"
+							],
+							"query": [
+								{
+									"key": "token",
+									"value": "<token_received_by_email>"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "auth/resend-verification",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"user@example.com\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/resend-verification",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"resend-verification"
 							]
 						}
 					},
