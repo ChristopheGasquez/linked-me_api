@@ -25,6 +25,7 @@ import { PermissionsGuard } from '../../auth/guards/permissions.guard.js';
 import { RequirePermissions } from '../../auth/decorators/permissions.decorator.js';
 import { Permissions } from '../../auth/permissions.constants.js';
 import { MessageResponseDto } from '../../../common/dto/message-response.dto.js';
+import { ErrorResponseDto } from '../../../common/dto/error-response.dto.js';
 import { ApiPaginatedResponse } from '../../../common/pagination/index.js';
 
 @ApiTags('Admin / Users')
@@ -35,29 +36,27 @@ import { ApiPaginatedResponse } from '../../../common/pagination/index.js';
 export class AdminUsersController {
   constructor(private usersService: AdminUsersService) {}
 
-  @ApiOperation({
-    summary: 'Lister les utilisateurs avec pagination, tri et filtres',
-  })
-  @ApiPaginatedResponse(UserAdminResponseDto, 'Liste paginée des utilisateurs')
+  @ApiOperation({ summary: 'List users with pagination, sorting and filters' })
+  @ApiPaginatedResponse(UserAdminResponseDto, 'Paginated list of users')
   @RequirePermissions(Permissions.ADMIN_USER_READ)
   @Get('users')
   findAllUsers(@Query() query: FindUsersQueryDto) {
     return this.usersService.findAllUsers(query);
   }
 
-  @ApiOperation({ summary: 'Récupérer un utilisateur par son ID' })
-  @ApiResponse({ status: 200, type: UserAdminResponseDto, description: 'Utilisateur trouvé' })
-  @ApiResponse({ status: 404, description: 'Utilisateur non trouvé' })
+  @ApiOperation({ summary: 'Get a user by ID' })
+  @ApiResponse({ status: 200, type: UserAdminResponseDto, description: 'User found' })
+  @ApiResponse({ status: 404, description: 'User not found', type: ErrorResponseDto })
   @RequirePermissions(Permissions.ADMIN_USER_READ)
   @Get('users/:id')
   findUserById(@Param('id', ParseIntPipe) id: number) {
     return this.usersService.findUserById(id);
   }
 
-  @ApiOperation({ summary: 'Assigner un rôle à un utilisateur' })
-  @ApiResponse({ status: 201, type: MessageResponseDto, description: 'Rôle assigné' })
-  @ApiResponse({ status: 400, description: "L'utilisateur a déjà ce rôle" })
-  @ApiResponse({ status: 404, description: 'Utilisateur ou rôle non trouvé' })
+  @ApiOperation({ summary: 'Assign a role to a user' })
+  @ApiResponse({ status: 201, type: MessageResponseDto, description: 'Role assigned' })
+  @ApiResponse({ status: 400, description: 'User already has this role', type: ErrorResponseDto })
+  @ApiResponse({ status: 404, description: 'User or role not found', type: ErrorResponseDto })
   @RequirePermissions(Permissions.ADMIN_USER_ASSIGN_ROLE)
   @Post('users/:id/roles')
   addRoleToUser(
@@ -68,9 +67,9 @@ export class AdminUsersController {
     return this.usersService.addRoleToUser(req.user.id, id, dto.role);
   }
 
-  @ApiOperation({ summary: "Retirer un rôle d'un utilisateur" })
-  @ApiResponse({ status: 200, type: MessageResponseDto, description: 'Rôle retiré' })
-  @ApiResponse({ status: 404, description: 'Association non trouvée' })
+  @ApiOperation({ summary: 'Remove a role from a user' })
+  @ApiResponse({ status: 200, type: MessageResponseDto, description: 'Role removed' })
+  @ApiResponse({ status: 404, description: 'Association not found', type: ErrorResponseDto })
   @RequirePermissions(Permissions.ADMIN_USER_ASSIGN_ROLE)
   @Delete('users/:id/roles/:roleId')
   removeRoleFromUser(
@@ -81,9 +80,9 @@ export class AdminUsersController {
     return this.usersService.removeRoleFromUser(req.user.id, userId, roleId);
   }
 
-  @ApiOperation({ summary: 'Supprimer un utilisateur' })
-  @ApiResponse({ status: 200, type: MessageResponseDto, description: 'Utilisateur supprimé' })
-  @ApiResponse({ status: 404, description: 'Utilisateur non trouvé' })
+  @ApiOperation({ summary: 'Delete a user' })
+  @ApiResponse({ status: 200, type: MessageResponseDto, description: 'User deleted' })
+  @ApiResponse({ status: 404, description: 'User not found', type: ErrorResponseDto })
   @RequirePermissions(Permissions.ADMIN_USER_DELETE)
   @Delete('users/:id')
   deleteUser(@Request() req: any, @Param('id', ParseIntPipe) id: number) {

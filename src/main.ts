@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module.js';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter.js';
 import { AuthModule } from './core/auth/auth.module.js';
 import { ProfilesModule } from './core/profiles/profiles.module.js';
 import { AdminModule } from './core/admin/admin.module.js';
@@ -19,6 +20,7 @@ async function bootstrap() {
     credentials: true,
   });
 
+  app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
   if (process.env.SWAGGER_ENABLED === 'true') {

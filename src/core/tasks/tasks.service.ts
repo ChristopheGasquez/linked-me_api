@@ -6,6 +6,7 @@ import { ProfilesService } from '../profiles/profiles.service.js';
 import { AuditService } from '../audit/audit.service.js';
 import { Permissions } from '../auth/permissions.constants.js';
 import { MS_PER_DAY } from '../../common/constants.js';
+import { ResponseCodes } from '../../common/constants/response-codes.js';
 
 @Injectable()
 export class TasksService {
@@ -34,7 +35,7 @@ export class TasksService {
       'task',
       { count, ttlHours: ttl },
     );
-    return { message: `${count} unverified account(s) deleted` };
+    return { message: `${count} unverified account(s) deleted`, code: ResponseCodes.TASK_CLEANUP_UNVERIFIED_USERS };
   }
 
   @Cron('0 2 * * *')
@@ -63,6 +64,7 @@ export class TasksService {
     );
     return {
       message: `${total} expired token(s) deleted`,
+      code: ResponseCodes.TASK_CLEANUP_EXPIRED_TOKENS,
       refreshTokens: refreshResult.count,
       passwordResets: resetResult.count,
     };
@@ -94,6 +96,7 @@ export class TasksService {
     );
     return {
       message: `${result.count} audit log(s) deleted`,
+      code: ResponseCodes.TASK_CLEANUP_AUDIT_LOGS,
       olderThanDays: days,
     };
   }
@@ -112,7 +115,7 @@ export class TasksService {
         'task',
         { count: 0, deleted: [] },
       );
-      return { message: 'No orphaned permissions found', deleted: [] };
+      return { message: 'No orphaned permissions found', code: ResponseCodes.TASK_CLEANUP_ORPHANED_PERMISSIONS_NONE, deleted: [] };
     }
 
     const ids = orphaned.map((p) => p.id);
@@ -130,6 +133,7 @@ export class TasksService {
     );
     return {
       message: `${orphaned.length} orphaned permission(s) deleted`,
+      code: ResponseCodes.TASK_CLEANUP_ORPHANED_PERMISSIONS_DONE,
       deleted: orphaned.map((p) => p.name),
     };
   }

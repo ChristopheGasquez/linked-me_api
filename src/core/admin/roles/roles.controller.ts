@@ -31,6 +31,7 @@ import { PermissionsGuard } from '../../auth/guards/permissions.guard.js';
 import { RequirePermissions } from '../../auth/decorators/permissions.decorator.js';
 import { Permissions } from '../../auth/permissions.constants.js';
 import { MessageResponseDto } from '../../../common/dto/message-response.dto.js';
+import { ErrorResponseDto } from '../../../common/dto/error-response.dto.js';
 import { ApiPaginatedResponse } from '../../../common/pagination/index.js';
 
 @ApiTags('Admin / Roles')
@@ -43,41 +44,36 @@ export class AdminRolesController {
 
   // ─── Rôles ───────────────────────────────────────────────
 
-  @ApiOperation({ summary: 'Lister tous les rôles avec leurs permissions' })
-  @ApiPaginatedResponse(RoleResponseDto, 'Liste paginée des rôles')
+  @ApiOperation({ summary: 'List all roles with their permissions' })
+  @ApiPaginatedResponse(RoleResponseDto, 'Paginated list of roles')
   @RequirePermissions(Permissions.ADMIN_ROLE_READ)
   @Get('roles')
   findAllRoles(@Query() query: FindRolesQueryDto) {
     return this.rolesService.findAllRoles(query);
   }
 
-  @ApiOperation({ summary: 'Récupérer un rôle par son ID' })
-  @ApiResponse({ status: 200, type: RoleResponseDto, description: 'Rôle trouvé' })
-  @ApiResponse({ status: 404, description: 'Rôle non trouvé' })
+  @ApiOperation({ summary: 'Get a role by ID' })
+  @ApiResponse({ status: 200, type: RoleResponseDto, description: 'Role found' })
+  @ApiResponse({ status: 404, description: 'Role not found', type: ErrorResponseDto })
   @RequirePermissions(Permissions.ADMIN_ROLE_READ)
   @Get('roles/:id')
   findRoleById(@Param('id', ParseIntPipe) id: number) {
     return this.rolesService.findRoleById(id);
   }
 
-  @ApiOperation({ summary: 'Créer un nouveau rôle' })
-  @ApiResponse({ status: 201, type: RoleBasicResponseDto, description: 'Rôle créé' })
-  @ApiResponse({ status: 400, description: 'Le rôle existe déjà' })
+  @ApiOperation({ summary: 'Create a new role' })
+  @ApiResponse({ status: 201, type: RoleBasicResponseDto, description: 'Role created' })
+  @ApiResponse({ status: 400, description: 'Role already exists', type: ErrorResponseDto })
   @RequirePermissions(Permissions.ADMIN_ROLE_MANAGE)
   @Post('roles')
   createRole(@Request() req: any, @Body() dto: CreateRoleDto) {
     return this.rolesService.createRole(req.user.id, dto.name);
   }
 
-  @ApiOperation({
-    summary: 'Supprimer un rôle (si non assigné à un utilisateur)',
-  })
-  @ApiResponse({ status: 200, type: MessageResponseDto, description: 'Rôle supprimé' })
-  @ApiResponse({
-    status: 400,
-    description: 'Rôle encore assigné à des utilisateurs',
-  })
-  @ApiResponse({ status: 404, description: 'Rôle non trouvé' })
+  @ApiOperation({ summary: 'Delete a role (if not assigned to any user)' })
+  @ApiResponse({ status: 200, type: MessageResponseDto, description: 'Role deleted' })
+  @ApiResponse({ status: 400, description: 'Role still assigned to users', type: ErrorResponseDto })
+  @ApiResponse({ status: 404, description: 'Role not found', type: ErrorResponseDto })
   @RequirePermissions(Permissions.ADMIN_ROLE_MANAGE)
   @Delete('roles/:id')
   deleteRole(@Request() req: any, @Param('id', ParseIntPipe) id: number) {
@@ -86,14 +82,10 @@ export class AdminRolesController {
 
   // ─── Permissions sur un rôle ─────────────────────────────
 
-  @ApiOperation({ summary: 'Ajouter des permissions à un rôle' })
-  @ApiResponse({
-    status: 200,
-    type: RoleResponseDto,
-    description: 'Permissions ajoutées, retourne le rôle mis à jour',
-  })
-  @ApiResponse({ status: 400, description: 'Permissions inconnues' })
-  @ApiResponse({ status: 404, description: 'Rôle non trouvé' })
+  @ApiOperation({ summary: 'Add permissions to a role' })
+  @ApiResponse({ status: 200, type: RoleResponseDto, description: 'Permissions added, returns the updated role' })
+  @ApiResponse({ status: 400, description: 'Unknown permissions', type: ErrorResponseDto })
+  @ApiResponse({ status: 404, description: 'Role not found', type: ErrorResponseDto })
   @RequirePermissions(Permissions.ADMIN_ROLE_MANAGE)
   @Post('roles/:id/permissions')
   addPermissions(
@@ -108,9 +100,9 @@ export class AdminRolesController {
     );
   }
 
-  @ApiOperation({ summary: "Retirer une permission d'un rôle" })
-  @ApiResponse({ status: 200, type: MessageResponseDto, description: 'Permission retirée' })
-  @ApiResponse({ status: 404, description: 'Association non trouvée' })
+  @ApiOperation({ summary: 'Remove a permission from a role' })
+  @ApiResponse({ status: 200, type: MessageResponseDto, description: 'Permission removed' })
+  @ApiResponse({ status: 404, description: 'Association not found', type: ErrorResponseDto })
   @RequirePermissions(Permissions.ADMIN_ROLE_MANAGE)
   @Delete('roles/:id/permissions/:permId')
   removePermission(
@@ -123,8 +115,8 @@ export class AdminRolesController {
 
   // ─── Permissions (consultation) ──────────────────────────
 
-  @ApiOperation({ summary: 'Lister toutes les permissions disponibles' })
-  @ApiPaginatedResponse(PermissionResponseDto, 'Liste paginée des permissions')
+  @ApiOperation({ summary: 'List all available permissions' })
+  @ApiPaginatedResponse(PermissionResponseDto, 'Paginated list of permissions')
   @RequirePermissions(Permissions.ADMIN_PERMISSION_READ)
   @Get('permissions')
   findAllPermissions(@Query() query: FindPermissionsQueryDto) {

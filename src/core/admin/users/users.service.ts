@@ -8,6 +8,7 @@ import { AuditService } from '../../audit/audit.service.js';
 import { UserCacheService } from '../../auth/cache/user-cache.service.js';
 import { paginate } from '../../../common/pagination/index.js';
 import { FindUsersQueryDto } from './dto/find-users-query.dto.js';
+import { ResponseCodes } from '../../../common/constants/response-codes.js';
 
 @Injectable()
 export class AdminUsersService {
@@ -52,25 +53,25 @@ export class AdminUsersService {
       where: { id: userId },
       include: { roles: { include: { role: true } } },
     });
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new NotFoundException({ message: 'User not found', code: ResponseCodes.ADMIN_USER_NOT_FOUND });
     const { password: _password, ...rest } = user;
     return { ...rest, roles: rest.roles.map((ur) => ur.role) };
   }
 
   async addRoleToUser(actorId: number, userId: number, roleName: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new NotFoundException({ message: 'User not found', code: ResponseCodes.ADMIN_USER_NOT_FOUND });
 
     const role = await this.prisma.role.findUnique({
       where: { name: roleName },
     });
-    if (!role) throw new NotFoundException(`Role "${roleName}" not found`);
+    if (!role) throw new NotFoundException({ message: `Role "${roleName}" not found`, code: ResponseCodes.ADMIN_ROLE_NOT_FOUND });
 
     const existing = await this.prisma.userRole.findUnique({
       where: { userId_roleId: { userId, roleId: role.id } },
     });
     if (existing) {
-      throw new BadRequestException(`User already has role "${roleName}"`);
+      throw new BadRequestException({ message: `User already has role "${roleName}"`, code: ResponseCodes.ADMIN_USER_ROLE_ALREADY_ASSIGNED });
     }
 
     await this.prisma.userRole.create({ data: { userId, roleId: role.id } });
@@ -78,7 +79,7 @@ export class AdminUsersService {
       roleName,
     });
     this.userCache.invalidate(userId);
-    return { message: `Role "${roleName}" assigned to user ${userId}` };
+    return { message: `Role "${roleName}" assigned to user ${userId}`, code: ResponseCodes.ADMIN_USER_ROLE_ASSIGNED };
   }
 
   async removeRoleFromUser(actorId: number, userId: number, roleId: number) {
@@ -87,7 +88,7 @@ export class AdminUsersService {
       include: { role: true },
     });
     if (!link) {
-      throw new NotFoundException('Role not assigned to this user');
+      throw new NotFoundException({ message: 'Role not assigned to this user', code: ResponseCodes.ADMIN_USER_ROLE_NOT_ASSIGNED });
     }
 
     await this.prisma.userRole.delete({
@@ -97,7 +98,7 @@ export class AdminUsersService {
       roleName: link.role.name,
     });
     this.userCache.invalidate(userId);
-    return { message: 'Role removed from user' };
+    return { message: 'Role removed from user', code: ResponseCodes.ADMIN_USER_ROLE_REMOVED };
   }
 
   async deleteUser(actorId: number, userId: number) {
@@ -105,12 +106,10 @@ export class AdminUsersService {
       where: { id: userId },
       include: { roles: true },
     });
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new NotFoundException({ message: 'User not found', code: ResponseCodes.ADMIN_USER_NOT_FOUND });
 
     if (user.roles.length > 0) {
-      throw new BadRequestException(
-        'Cannot delete: remove all roles from this user first',
-      );
+      throw new BadRequestException({ message: 'Cannot delete: remove all roles from this user first', code: ResponseCodes.ADMIN_USER_HAS_ROLES });
     }
 
     await this.prisma.user.delete({ where: { id: userId } });
@@ -119,6 +118,6 @@ export class AdminUsersService {
       name: user.name,
     });
     this.userCache.invalidate(userId);
-    return { message: `User ${userId} deleted` };
+    return { message: `User ${userId} deleted`, code: ResponseCodes.ADMIN_USER_DELETED };
   }
 }

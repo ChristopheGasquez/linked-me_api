@@ -9,6 +9,7 @@ import { UserCacheService } from '../../auth/cache/user-cache.service.js';
 import { paginate } from '../../../common/pagination/index.js';
 import { FindRolesQueryDto } from './dto/find-roles-query.dto.js';
 import { FindPermissionsQueryDto } from './dto/find-permissions-query.dto.js';
+import { ResponseCodes } from '../../../common/constants/response-codes.js';
 
 @Injectable()
 export class AdminRolesService {
@@ -37,7 +38,7 @@ export class AdminRolesService {
       where: { id: roleId },
       include: { permissions: { include: { permission: true } } },
     });
-    if (!role) throw new NotFoundException('Role not found');
+    if (!role) throw new NotFoundException({ message: 'Role not found', code: ResponseCodes.ADMIN_ROLE_NOT_FOUND });
     return {
       ...role,
       permissions: role.permissions.map((rp) => rp.permission),
@@ -47,7 +48,7 @@ export class AdminRolesService {
   async createRole(actorId: number, name: string) {
     const existing = await this.prisma.role.findUnique({ where: { name } });
     if (existing) {
-      throw new BadRequestException(`Role "${name}" already exists`);
+      throw new BadRequestException({ message: `Role "${name}" already exists`, code: ResponseCodes.ADMIN_ROLE_ALREADY_EXISTS });
     }
     const role = await this.prisma.role.create({ data: { name } });
     await this.auditService.log('role.create', actorId, role.id, 'role', {
@@ -58,13 +59,11 @@ export class AdminRolesService {
 
   async deleteRole(actorId: number, roleId: number) {
     const role = await this.prisma.role.findUnique({ where: { id: roleId } });
-    if (!role) throw new NotFoundException('Role not found');
+    if (!role) throw new NotFoundException({ message: 'Role not found', code: ResponseCodes.ADMIN_ROLE_NOT_FOUND });
 
     const usersCount = await this.prisma.userRole.count({ where: { roleId } });
     if (usersCount > 0) {
-      throw new BadRequestException(
-        `Cannot delete: role is still assigned to ${usersCount} user(s)`,
-      );
+      throw new BadRequestException({ message: `Cannot delete: role is still assigned to ${usersCount} user(s)`, code: ResponseCodes.ADMIN_ROLE_HAS_USERS });
     }
 
     await this.prisma.role.delete({ where: { id: roleId } });
@@ -72,7 +71,7 @@ export class AdminRolesService {
       name: role.name,
     });
     this.userCache.invalidateAll();
-    return { message: `Role "${role.name}" deleted` };
+    return { message: `Role "${role.name}" deleted`, code: ResponseCodes.ADMIN_ROLE_DELETED };
   }
 
   async addPermissionsToRole(
@@ -81,7 +80,7 @@ export class AdminRolesService {
     permissionNames: string[],
   ) {
     const role = await this.prisma.role.findUnique({ where: { id: roleId } });
-    if (!role) throw new NotFoundException('Role not found');
+    if (!role) throw new NotFoundException({ message: 'Role not found', code: ResponseCodes.ADMIN_ROLE_NOT_FOUND });
 
     const permissions = await this.prisma.permission.findMany({
       where: { name: { in: permissionNames } },
@@ -90,9 +89,7 @@ export class AdminRolesService {
     const foundNames = permissions.map((p) => p.name);
     const unknown = permissionNames.filter((n) => !foundNames.includes(n));
     if (unknown.length > 0) {
-      throw new BadRequestException(
-        `Unknown permissions: ${unknown.join(', ')}`,
-      );
+      throw new BadRequestException({ message: `Unknown permissions: ${unknown.join(', ')}`, code: ResponseCodes.ADMIN_PERMISSION_UNKNOWN });
     }
 
     for (const perm of permissions) {
@@ -132,7 +129,7 @@ export class AdminRolesService {
       include: { role: true, permission: true },
     });
     if (!link) {
-      throw new NotFoundException('Permission not assigned to this role');
+      throw new NotFoundException({ message: 'Permission not assigned to this role', code: ResponseCodes.ADMIN_ROLE_PERMISSION_NOT_ASSIGNED });
     }
 
     await this.prisma.rolePermission.delete({
@@ -146,7 +143,7 @@ export class AdminRolesService {
       { roleName: link.role.name, permissionName: link.permission.name },
     );
     this.userCache.invalidateAll();
-    return { message: 'Permission removed from role' };
+    return { message: 'Permission removed from role', code: ResponseCodes.ADMIN_ROLE_PERMISSION_REMOVED };
   }
 
   async findAllPermissions(query: FindPermissionsQueryDto) {
