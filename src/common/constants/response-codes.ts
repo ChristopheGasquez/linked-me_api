@@ -1,4 +1,7 @@
 export const ResponseCodes = {
+  // ─── Throttle ─────────────────────────────────────────────
+  THROTTLE_TOO_MANY_REQUESTS:             'throttle.too_many_requests',
+
   // ─── Validation ──────────────────────────────────────────
   VALIDATION_FAILED:                      'validation.failed',
 

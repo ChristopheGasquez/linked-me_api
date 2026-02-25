@@ -48,7 +48,7 @@ export class AuthController {
   @ApiResponse({ status: 201, type: RegisterResponseDto, description: 'User created' })
   @ApiResponse({ status: 400, description: 'Validation failed (email format, password format)', type: ValidationErrorResponseDto })
   @ApiResponse({ status: 409, description: 'Email already in use', type: ErrorResponseDto })
-  @ApiResponse({ status: 429, description: 'Too many attempts, try again in 15 minutes', type: ErrorResponseDto })
+  @ApiResponse({ status: 429, description: 'Too many attempts — code: throttle.too_many_requests, params.retryAfter: seconds until retry', type: ErrorResponseDto })
   @Throttle({ global: THROTTLE.AUTH })
   @Post('register')
   register(@Body() dto: RegisterDto) {
@@ -59,7 +59,7 @@ export class AuthController {
   @ApiResponse({ status: 200, type: LoginResponseDto, description: 'JWT token returned' })
   @ApiResponse({ status: 401, description: 'Invalid email or password', type: ErrorResponseDto })
   @ApiResponse({ status: 403, description: 'Account temporarily locked', type: ErrorResponseDto })
-  @ApiResponse({ status: 429, description: 'Too many attempts, try again in 15 minutes', type: ErrorResponseDto })
+  @ApiResponse({ status: 429, description: 'Too many attempts — code: throttle.too_many_requests, params.retryAfter: seconds until retry', type: ErrorResponseDto })
   @Throttle({ global: THROTTLE.AUTH })
   @Post('login')
   login(@Body() dto: LoginDto) {
@@ -76,7 +76,7 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Resend verification email' })
   @ApiResponse({ status: 200, type: MessageResponseDto, description: 'Email sent if account exists and is not verified' })
-  @ApiResponse({ status: 429, description: 'Too many attempts, try again in 1 hour', type: ErrorResponseDto })
+  @ApiResponse({ status: 429, description: 'Too many attempts — code: throttle.too_many_requests, params.retryAfter: seconds until retry', type: ErrorResponseDto })
   @Throttle({ global: THROTTLE.SENSITIVE })
   @Post('resend-verification')
   resendVerification(@Body() dto: ResendVerificationDto) {
@@ -85,7 +85,7 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Request a password reset' })
   @ApiResponse({ status: 200, type: MessageResponseDto, description: 'Email sent if account exists' })
-  @ApiResponse({ status: 429, description: 'Too many attempts, try again in 1 hour', type: ErrorResponseDto })
+  @ApiResponse({ status: 429, description: 'Too many attempts — code: throttle.too_many_requests, params.retryAfter: seconds until retry', type: ErrorResponseDto })
   @Throttle({ global: THROTTLE.SENSITIVE })
   @Post('forgot-password')
   forgotPassword(@Body() dto: ForgotPasswordDto) {
@@ -96,7 +96,7 @@ export class AuthController {
   @ApiResponse({ status: 200, type: MessageResponseDto, description: 'Password reset, all sessions revoked' })
   @ApiResponse({ status: 400, description: 'Validation failed (password format)', type: ValidationErrorResponseDto })
   @ApiResponse({ status: 401, description: 'Invalid or expired token', type: ErrorResponseDto })
-  @ApiResponse({ status: 429, description: 'Too many attempts', type: ErrorResponseDto })
+  @ApiResponse({ status: 429, description: 'Too many attempts — code: throttle.too_many_requests, params.retryAfter: seconds until retry', type: ErrorResponseDto })
   @Throttle({ global: THROTTLE.PASSWORD_RESET })
   @Post('reset-password')
   resetPassword(@Body() dto: ResetPasswordDto) {

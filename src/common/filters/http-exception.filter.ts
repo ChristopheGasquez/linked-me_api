@@ -20,7 +20,26 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     let body: Record<string, unknown>;
 
+    let parsed: Record<string, unknown> | null = null;
     if (typeof exceptionResponse === 'string') {
+      try {
+        parsed = JSON.parse(exceptionResponse) as Record<string, unknown>;
+      } catch {
+        // not JSON, treat as plain message
+      }
+    }
+
+    if (parsed !== null) {
+      const { message, code, params, ...rest } = parsed;
+      body = {
+        statusCode: status,
+        error: errorText,
+        message: message ?? errorText,
+        ...(code !== undefined && { code }),
+        ...(params !== undefined && { params }),
+        ...rest,
+      };
+    } else if (typeof exceptionResponse === 'string') {
       body = { statusCode: status, message: exceptionResponse, error: errorText };
     } else {
       const { message, code, params, ...rest } = exceptionResponse as Record<string, unknown>;

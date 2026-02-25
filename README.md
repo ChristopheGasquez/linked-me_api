@@ -214,6 +214,18 @@ All endpoints are limited to **60 requests per minute** per IP.
 Authentication endpoints (`/auth/login`, `/auth/register`) have a stricter limit: **10 requests per 15 minutes** per IP.
 `/auth/resend-verification` is limited to **3 requests per hour** per IP. Exceeding these limits returns a `429 Too Many Requests`.
 
+Rate limit errors follow the same normalized format as other errors, with `params.retryAfter` indicating how many seconds to wait before retrying:
+
+```json
+{
+  "statusCode": 429,
+  "error": "TOO_MANY_REQUESTS",
+  "message": "Too Many Requests",
+  "code": "throttle.too_many_requests",
+  "params": { "retryAfter": 42 }
+}
+```
+
 Access control is based on **RBAC** (Role-Based Access Control):
 - Each user has one or more **roles** (USER, ADMIN...)
 - Each role has **permissions** (e.g. `realm:admin`, `admin:role:read`, `profile:read`)
