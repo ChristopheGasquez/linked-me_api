@@ -8,6 +8,6 @@ export class ForgotPasswordDto {
 
   @ApiPropertyOptional({ example: 'https://app.example.com/reset-password' })
   @IsOptional()
-  @IsUrl({}, { message: 'callbackUrl must be a valid URL' })
+  @IsUrl({ require_tld: false }, { message: 'callbackUrl must be a valid URL' })
   callbackUrl?: string;
 }
