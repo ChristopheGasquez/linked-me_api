@@ -46,7 +46,7 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({ status: 201, type: RegisterResponseDto, description: 'User created' })
-  @ApiResponse({ status: 400, description: 'Validation failed (email format, password format)', type: ValidationErrorResponseDto })
+  @ApiResponse({ status: 400, description: 'Validation failed (email format, password format) or callbackUrl not in whitelist — code: auth.callback_url.not_allowed', type: ValidationErrorResponseDto })
   @ApiResponse({ status: 409, description: 'Email already in use', type: ErrorResponseDto })
   @ApiResponse({ status: 429, description: 'Too many attempts — code: throttle.too_many_requests, params.retryAfter: seconds until retry', type: ErrorResponseDto })
   @Throttle({ global: THROTTLE.AUTH })
@@ -76,20 +76,22 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Resend verification email' })
   @ApiResponse({ status: 200, type: MessageResponseDto, description: 'Email sent if account exists and is not verified' })
+  @ApiResponse({ status: 400, description: 'callbackUrl not in whitelist — code: auth.callback_url.not_allowed', type: ErrorResponseDto })
   @ApiResponse({ status: 429, description: 'Too many attempts — code: throttle.too_many_requests, params.retryAfter: seconds until retry', type: ErrorResponseDto })
   @Throttle({ global: THROTTLE.SENSITIVE })
   @Post('resend-verification')
   resendVerification(@Body() dto: ResendVerificationDto) {
-    return this.authService.resendVerificationEmail(dto.email);
+    return this.authService.resendVerificationEmail(dto.email, dto.callbackUrl);
   }
 
   @ApiOperation({ summary: 'Request a password reset' })
   @ApiResponse({ status: 200, type: MessageResponseDto, description: 'Email sent if account exists' })
+  @ApiResponse({ status: 400, description: 'callbackUrl not in whitelist — code: auth.callback_url.not_allowed', type: ErrorResponseDto })
   @ApiResponse({ status: 429, description: 'Too many attempts — code: throttle.too_many_requests, params.retryAfter: seconds until retry', type: ErrorResponseDto })
   @Throttle({ global: THROTTLE.SENSITIVE })
   @Post('forgot-password')
   forgotPassword(@Body() dto: ForgotPasswordDto) {
-    return this.authService.forgotPassword(dto.email);
+    return this.authService.forgotPassword(dto.email, dto.callbackUrl);
   }
 
   @ApiOperation({ summary: 'Reset password with the token received by email' })

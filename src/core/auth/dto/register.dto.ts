@@ -1,11 +1,13 @@
 import {
   IsEmail,
+  IsOptional,
   IsString,
+  IsUrl,
   MinLength,
   MaxLength,
   Matches,
 } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   PASSWORD_REGEX,
   PASSWORD_REGEX_MESSAGE,
@@ -29,4 +31,9 @@ export class RegisterDto {
   @MinLength(2, { message: 'Name must be at least 2 characters' })
   @MaxLength(100)
   name: string;
+
+  @ApiPropertyOptional({ example: 'https://app.example.com/verify-email' })
+  @IsOptional()
+  @IsUrl({}, { message: 'callbackUrl must be a valid URL' })
+  callbackUrl?: string;
 }

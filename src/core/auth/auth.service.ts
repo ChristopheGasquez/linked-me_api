@@ -1,5 +1,6 @@
 import {
   Injectable,
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   NotFoundException,
@@ -37,6 +38,8 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
+    this.validateCallbackUrl(dto.callbackUrl);
+
     const existingUser = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
@@ -68,6 +71,7 @@ export class AuthService {
       user.email,
       user.name,
       verificationToken,
+      dto.callbackUrl,
     );
 
     await this.auditService.log('user.create', user.id, user.id, 'user', {
@@ -268,6 +272,27 @@ export class AuthService {
     return { message: 'All sessions revoked', code: ResponseCodes.AUTH_LOGOUT_ALL_SUCCESS };
   }
 
+  private validateCallbackUrl(callbackUrl: string | undefined): void {
+    if (!callbackUrl) return;
+    const raw = this.config.get<string>('ALLOWED_REDIRECT_ORIGINS', '');
+    const allowedOrigins = raw ? raw.split(',').map((o) => o.trim()) : [];
+    let origin: string;
+    try {
+      origin = new URL(callbackUrl).origin;
+    } catch {
+      throw new BadRequestException({
+        message: 'Callback URL not allowed',
+        code: ResponseCodes.AUTH_CALLBACK_URL_NOT_ALLOWED,
+      });
+    }
+    if (!allowedOrigins.includes(origin)) {
+      throw new BadRequestException({
+        message: 'Callback URL not allowed',
+        code: ResponseCodes.AUTH_CALLBACK_URL_NOT_ALLOWED,
+      });
+    }
+  }
+
   private async createVerificationToken(userId: number): Promise<string> {
     await this.prisma.emailVerification.deleteMany({ where: { userId } });
 
@@ -322,7 +347,9 @@ export class AuthService {
     return { message: 'Email verified successfully', code: ResponseCodes.AUTH_EMAIL_VERIFIED };
   }
 
-  async forgotPassword(email: string) {
+  async forgotPassword(email: string, callbackUrl?: string) {
+    this.validateCallbackUrl(callbackUrl);
+
     const user = await this.prisma.user.findUnique({ where: { email } });
 
     // Generic response: never reveal whether email exists
@@ -350,6 +377,7 @@ export class AuthService {
       user.email,
       user.name,
       rawToken,
+      callbackUrl,
     );
 
     return {
@@ -401,7 +429,9 @@ export class AuthService {
     };
   }
 
-  async resendVerificationEmail(email: string) {
+  async resendVerificationEmail(email: string, callbackUrl?: string) {
+    this.validateCallbackUrl(callbackUrl);
+
     const user = await this.prisma.user.findUnique({ where: { email } });
 
     if (!user || user.isEmailChecked) {
@@ -416,6 +446,7 @@ export class AuthService {
       user.email,
       user.name,
       verificationToken,
+      callbackUrl,
     );
 
     return {
