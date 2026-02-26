@@ -36,8 +36,16 @@ export class ProfilesController {
   constructor(private profilesService: ProfilesService) {}
 
   @ApiOperation({ summary: 'Get the public profile of a user' })
-  @ApiResponse({ status: 200, type: ProfileResponseDto, description: 'User profile (id, name, email, createdAt)' })
-  @ApiResponse({ status: 404, description: 'User not found', type: ErrorResponseDto })
+  @ApiResponse({
+    status: 200,
+    type: ProfileResponseDto,
+    description: 'User profile (id, name, email, createdAt)',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+    type: ErrorResponseDto,
+  })
   @RequirePermissions(Permissions.PROFILE_READ)
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
@@ -45,7 +53,11 @@ export class ProfilesController {
   }
 
   @ApiOperation({ summary: 'Update your own profile' })
-  @ApiResponse({ status: 200, type: ProfileResponseDto, description: 'Profile updated' })
+  @ApiResponse({
+    status: 200,
+    type: ProfileResponseDto,
+    description: 'Profile updated',
+  })
   @RequirePermissions(Permissions.PROFILE_UPDATE_OWN)
   @Patch('me')
   update(@Request() req: any, @Body() dto: UpdateProfileDto) {
@@ -53,9 +65,21 @@ export class ProfilesController {
   }
 
   @ApiOperation({ summary: 'Change your password' })
-  @ApiResponse({ status: 200, type: MessageResponseDto, description: 'Password changed, all sessions revoked' })
-  @ApiResponse({ status: 400, description: 'Validation failed (password format)', type: ValidationErrorResponseDto })
-  @ApiResponse({ status: 401, description: 'Current password incorrect', type: ErrorResponseDto })
+  @ApiResponse({
+    status: 200,
+    type: MessageResponseDto,
+    description: 'Password changed, all sessions revoked',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Validation failed (password format)',
+    type: ValidationErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Current password incorrect',
+    type: ErrorResponseDto,
+  })
   @RequirePermissions(Permissions.PROFILE_UPDATE_OWN)
   @Patch('me/password')
   changePassword(@Request() req: any, @Body() dto: ChangePasswordDto) {
@@ -67,7 +91,11 @@ export class ProfilesController {
   }
 
   @ApiOperation({ summary: 'Delete your own account' })
-  @ApiResponse({ status: 200, type: MessageResponseDto, description: 'Account deleted' })
+  @ApiResponse({
+    status: 200,
+    type: MessageResponseDto,
+    description: 'Account deleted',
+  })
   @RequirePermissions(Permissions.PROFILE_DELETE_OWN)
   @Delete('me')
   remove(@Request() req: any) {

@@ -1,5 +1,9 @@
 import { ExecutionContext, Injectable } from '@nestjs/common';
-import { ThrottlerGuard, ThrottlerLimitDetail, ThrottlerException } from '@nestjs/throttler';
+import {
+  ThrottlerGuard,
+  ThrottlerLimitDetail,
+  ThrottlerException,
+} from '@nestjs/throttler';
 import { ResponseCodes } from '../constants/response-codes.js';
 
 @Injectable()

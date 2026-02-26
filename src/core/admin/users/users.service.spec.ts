@@ -188,7 +188,10 @@ describe('AdminUsersService', () => {
         'user',
         { roleName: 'USER' },
       );
-      expect(result).toMatchObject({ code: 'admin.user.role.assigned', params: { roleName: 'USER', userId: 1 } });
+      expect(result).toMatchObject({
+        code: 'admin.user.role.assigned',
+        params: { roleName: 'USER', userId: 1 },
+      });
     });
   });
 
@@ -261,7 +264,10 @@ describe('AdminUsersService', () => {
         'user',
         expect.any(Object),
       );
-      expect(result).toMatchObject({ code: 'admin.user.deleted', params: { userId: 1 } });
+      expect(result).toMatchObject({
+        code: 'admin.user.deleted',
+        params: { userId: 1 },
+      });
     });
   });
 });

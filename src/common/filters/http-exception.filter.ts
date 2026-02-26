@@ -16,7 +16,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const exceptionResponse = exception.getResponse();
 
     const errorText =
-      HttpStatus[status as unknown as keyof typeof HttpStatus] ?? 'Internal Server Error';
+      HttpStatus[status as unknown as keyof typeof HttpStatus] ??
+      'Internal Server Error';
 
     let body: Record<string, unknown>;
 
@@ -40,9 +41,16 @@ export class HttpExceptionFilter implements ExceptionFilter {
         ...rest,
       };
     } else if (typeof exceptionResponse === 'string') {
-      body = { statusCode: status, message: exceptionResponse, error: errorText };
+      body = {
+        statusCode: status,
+        message: exceptionResponse,
+        error: errorText,
+      };
     } else {
-      const { message, code, params, ...rest } = exceptionResponse as Record<string, unknown>;
+      const { message, code, params, ...rest } = exceptionResponse as Record<
+        string,
+        unknown
+      >;
       body = {
         statusCode: status,
         error: errorText,

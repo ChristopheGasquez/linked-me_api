@@ -45,10 +45,28 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @ApiOperation({ summary: 'Register a new user' })
-  @ApiResponse({ status: 201, type: RegisterResponseDto, description: 'User created' })
-  @ApiResponse({ status: 400, description: 'Validation failed (email format, password format) or callbackUrl not in whitelist — code: auth.callback_url.not_allowed', type: ValidationErrorResponseDto })
-  @ApiResponse({ status: 409, description: 'Email already in use', type: ErrorResponseDto })
-  @ApiResponse({ status: 429, description: 'Too many attempts — code: throttle.too_many_requests, params.retryAfter: seconds until retry', type: ErrorResponseDto })
+  @ApiResponse({
+    status: 201,
+    type: RegisterResponseDto,
+    description: 'User created',
+  })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Validation failed (email format, password format) or callbackUrl not in whitelist — code: auth.callback_url.not_allowed',
+    type: ValidationErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Email already in use',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 429,
+    description:
+      'Too many attempts — code: throttle.too_many_requests, params.retryAfter: seconds until retry',
+    type: ErrorResponseDto,
+  })
   @Throttle({ global: THROTTLE.AUTH })
   @Post('register')
   register(@Body() dto: RegisterDto) {
@@ -56,28 +74,69 @@ export class AuthController {
   }
 
   @ApiOperation({ summary: 'Sign in (returns a JWT)' })
-  @ApiResponse({ status: 200, type: LoginResponseDto, description: 'JWT token returned' })
-  @ApiResponse({ status: 401, description: 'Invalid email or password', type: ErrorResponseDto })
-  @ApiResponse({ status: 403, description: 'Account temporarily locked', type: ErrorResponseDto })
-  @ApiResponse({ status: 429, description: 'Too many attempts — code: throttle.too_many_requests, params.retryAfter: seconds until retry', type: ErrorResponseDto })
+  @ApiResponse({
+    status: 200,
+    type: LoginResponseDto,
+    description: 'JWT token returned',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Invalid email or password',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Account temporarily locked',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 429,
+    description:
+      'Too many attempts — code: throttle.too_many_requests, params.retryAfter: seconds until retry',
+    type: ErrorResponseDto,
+  })
   @Throttle({ global: THROTTLE.AUTH })
   @Post('login')
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto.email, dto.password);
   }
 
-  @ApiOperation({ summary: 'Verify email address with the token received by email' })
-  @ApiResponse({ status: 200, type: MessageResponseDto, description: 'Email verified successfully' })
-  @ApiResponse({ status: 401, description: 'Invalid or expired token', type: ErrorResponseDto })
+  @ApiOperation({
+    summary: 'Verify email address with the token received by email',
+  })
+  @ApiResponse({
+    status: 200,
+    type: MessageResponseDto,
+    description: 'Email verified successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Invalid or expired token',
+    type: ErrorResponseDto,
+  })
   @Get('verify-email')
   verifyEmail(@Query('token') token: string) {
     return this.authService.verifyEmail(token);
   }
 
   @ApiOperation({ summary: 'Resend verification email' })
-  @ApiResponse({ status: 200, type: MessageResponseDto, description: 'Email sent if account exists and is not verified' })
-  @ApiResponse({ status: 400, description: 'callbackUrl not in whitelist — code: auth.callback_url.not_allowed', type: ErrorResponseDto })
-  @ApiResponse({ status: 429, description: 'Too many attempts — code: throttle.too_many_requests, params.retryAfter: seconds until retry', type: ErrorResponseDto })
+  @ApiResponse({
+    status: 200,
+    type: MessageResponseDto,
+    description: 'Email sent if account exists and is not verified',
+  })
+  @ApiResponse({
+    status: 400,
+    description:
+      'callbackUrl not in whitelist — code: auth.callback_url.not_allowed',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 429,
+    description:
+      'Too many attempts — code: throttle.too_many_requests, params.retryAfter: seconds until retry',
+    type: ErrorResponseDto,
+  })
   @Throttle({ global: THROTTLE.SENSITIVE })
   @Post('resend-verification')
   resendVerification(@Body() dto: ResendVerificationDto) {
@@ -85,9 +144,23 @@ export class AuthController {
   }
 
   @ApiOperation({ summary: 'Request a password reset' })
-  @ApiResponse({ status: 200, type: MessageResponseDto, description: 'Email sent if account exists' })
-  @ApiResponse({ status: 400, description: 'callbackUrl not in whitelist — code: auth.callback_url.not_allowed', type: ErrorResponseDto })
-  @ApiResponse({ status: 429, description: 'Too many attempts — code: throttle.too_many_requests, params.retryAfter: seconds until retry', type: ErrorResponseDto })
+  @ApiResponse({
+    status: 200,
+    type: MessageResponseDto,
+    description: 'Email sent if account exists',
+  })
+  @ApiResponse({
+    status: 400,
+    description:
+      'callbackUrl not in whitelist — code: auth.callback_url.not_allowed',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 429,
+    description:
+      'Too many attempts — code: throttle.too_many_requests, params.retryAfter: seconds until retry',
+    type: ErrorResponseDto,
+  })
   @Throttle({ global: THROTTLE.SENSITIVE })
   @Post('forgot-password')
   forgotPassword(@Body() dto: ForgotPasswordDto) {
@@ -95,10 +168,27 @@ export class AuthController {
   }
 
   @ApiOperation({ summary: 'Reset password with the token received by email' })
-  @ApiResponse({ status: 200, type: MessageResponseDto, description: 'Password reset, all sessions revoked' })
-  @ApiResponse({ status: 400, description: 'Validation failed (password format)', type: ValidationErrorResponseDto })
-  @ApiResponse({ status: 401, description: 'Invalid or expired token', type: ErrorResponseDto })
-  @ApiResponse({ status: 429, description: 'Too many attempts — code: throttle.too_many_requests, params.retryAfter: seconds until retry', type: ErrorResponseDto })
+  @ApiResponse({
+    status: 200,
+    type: MessageResponseDto,
+    description: 'Password reset, all sessions revoked',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Validation failed (password format)',
+    type: ValidationErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Invalid or expired token',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 429,
+    description:
+      'Too many attempts — code: throttle.too_many_requests, params.retryAfter: seconds until retry',
+    type: ErrorResponseDto,
+  })
   @Throttle({ global: THROTTLE.PASSWORD_RESET })
   @Post('reset-password')
   resetPassword(@Body() dto: ResetPasswordDto) {
@@ -107,8 +197,16 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Get the currently authenticated user profile' })
   @ApiBearerAuth()
-  @ApiResponse({ status: 200, type: MeResponseDto, description: 'User data with roles and permissions' })
-  @ApiResponse({ status: 401, description: 'Not authenticated', type: ErrorResponseDto })
+  @ApiResponse({
+    status: 200,
+    type: MeResponseDto,
+    description: 'User data with roles and permissions',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Not authenticated',
+    type: ErrorResponseDto,
+  })
   @UseGuards(JwtAuthGuard)
   @Get('me')
   getMe(@Request() req: any) {
@@ -116,15 +214,27 @@ export class AuthController {
   }
 
   @ApiOperation({ summary: 'Refresh tokens (rotation)' })
-  @ApiResponse({ status: 200, type: TokensResponseDto, description: 'New access_token + refresh_token pair' })
-  @ApiResponse({ status: 401, description: 'Refresh token invalid or revoked', type: ErrorResponseDto })
+  @ApiResponse({
+    status: 200,
+    type: TokensResponseDto,
+    description: 'New access_token + refresh_token pair',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Refresh token invalid or revoked',
+    type: ErrorResponseDto,
+  })
   @Post('refresh')
   refresh(@Body() dto: RefreshTokenDto) {
     return this.authService.refresh(dto.refresh_token);
   }
 
   @ApiOperation({ summary: 'Sign out (revoke the refresh token)' })
-  @ApiResponse({ status: 200, type: MessageResponseDto, description: 'Refresh token revoked' })
+  @ApiResponse({
+    status: 200,
+    type: MessageResponseDto,
+    description: 'Refresh token revoked',
+  })
   @Post('logout')
   logout(@Body() dto: RefreshTokenDto) {
     return this.authService.logout(dto.refresh_token);
@@ -132,8 +242,16 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Revoke all sessions' })
   @ApiBearerAuth()
-  @ApiResponse({ status: 200, type: MessageResponseDto, description: 'All refresh tokens revoked' })
-  @ApiResponse({ status: 401, description: 'Not authenticated', type: ErrorResponseDto })
+  @ApiResponse({
+    status: 200,
+    type: MessageResponseDto,
+    description: 'All refresh tokens revoked',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Not authenticated',
+    type: ErrorResponseDto,
+  })
   @UseGuards(JwtAuthGuard)
   @Post('logout-all')
   logoutAll(@Request() req: any) {
@@ -143,7 +261,11 @@ export class AuthController {
   @ApiOperation({ summary: 'List active sessions' })
   @ApiBearerAuth()
   @ApiPaginatedResponse(SessionResponseDto, 'Paginated list of active sessions')
-  @ApiResponse({ status: 401, description: 'Not authenticated', type: ErrorResponseDto })
+  @ApiResponse({
+    status: 401,
+    description: 'Not authenticated',
+    type: ErrorResponseDto,
+  })
   @UseGuards(JwtAuthGuard)
   @Get('sessions')
   getSessions(@Request() req: any, @Query() query: FindSessionsQueryDto) {
@@ -152,9 +274,21 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Revoke a specific session' })
   @ApiBearerAuth()
-  @ApiResponse({ status: 200, type: MessageResponseDto, description: 'Session revoked' })
-  @ApiResponse({ status: 401, description: 'Not authenticated', type: ErrorResponseDto })
-  @ApiResponse({ status: 404, description: 'Session not found', type: ErrorResponseDto })
+  @ApiResponse({
+    status: 200,
+    type: MessageResponseDto,
+    description: 'Session revoked',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Not authenticated',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Session not found',
+    type: ErrorResponseDto,
+  })
   @UseGuards(JwtAuthGuard)
   @Delete('sessions/:id')
   revokeSession(@Request() req: any, @Param('id', ParseIntPipe) id: number) {

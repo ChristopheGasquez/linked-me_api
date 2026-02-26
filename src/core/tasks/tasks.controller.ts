@@ -36,7 +36,11 @@ export class TasksController {
   constructor(private tasksService: TasksService) {}
 
   @ApiOperation({ summary: 'Force cleanup of unverified accounts' })
-  @ApiResponse({ status: 200, type: CleanupUnverifiedUsersResponseDto, description: 'Cleanup done' })
+  @ApiResponse({
+    status: 200,
+    type: CleanupUnverifiedUsersResponseDto,
+    description: 'Cleanup done',
+  })
   @RequirePermissions(Permissions.TASK_CLEAN_USERS)
   @Post('cleanup-unverified-users')
   @HttpCode(200)
@@ -46,8 +50,14 @@ export class TasksController {
     );
   }
 
-  @ApiOperation({ summary: 'Force cleanup of expired tokens (refresh + password reset)' })
-  @ApiResponse({ status: 200, type: CleanupExpiredTokensResponseDto, description: 'Expired tokens deleted' })
+  @ApiOperation({
+    summary: 'Force cleanup of expired tokens (refresh + password reset)',
+  })
+  @ApiResponse({
+    status: 200,
+    type: CleanupExpiredTokensResponseDto,
+    description: 'Expired tokens deleted',
+  })
   @RequirePermissions(Permissions.TASK_CLEAN_TOKENS)
   @Post('cleanup-expired-tokens')
   @HttpCode(200)
@@ -57,8 +67,14 @@ export class TasksController {
     );
   }
 
-  @ApiOperation({ summary: 'Delete orphaned permissions (absent from constants)' })
-  @ApiResponse({ status: 200, type: CleanupOrphanedPermissionsResponseDto, description: 'Orphaned permissions deleted' })
+  @ApiOperation({
+    summary: 'Delete orphaned permissions (absent from constants)',
+  })
+  @ApiResponse({
+    status: 200,
+    type: CleanupOrphanedPermissionsResponseDto,
+    description: 'Orphaned permissions deleted',
+  })
   @RequirePermissions(Permissions.TASK_CLEAN_PERMISSIONS)
   @Post('cleanup-orphaned-permissions')
   @HttpCode(200)
@@ -69,8 +85,16 @@ export class TasksController {
   }
 
   @ApiOperation({ summary: 'Delete audit logs older than N days' })
-  @ApiResponse({ status: 200, type: CleanupAuditLogsResponseDto, description: 'Logs deleted' })
-  @ApiResponse({ status: 400, description: 'Invalid parameter (minimum 1 day)', type: ErrorResponseDto })
+  @ApiResponse({
+    status: 200,
+    type: CleanupAuditLogsResponseDto,
+    description: 'Logs deleted',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid parameter (minimum 1 day)',
+    type: ErrorResponseDto,
+  })
   @RequirePermissions(Permissions.TASK_CLEAN_AUDIT)
   @Post('cleanup-audit-logs')
   @HttpCode(200)

@@ -29,6 +29,9 @@ import { THROTTLE } from './common/constants.js';
     AuditModule,
   ],
   controllers: [AppController],
-  providers: [AppService, { provide: APP_GUARD, useClass: CustomThrottlerGuard }],
+  providers: [
+    AppService,
+    { provide: APP_GUARD, useClass: CustomThrottlerGuard },
+  ],
 })
 export class AppModule {}
