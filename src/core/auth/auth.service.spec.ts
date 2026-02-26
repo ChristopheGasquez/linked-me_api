@@ -487,6 +487,7 @@ describe('AuthService', () => {
         mockUser.email,
         mockUser.name,
         expect.any(String),
+        undefined,
       );
       expect(result).toMatchObject({ code: 'auth.forgot_password.sent' });
     });
@@ -570,6 +571,7 @@ describe('AuthService', () => {
         unverifiedUser.email,
         unverifiedUser.name,
         expect.any(String),
+        undefined,
       );
       expect(result).toMatchObject({ code: 'auth.email.resend_sent' });
     });

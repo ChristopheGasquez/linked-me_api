@@ -12,12 +12,19 @@ export class MailService {
     this.fromEmail = this.config.get('MAIL_FROM', 'onboarding@resend.dev');
   }
 
-  async sendPasswordResetEmail(to: string, name: string, token: string) {
-    const frontendUrl = this.config.get(
-      'FRONTEND_URL',
-      this.config.getOrThrow('APP_URL'),
-    );
-    const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
+  async sendPasswordResetEmail(to: string, name: string, token: string, callbackUrl?: string) {
+    let resetUrl: string;
+    if (callbackUrl) {
+      const url = new URL(callbackUrl);
+      url.searchParams.set('token', token);
+      resetUrl = url.toString();
+    } else {
+      const frontendUrl = this.config.get(
+        'FRONTEND_URL',
+        this.config.getOrThrow('APP_URL'),
+      );
+      resetUrl = `${frontendUrl}/reset-password?token=${token}`;
+    }
 
     await this.resend.emails.send({
       from: this.fromEmail,
@@ -51,9 +58,15 @@ export class MailService {
     });
   }
 
-  async sendVerificationEmail(to: string, name: string, token: string) {
-    const appUrl = this.config.getOrThrow('APP_URL');
-    const verifyUrl = `${appUrl}/auth/verify-email?token=${token}`;
+  async sendVerificationEmail(to: string, name: string, token: string, callbackUrl?: string) {
+    let verifyUrl: string;
+    if (callbackUrl) {
+      const url = new URL(callbackUrl);
+      url.searchParams.set('token', token);
+      verifyUrl = url.toString();
+    } else {
+      verifyUrl = `${this.config.getOrThrow('APP_URL')}/auth/verify-email?token=${token}`;
+    }
 
     await this.resend.emails.send({
       from: this.fromEmail,
