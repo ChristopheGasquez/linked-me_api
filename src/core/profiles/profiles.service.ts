@@ -6,6 +6,7 @@ import {
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
+import { UserCacheService } from '../auth/cache/user-cache.service.js';
 import { UpdateProfileDto } from './dto/update-profile.dto.js';
 import { BCRYPT_ROUNDS, MS_PER_HOUR } from '../../common/constants.js';
 import { ResponseCodes } from '../../common/constants/response-codes.js';
@@ -15,13 +16,17 @@ export class ProfilesService {
   constructor(
     private prisma: PrismaService,
     private auditService: AuditService,
+    private userCache: UserCacheService,
   ) {}
 
   async findOne(id: number) {
     const user = await this.prisma.user.findUnique({ where: { id } });
 
     if (!user) {
-      throw new NotFoundException({ message: 'User not found', code: ResponseCodes.PROFILE_USER_NOT_FOUND });
+      throw new NotFoundException({
+        message: 'User not found',
+        code: ResponseCodes.PROFILE_USER_NOT_FOUND,
+      });
     }
 
     return {
@@ -34,7 +39,11 @@ export class ProfilesService {
 
   async update(id: number, dto: UpdateProfileDto) {
     const user = await this.prisma.user.findUnique({ where: { id } });
-    if (!user) throw new NotFoundException({ message: 'User not found', code: ResponseCodes.PROFILE_USER_NOT_FOUND });
+    if (!user)
+      throw new NotFoundException({
+        message: 'User not found',
+        code: ResponseCodes.PROFILE_USER_NOT_FOUND,
+      });
 
     const updated = await this.prisma.user.update({
       where: { id },
@@ -44,6 +53,7 @@ export class ProfilesService {
     await this.auditService.log('profile.update', id, id, 'user', {
       fields: Object.keys(dto),
     });
+    this.userCache.invalidate(id);
 
     return {
       id: updated.id,
@@ -55,7 +65,11 @@ export class ProfilesService {
 
   async remove(id: number) {
     const user = await this.prisma.user.findUnique({ where: { id } });
-    if (!user) throw new NotFoundException({ message: 'User not found', code: ResponseCodes.PROFILE_USER_NOT_FOUND });
+    if (!user)
+      throw new NotFoundException({
+        message: 'User not found',
+        code: ResponseCodes.PROFILE_USER_NOT_FOUND,
+      });
     await this.prisma.user.delete({ where: { id } });
     await this.auditService.log('profile.delete', id, id, 'user', {
       email: user.email,
@@ -69,11 +83,18 @@ export class ProfilesService {
     newPassword: string,
   ) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new NotFoundException({ message: 'User not found', code: ResponseCodes.PROFILE_USER_NOT_FOUND });
+    if (!user)
+      throw new NotFoundException({
+        message: 'User not found',
+        code: ResponseCodes.PROFILE_USER_NOT_FOUND,
+      });
 
     const isValid = await bcrypt.compare(currentPassword, user.password);
     if (!isValid)
-      throw new UnauthorizedException({ message: 'Current password is incorrect', code: ResponseCodes.PROFILE_PASSWORD_INCORRECT });
+      throw new UnauthorizedException({
+        message: 'Current password is incorrect',
+        code: ResponseCodes.PROFILE_PASSWORD_INCORRECT,
+      });
 
     const hashed = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
 
@@ -92,7 +113,10 @@ export class ProfilesService {
       'user',
     );
 
-    return { message: 'Password changed. Please log in again.', code: ResponseCodes.PROFILE_PASSWORD_CHANGED };
+    return {
+      message: 'Password changed. Please log in again.',
+      code: ResponseCodes.PROFILE_PASSWORD_CHANGED,
+    };
   }
 
   async deleteUnverified(ttlHours: number): Promise<number> {

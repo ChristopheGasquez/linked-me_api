@@ -11,6 +11,27 @@ import { AdminModule } from './core/admin/admin.module.js';
 import { AuditModule } from './core/audit/audit.module.js';
 import { TasksModule } from './core/tasks/tasks.module.js';
 
+const SWAGGER_SECTIONS = [
+  { label: 'Global API', path: '/docs', description: 'All endpoints' },
+  {
+    label: 'Core API',
+    path: '/docs/core',
+    description: 'Auth, profiles, administration, audit, tasks',
+  },
+  {
+    label: 'Constants',
+    path: '/docs/constants',
+    description: 'Response codes and shared constants',
+  },
+];
+
+function swaggerNav(currentPath: string): string {
+  const links = SWAGGER_SECTIONS.filter((s) => s.path !== currentPath)
+    .map((s) => `- **[${s.label}](${s.path})** — ${s.description}`)
+    .join('\n');
+  return `\n\n## Documentation sections\n${links}`;
+}
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
@@ -35,7 +56,10 @@ async function bootstrap() {
           params: {
             fields: errors.map((e) => {
               const constraint = Object.keys(e.constraints ?? {})[0];
-              return { key: e.property, code: `validation.${e.property}.${constraint}` };
+              return {
+                key: e.property,
+                code: `validation.${e.property}.${constraint}`,
+              };
             }),
           },
         });
@@ -48,10 +72,7 @@ async function bootstrap() {
     const globalConfig = new DocumentBuilder()
       .setTitle('linked-me API')
       .setDescription(
-        'linked-me platform API — full documentation\n\n' +
-          '## Documentation sections\n' +
-          '- **[Core API](/docs/core)** — Auth, profiles, administration, audit, tasks\n' +
-          '- **[Constants](/docs/constants)** — Response codes and shared constants',
+        'linked-me platform API — full documentation' + swaggerNav('/docs'),
       )
       .setVersion('1.0')
       .addBearerAuth()
@@ -62,7 +83,10 @@ async function bootstrap() {
     // Core doc — auth, profiles, admin, audit, tasks
     const coreConfig = new DocumentBuilder()
       .setTitle('linked-me — Core API')
-      .setDescription('Auth, profiles, administration, audit, tasks')
+      .setDescription(
+        'Auth, profiles, administration, audit, tasks' +
+          swaggerNav('/docs/core'),
+      )
       .setVersion('1.0')
       .addBearerAuth()
       .build();
@@ -80,10 +104,16 @@ async function bootstrap() {
     // Constants doc — response codes and shared constants
     const constantsConfig = new DocumentBuilder()
       .setTitle('linked-me — Constants')
-      .setDescription('Response codes and shared constants for client-side i18n')
+      .setDescription(
+        'Response codes and shared constants for client-side i18n' +
+          swaggerNav('/docs/constants'),
+      )
       .setVersion('1.0')
       .build();
-    const constantsDocument = SwaggerModule.createDocument(app, constantsConfig);
+    const constantsDocument = SwaggerModule.createDocument(
+      app,
+      constantsConfig,
+    );
     constantsDocument.paths = {};
     constantsDocument.components = {
       schemas: {

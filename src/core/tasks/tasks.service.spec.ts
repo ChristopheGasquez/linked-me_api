@@ -63,7 +63,10 @@ describe('TasksService', () => {
         'UNVERIFIED_USER_TTL_HOURS',
       );
       expect(profilesService.deleteUnverified).toHaveBeenCalledWith(24);
-      expect(result).toMatchObject({ code: 'task.cleanup.unverified_users.done', params: { count: 5 } });
+      expect(result).toMatchObject({
+        code: 'task.cleanup.unverified_users.done',
+        params: { count: 5 },
+      });
     });
 
     it('should return 0 deleted when no unverified users exist', async () => {
@@ -126,7 +129,10 @@ describe('TasksService', () => {
           where: { expiresAt: { lt: expect.any(Date) } },
         }),
       );
-      expect(result).toMatchObject({ code: 'task.cleanup.expired_tokens.done', params: { count: 4, refreshTokens: 3, passwordResets: 1 } });
+      expect(result).toMatchObject({
+        code: 'task.cleanup.expired_tokens.done',
+        params: { count: 4, refreshTokens: 3, passwordResets: 1 },
+      });
     });
 
     it('should log audit with counts', async () => {
@@ -205,7 +211,10 @@ describe('TasksService', () => {
 
       const result = await service.cleanupOrphanedPermissions();
 
-      expect(result).toMatchObject({ code: 'task.cleanup.orphaned_permissions.none_found', params: { count: 0, deleted: [] } });
+      expect(result).toMatchObject({
+        code: 'task.cleanup.orphaned_permissions.none_found',
+        params: { count: 0, deleted: [] },
+      });
       expect(prisma.rolePermission.deleteMany).not.toHaveBeenCalled();
       expect(prisma.permission.deleteMany).not.toHaveBeenCalled();
     });
@@ -241,7 +250,12 @@ describe('TasksService', () => {
       expect(prisma.permission.deleteMany).toHaveBeenCalledWith({
         where: { id: { in: [10, 11] } },
       });
-      expect(result).toMatchObject({ params: { count: 2, deleted: ['obsolete:permission', 'old:feature:access'] } });
+      expect(result).toMatchObject({
+        params: {
+          count: 2,
+          deleted: ['obsolete:permission', 'old:feature:access'],
+        },
+      });
     });
 
     it('should log audit with deleted permission names', async () => {

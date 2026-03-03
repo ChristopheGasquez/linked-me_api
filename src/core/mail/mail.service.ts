@@ -12,7 +12,12 @@ export class MailService {
     this.fromEmail = this.config.get('MAIL_FROM', 'onboarding@resend.dev');
   }
 
-  async sendPasswordResetEmail(to: string, name: string, token: string, callbackUrl?: string) {
+  async sendPasswordResetEmail(
+    to: string,
+    name: string,
+    token: string,
+    callbackUrl?: string,
+  ) {
     let resetUrl: string;
     if (callbackUrl) {
       const url = new URL(callbackUrl);
@@ -58,7 +63,12 @@ export class MailService {
     });
   }
 
-  async sendVerificationEmail(to: string, name: string, token: string, callbackUrl?: string) {
+  async sendVerificationEmail(
+    to: string,
+    name: string,
+    token: string,
+    callbackUrl?: string,
+  ) {
     let verifyUrl: string;
     if (callbackUrl) {
       const url = new URL(callbackUrl);

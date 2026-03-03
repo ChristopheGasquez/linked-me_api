@@ -9,6 +9,7 @@ import * as bcrypt from 'bcrypt';
 import { ProfilesService } from './profiles.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
+import { UserCacheService } from '../auth/cache/user-cache.service.js';
 import {
   createPrismaServiceMock,
   PrismaServiceMock,
@@ -30,6 +31,7 @@ describe('ProfilesService', () => {
   let service: ProfilesService;
   let prisma: PrismaServiceMock;
   let auditService: jest.Mocked<Pick<AuditService, 'log'>>;
+  let userCache: jest.Mocked<Pick<UserCacheService, 'invalidate'>>;
 
   beforeEach(async () => {
     prisma = createPrismaServiceMock();
@@ -38,11 +40,16 @@ describe('ProfilesService', () => {
       log: jest.fn().mockResolvedValue(undefined),
     };
 
+    userCache = {
+      invalidate: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ProfilesService,
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: auditService },
+        { provide: UserCacheService, useValue: userCache },
       ],
     }).compile();
 
@@ -108,6 +115,7 @@ describe('ProfilesService', () => {
         'user',
         expect.any(Object),
       );
+      expect(userCache.invalidate).toHaveBeenCalledWith(1);
       expect(result).toMatchObject({ id: 1, name: 'New Name' });
       expect(result).not.toHaveProperty('password');
     });

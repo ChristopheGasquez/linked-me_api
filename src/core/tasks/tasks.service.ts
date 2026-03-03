@@ -35,7 +35,11 @@ export class TasksService {
       'task',
       { count, ttlHours: ttl },
     );
-    return { message: `${count} unverified account(s) deleted`, code: ResponseCodes.TASK_CLEANUP_UNVERIFIED_USERS, params: { count } };
+    return {
+      message: `${count} unverified account(s) deleted`,
+      code: ResponseCodes.TASK_CLEANUP_UNVERIFIED_USERS,
+      params: { count },
+    };
   }
 
   @Cron('0 2 * * *')
@@ -65,7 +69,11 @@ export class TasksService {
     return {
       message: `${total} expired token(s) deleted`,
       code: ResponseCodes.TASK_CLEANUP_EXPIRED_TOKENS,
-      params: { count: total, refreshTokens: refreshResult.count, passwordResets: resetResult.count },
+      params: {
+        count: total,
+        refreshTokens: refreshResult.count,
+        passwordResets: resetResult.count,
+      },
     };
   }
 
@@ -114,7 +122,11 @@ export class TasksService {
         'task',
         { count: 0, deleted: [] },
       );
-      return { message: 'No orphaned permissions found', code: ResponseCodes.TASK_CLEANUP_ORPHANED_PERMISSIONS_NONE, params: { count: 0, deleted: [] } };
+      return {
+        message: 'No orphaned permissions found',
+        code: ResponseCodes.TASK_CLEANUP_ORPHANED_PERMISSIONS_NONE,
+        params: { count: 0, deleted: [] },
+      };
     }
 
     const ids = orphaned.map((p) => p.id);

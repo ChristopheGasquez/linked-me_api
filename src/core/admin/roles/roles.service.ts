@@ -38,7 +38,11 @@ export class AdminRolesService {
       where: { id: roleId },
       include: { permissions: { include: { permission: true } } },
     });
-    if (!role) throw new NotFoundException({ message: 'Role not found', code: ResponseCodes.ADMIN_ROLE_NOT_FOUND });
+    if (!role)
+      throw new NotFoundException({
+        message: 'Role not found',
+        code: ResponseCodes.ADMIN_ROLE_NOT_FOUND,
+      });
     return {
       ...role,
       permissions: role.permissions.map((rp) => rp.permission),
@@ -48,7 +52,11 @@ export class AdminRolesService {
   async createRole(actorId: number, name: string) {
     const existing = await this.prisma.role.findUnique({ where: { name } });
     if (existing) {
-      throw new BadRequestException({ message: 'Role already exists', code: ResponseCodes.ADMIN_ROLE_ALREADY_EXISTS, params: { name } });
+      throw new BadRequestException({
+        message: 'Role already exists',
+        code: ResponseCodes.ADMIN_ROLE_ALREADY_EXISTS,
+        params: { name },
+      });
     }
     const role = await this.prisma.role.create({ data: { name } });
     await this.auditService.log('role.create', actorId, role.id, 'role', {
@@ -59,11 +67,19 @@ export class AdminRolesService {
 
   async deleteRole(actorId: number, roleId: number) {
     const role = await this.prisma.role.findUnique({ where: { id: roleId } });
-    if (!role) throw new NotFoundException({ message: 'Role not found', code: ResponseCodes.ADMIN_ROLE_NOT_FOUND });
+    if (!role)
+      throw new NotFoundException({
+        message: 'Role not found',
+        code: ResponseCodes.ADMIN_ROLE_NOT_FOUND,
+      });
 
     const usersCount = await this.prisma.userRole.count({ where: { roleId } });
     if (usersCount > 0) {
-      throw new BadRequestException({ message: 'Cannot delete: role is still assigned to users', code: ResponseCodes.ADMIN_ROLE_HAS_USERS, params: { count: usersCount } });
+      throw new BadRequestException({
+        message: 'Cannot delete: role is still assigned to users',
+        code: ResponseCodes.ADMIN_ROLE_HAS_USERS,
+        params: { count: usersCount },
+      });
     }
 
     await this.prisma.role.delete({ where: { id: roleId } });
@@ -71,7 +87,11 @@ export class AdminRolesService {
       name: role.name,
     });
     this.userCache.invalidateAll();
-    return { message: 'Role deleted', code: ResponseCodes.ADMIN_ROLE_DELETED, params: { name: role.name } };
+    return {
+      message: 'Role deleted',
+      code: ResponseCodes.ADMIN_ROLE_DELETED,
+      params: { name: role.name },
+    };
   }
 
   async addPermissionsToRole(
@@ -80,7 +100,11 @@ export class AdminRolesService {
     permissionNames: string[],
   ) {
     const role = await this.prisma.role.findUnique({ where: { id: roleId } });
-    if (!role) throw new NotFoundException({ message: 'Role not found', code: ResponseCodes.ADMIN_ROLE_NOT_FOUND });
+    if (!role)
+      throw new NotFoundException({
+        message: 'Role not found',
+        code: ResponseCodes.ADMIN_ROLE_NOT_FOUND,
+      });
 
     const permissions = await this.prisma.permission.findMany({
       where: { name: { in: permissionNames } },
@@ -89,7 +113,11 @@ export class AdminRolesService {
     const foundNames = permissions.map((p) => p.name);
     const unknown = permissionNames.filter((n) => !foundNames.includes(n));
     if (unknown.length > 0) {
-      throw new BadRequestException({ message: 'Some permissions are unknown', code: ResponseCodes.ADMIN_PERMISSION_UNKNOWN, params: { permissions: unknown } });
+      throw new BadRequestException({
+        message: 'Some permissions are unknown',
+        code: ResponseCodes.ADMIN_PERMISSION_UNKNOWN,
+        params: { permissions: unknown },
+      });
     }
 
     for (const perm of permissions) {
@@ -129,7 +157,10 @@ export class AdminRolesService {
       include: { role: true, permission: true },
     });
     if (!link) {
-      throw new NotFoundException({ message: 'Permission not assigned to this role', code: ResponseCodes.ADMIN_ROLE_PERMISSION_NOT_ASSIGNED });
+      throw new NotFoundException({
+        message: 'Permission not assigned to this role',
+        code: ResponseCodes.ADMIN_ROLE_PERMISSION_NOT_ASSIGNED,
+      });
     }
 
     await this.prisma.rolePermission.delete({
@@ -143,7 +174,10 @@ export class AdminRolesService {
       { roleName: link.role.name, permissionName: link.permission.name },
     );
     this.userCache.invalidateAll();
-    return { message: 'Permission removed from role', code: ResponseCodes.ADMIN_ROLE_PERMISSION_REMOVED };
+    return {
+      message: 'Permission removed from role',
+      code: ResponseCodes.ADMIN_ROLE_PERMISSION_REMOVED,
+    };
   }
 
   async findAllPermissions(query: FindPermissionsQueryDto) {

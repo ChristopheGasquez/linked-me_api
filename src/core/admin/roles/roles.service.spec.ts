@@ -171,7 +171,10 @@ describe('AdminRolesService', () => {
         'role',
         { name: 'MODERATOR' },
       );
-      expect(result).toMatchObject({ code: 'admin.role.deleted', params: { name: 'MODERATOR' } });
+      expect(result).toMatchObject({
+        code: 'admin.role.deleted',
+        params: { name: 'MODERATOR' },
+      });
     });
   });
 

@@ -25,8 +25,16 @@ export class AuditController {
 
   @ApiOperation({ summary: 'List audit logs' })
   @ApiPaginatedResponse(AuditLogResponseDto, 'Paginated list of audit logs')
-  @ApiResponse({ status: 401, description: 'Not authenticated', type: ErrorResponseDto })
-  @ApiResponse({ status: 403, description: 'Insufficient permissions', type: ErrorResponseDto })
+  @ApiResponse({
+    status: 401,
+    description: 'Not authenticated',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Insufficient permissions',
+    type: ErrorResponseDto,
+  })
   @Get()
   findAll(@Query() query: FindAuditLogsQueryDto) {
     return this.auditService.findAll(query);

@@ -244,7 +244,10 @@ export class AuthService {
   async logout(refreshToken: string) {
     const hash = crypto.createHash('sha256').update(refreshToken).digest('hex');
     await this.prisma.refreshToken.deleteMany({ where: { token: hash } });
-    return { message: 'Logged out successfully', code: ResponseCodes.AUTH_LOGOUT_SUCCESS };
+    return {
+      message: 'Logged out successfully',
+      code: ResponseCodes.AUTH_LOGOUT_SUCCESS,
+    };
   }
 
   async getSessions(userId: number, query: FindSessionsQueryDto) {
@@ -264,12 +267,18 @@ export class AuthService {
       });
     }
     await this.prisma.refreshToken.delete({ where: { id: sessionId } });
-    return { message: 'Session revoked', code: ResponseCodes.AUTH_SESSION_REVOKED };
+    return {
+      message: 'Session revoked',
+      code: ResponseCodes.AUTH_SESSION_REVOKED,
+    };
   }
 
   async logoutAll(userId: number) {
     await this.prisma.refreshToken.deleteMany({ where: { userId } });
-    return { message: 'All sessions revoked', code: ResponseCodes.AUTH_LOGOUT_ALL_SUCCESS };
+    return {
+      message: 'All sessions revoked',
+      code: ResponseCodes.AUTH_LOGOUT_ALL_SUCCESS,
+    };
   }
 
   private validateCallbackUrl(callbackUrl: string | undefined): void {
@@ -344,7 +353,10 @@ export class AuthService {
       'user',
     );
 
-    return { message: 'Email verified successfully', code: ResponseCodes.AUTH_EMAIL_VERIFIED };
+    return {
+      message: 'Email verified successfully',
+      code: ResponseCodes.AUTH_EMAIL_VERIFIED,
+    };
   }
 
   async forgotPassword(email: string, callbackUrl?: string) {
@@ -355,7 +367,8 @@ export class AuthService {
     // Generic response: never reveal whether email exists
     if (!user) {
       return {
-        message: 'If an account with this email exists, a reset link has been sent',
+        message:
+          'If an account with this email exists, a reset link has been sent',
         code: ResponseCodes.AUTH_FORGOT_PASSWORD_SENT,
       };
     }
@@ -381,7 +394,8 @@ export class AuthService {
     );
 
     return {
-      message: 'If an account with this email exists, a reset link has been sent',
+      message:
+        'If an account with this email exists, a reset link has been sent',
       code: ResponseCodes.AUTH_FORGOT_PASSWORD_SENT,
     };
   }
@@ -436,7 +450,8 @@ export class AuthService {
 
     if (!user || user.isEmailChecked) {
       return {
-        message: 'If an unverified account with this email exists, a new link has been sent',
+        message:
+          'If an unverified account with this email exists, a new link has been sent',
         code: ResponseCodes.AUTH_EMAIL_RESEND_SENT,
       };
     }
@@ -450,7 +465,8 @@ export class AuthService {
     );
 
     return {
-      message: 'If an unverified account with this email exists, a new link has been sent',
+      message:
+        'If an unverified account with this email exists, a new link has been sent',
       code: ResponseCodes.AUTH_EMAIL_RESEND_SENT,
     };
   }

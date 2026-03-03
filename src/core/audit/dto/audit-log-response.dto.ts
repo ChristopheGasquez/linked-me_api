@@ -7,7 +7,11 @@ export class AuditLogResponseDto {
   @ApiPropertyOptional({ nullable: true }) targetId: number | null;
   @ApiPropertyOptional({ nullable: true, example: 'user' })
   targetType: string | null;
-  @ApiPropertyOptional({ nullable: true, type: 'object', additionalProperties: true })
+  @ApiPropertyOptional({
+    nullable: true,
+    type: 'object',
+    additionalProperties: true,
+  })
   metadata: Record<string, unknown> | null;
   @ApiProperty() createdAt: Date;
 }
