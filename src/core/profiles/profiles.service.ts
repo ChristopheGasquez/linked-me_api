@@ -6,6 +6,7 @@ import {
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
+import { UserCacheService } from '../auth/cache/user-cache.service.js';
 import { UpdateProfileDto } from './dto/update-profile.dto.js';
 import { BCRYPT_ROUNDS, MS_PER_HOUR } from '../../common/constants.js';
 import { ResponseCodes } from '../../common/constants/response-codes.js';
@@ -15,6 +16,7 @@ export class ProfilesService {
   constructor(
     private prisma: PrismaService,
     private auditService: AuditService,
+    private userCache: UserCacheService,
   ) {}
 
   async findOne(id: number) {
@@ -51,6 +53,7 @@ export class ProfilesService {
     await this.auditService.log('profile.update', id, id, 'user', {
       fields: Object.keys(dto),
     });
+    this.userCache.invalidate(id);
 
     return {
       id: updated.id,
