@@ -1,5 +1,5 @@
 import { IsOptional, IsString, IsBoolean } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { PaginationQueryDto } from '../../../../common/pagination/index.js';
 
@@ -16,7 +16,9 @@ export class FindUsersQueryDto extends PaginationQueryDto {
     description: 'Filtrer par statut de vérification email',
   })
   @IsOptional()
-  @Type(() => Boolean)
+  @Transform(({ value }) =>
+    value === 'true' ? true : value === 'false' ? false : value,
+  )
   @IsBoolean()
   isEmailChecked?: boolean;
 }
