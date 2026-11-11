@@ -21,4 +21,9 @@ export class FindUsersQueryDto extends PaginationQueryDto {
   )
   @IsBoolean()
   isEmailChecked?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  search?: string;
 }
