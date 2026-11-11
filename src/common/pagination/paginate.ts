@@ -16,7 +16,8 @@ export async function paginate<T>(
   query: PaginationQueryDto,
   options: PaginateOptions = {},
 ): Promise<PaginatedResponse<T>> {
-  const { page, limit, sortBy, sortOrder, search } = query;
+  const { page, limit, sortBy, sortOrder } = query;
+  const search = (query as PaginationQueryDto & { search?: string }).search;
   const { searchFields = [], where = {}, include, metaFilters } = options;
 
   const whereClause: Record<string, unknown> = { ...where };
