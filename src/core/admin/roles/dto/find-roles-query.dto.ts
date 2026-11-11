@@ -11,4 +11,9 @@ export class FindRolesQueryDto extends PaginationQueryDto {
   @IsString()
   @IsIn(['id', 'name', 'createdAt', 'updatedAt'])
   sortBy: string = 'createdAt';
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  search?: string;
 }

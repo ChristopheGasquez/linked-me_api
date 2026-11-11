@@ -28,8 +28,4 @@ export class PaginationQueryDto {
   @IsIn(['asc', 'desc'])
   sortOrder: 'asc' | 'desc' = 'desc';
 
-  @ApiPropertyOptional({ description: 'Recherche textuelle' })
-  @IsOptional()
-  @IsString()
-  search?: string;
 }
