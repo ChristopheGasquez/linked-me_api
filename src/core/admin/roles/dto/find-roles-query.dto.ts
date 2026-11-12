@@ -1,5 +1,6 @@
 import { IsIn, IsOptional, IsString } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Trim } from '../../../../common/validators/transforms.js';
 import { PaginationQueryDto } from '../../../../common/pagination/index.js';
 
 export class FindRolesQueryDto extends PaginationQueryDto {
@@ -13,6 +14,7 @@ export class FindRolesQueryDto extends PaginationQueryDto {
   sortBy: string = 'createdAt';
 
   @ApiPropertyOptional()
+  @Trim()
   @IsOptional()
   @IsString()
   search?: string;

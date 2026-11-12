@@ -8,6 +8,7 @@ import {
   Matches,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Trim, TrimLowerCase } from '../../../common/validators/transforms.js';
 import {
   PASSWORD_REGEX,
   PASSWORD_REGEX_MESSAGE,
@@ -15,6 +16,7 @@ import {
 
 export class RegisterDto {
   @ApiProperty({ example: 'user@example.com' })
+  @TrimLowerCase()
   @IsEmail({}, { message: 'Invalid email' })
   @MaxLength(255)
   email: string;
@@ -27,6 +29,7 @@ export class RegisterDto {
   password: string;
 
   @ApiProperty({ example: 'Jean Dupont', minLength: 2, maxLength: 100 })
+  @Trim()
   @IsString()
   @MinLength(2, { message: 'Name must be at least 2 characters' })
   @MaxLength(100)
