@@ -56,6 +56,11 @@ export class AdminUsersController {
     description: 'User found',
   })
   @ApiResponse({
+    status: 400,
+    description: 'Invalid user ID (must be an integer)',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
     status: 404,
     description: 'User not found',
     type: ErrorResponseDto,
