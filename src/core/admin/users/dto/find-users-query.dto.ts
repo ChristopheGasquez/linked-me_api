@@ -1,6 +1,10 @@
 import { IsOptional, IsString, IsBoolean, IsIn } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  Trim,
+  TrimUpperCase,
+} from '../../../../common/validators/transforms.js';
 import { PaginationQueryDto } from '../../../../common/pagination/index.js';
 
 export class FindUsersQueryDto extends PaginationQueryDto {
@@ -14,9 +18,10 @@ export class FindUsersQueryDto extends PaginationQueryDto {
   sortBy: string = 'createdAt';
 
   @ApiPropertyOptional({
-    description: 'Filtrer par nom de rôle',
+    description: 'Filtrer par nom de rôle (insensible à la casse)',
     example: 'ADMIN',
   })
+  @TrimUpperCase()
   @IsOptional()
   @IsString()
   role?: string;
@@ -32,6 +37,7 @@ export class FindUsersQueryDto extends PaginationQueryDto {
   isEmailChecked?: boolean;
 
   @ApiPropertyOptional()
+  @Trim()
   @IsOptional()
   @IsString()
   search?: string;
