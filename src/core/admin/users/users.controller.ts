@@ -30,10 +30,21 @@ import {
   UserRoleRemovedResponseDto,
   UserDeletedResponseDto,
 } from './dto/user-success.dto.js';
-import { UserRoleAlreadyAssignedErrorDto } from './dto/user-error.dto.js';
+import {
+  RoleNotFoundErrorDto,
+  UserRoleAlreadyAssignedErrorDto,
+} from './dto/user-error.dto.js';
 import { ApiPaginatedResponse } from '../../../common/pagination/index.js';
+import {
+  ApiAuthErrors,
+  ApiInvalidIdError,
+  ApiThrottleError,
+  ApiValidationError,
+} from '../../../common/swagger/api-common-responses.decorator.js';
 
 @ApiTags('Admin / Users')
+@ApiAuthErrors()
+@ApiThrottleError()
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @RequirePermissions(Permissions.REALM_ADMIN)
@@ -43,6 +54,9 @@ export class AdminUsersController {
 
   @ApiOperation({ summary: 'List users with pagination, sorting and filters' })
   @ApiPaginatedResponse(UserAdminResponseDto, 'Paginated list of users')
+  @ApiValidationError(
+    'Invalid query parameter (page, limit, sortBy, sortOrder or filter) — code: validation.failed',
+  )
   @RequirePermissions(Permissions.ADMIN_USER_READ)
   @Get('users')
   findAllUsers(@Query() query: FindUsersQueryDto) {
@@ -55,6 +69,7 @@ export class AdminUsersController {
     type: UserAdminResponseDto,
     description: 'User found',
   })
+  @ApiInvalidIdError()
   @ApiResponse({
     status: 404,
     description: 'User not found',
@@ -74,13 +89,15 @@ export class AdminUsersController {
   })
   @ApiResponse({
     status: 400,
-    description: 'User already has this role',
+    description:
+      'User already has this role (admin.user.role_already_assigned, params.roleName), validation failed (validation.failed) or invalid ID (must be an integer)',
     type: UserRoleAlreadyAssignedErrorDto,
   })
   @ApiResponse({
     status: 404,
-    description: 'User or role not found',
-    type: ErrorResponseDto,
+    description:
+      'User not found (admin.user.not_found) or role not found (admin.role.not_found, params.roleName)',
+    type: RoleNotFoundErrorDto,
   })
   @RequirePermissions(Permissions.ADMIN_USER_ASSIGN_ROLE)
   @Post('users/:id/roles')
@@ -103,6 +120,7 @@ export class AdminUsersController {
     description: 'Association not found',
     type: ErrorResponseDto,
   })
+  @ApiInvalidIdError()
   @RequirePermissions(Permissions.ADMIN_USER_ASSIGN_ROLE)
   @Delete('users/:id/roles/:roleId')
   removeRoleFromUser(
@@ -118,6 +136,12 @@ export class AdminUsersController {
     status: 200,
     type: UserDeletedResponseDto,
     description: 'User deleted',
+  })
+  @ApiResponse({
+    status: 400,
+    description:
+      'User still has roles, remove them first (admin.user.has_roles) or invalid ID (must be an integer)',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 404,

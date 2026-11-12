@@ -25,9 +25,15 @@ import {
   CleanupOrphanedPermissionsResponseDto,
   CleanupAuditLogsResponseDto,
 } from './dto/cleanup-response.dto.js';
-import { ErrorResponseDto } from '../../common/dto/error-response.dto.js';
+import {
+  ApiAuthErrors,
+  ApiThrottleError,
+  ApiValidationError,
+} from '../../common/swagger/api-common-responses.decorator.js';
 
 @ApiTags('Tasks')
+@ApiAuthErrors()
+@ApiThrottleError()
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @RequirePermissions(Permissions.REALM_TASK)
@@ -90,11 +96,9 @@ export class TasksController {
     type: CleanupAuditLogsResponseDto,
     description: 'Logs deleted',
   })
-  @ApiResponse({
-    status: 400,
-    description: 'Invalid parameter (minimum 1 day)',
-    type: ErrorResponseDto,
-  })
+  @ApiValidationError(
+    'olderThanDays missing, not an integer or < 1 — code: validation.failed',
+  )
   @RequirePermissions(Permissions.TASK_CLEAN_AUDIT)
   @Post('cleanup-audit-logs')
   @HttpCode(200)

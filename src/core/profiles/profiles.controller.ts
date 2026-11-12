@@ -26,8 +26,16 @@ import { Permissions } from '../auth/permissions.constants.js';
 import { MessageResponseDto } from '../../common/dto/message-response.dto.js';
 import { ErrorResponseDto } from '../../common/dto/error-response.dto.js';
 import { ValidationErrorResponseDto } from '../../common/dto/validation-error-response.dto.js';
+import {
+  ApiAuthErrors,
+  ApiInvalidIdError,
+  ApiThrottleError,
+  ApiValidationError,
+} from '../../common/swagger/api-common-responses.decorator.js';
 
 @ApiTags('Profiles')
+@ApiAuthErrors()
+@ApiThrottleError()
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @RequirePermissions(Permissions.REALM_PROFILE)
@@ -46,6 +54,7 @@ export class ProfilesController {
     description: 'User not found',
     type: ErrorResponseDto,
   })
+  @ApiInvalidIdError()
   @RequirePermissions(Permissions.PROFILE_READ)
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
@@ -58,6 +67,7 @@ export class ProfilesController {
     type: ProfileResponseDto,
     description: 'Profile updated',
   })
+  @ApiValidationError()
   @RequirePermissions(Permissions.PROFILE_UPDATE_OWN)
   @Patch('me')
   update(@Request() req: any, @Body() dto: UpdateProfileDto) {
