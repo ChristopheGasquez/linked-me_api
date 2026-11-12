@@ -30,7 +30,10 @@ import {
   UserRoleRemovedResponseDto,
   UserDeletedResponseDto,
 } from './dto/user-success.dto.js';
-import { UserRoleAlreadyAssignedErrorDto } from './dto/user-error.dto.js';
+import {
+  RoleNotFoundErrorDto,
+  UserRoleAlreadyAssignedErrorDto,
+} from './dto/user-error.dto.js';
 import { ApiPaginatedResponse } from '../../../common/pagination/index.js';
 
 @ApiTags('Admin / Users')
@@ -84,8 +87,9 @@ export class AdminUsersController {
   })
   @ApiResponse({
     status: 404,
-    description: 'User or role not found',
-    type: ErrorResponseDto,
+    description:
+      'User not found (admin.user.not_found) or role not found (admin.role.not_found, params.roleName)',
+    type: RoleNotFoundErrorDto,
   })
   @RequirePermissions(Permissions.ADMIN_USER_ASSIGN_ROLE)
   @Post('users/:id/roles')
@@ -123,6 +127,12 @@ export class AdminUsersController {
     status: 200,
     type: UserDeletedResponseDto,
     description: 'User deleted',
+  })
+  @ApiResponse({
+    status: 400,
+    description:
+      'User still has roles, remove them first — code: admin.user.has_roles',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 404,

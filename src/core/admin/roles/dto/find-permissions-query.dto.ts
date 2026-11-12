@@ -8,4 +8,9 @@ export class FindPermissionsQueryDto extends PaginationQueryDto {
   @IsString()
   @IsIn(['id', 'name'])
   sortBy: string = 'name';
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  search?: string;
 }

@@ -9,6 +9,7 @@ import {
   UseGuards,
   ParseIntPipe,
   Request,
+  HttpCode,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -135,6 +136,7 @@ export class AdminRolesController {
     type: ErrorResponseDto,
   })
   @RequirePermissions(Permissions.ADMIN_ROLE_MANAGE)
+  @HttpCode(200)
   @Post('roles/:id/permissions')
   addPermissions(
     @Request() req: any,

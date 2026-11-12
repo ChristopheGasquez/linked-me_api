@@ -25,6 +25,7 @@ import { ResendVerificationDto } from './dto/resend-verification.dto.js';
 import { ForgotPasswordDto } from './dto/forgot-password.dto.js';
 import { ResetPasswordDto } from './dto/reset-password.dto.js';
 import { FindSessionsQueryDto } from './dto/find-sessions-query.dto.js';
+import { VerifyEmailQueryDto } from './dto/verify-email-query.dto.js';
 import { RegisterResponseDto } from './dto/register-response.dto.js';
 import {
   LoginResponseDto,
@@ -81,7 +82,8 @@ export class AuthController {
   })
   @ApiResponse({
     status: 401,
-    description: 'Invalid email or password',
+    description:
+      'Invalid email or password (auth.login.invalid_credentials) or email not verified (auth.login.email_not_verified)',
     type: ErrorResponseDto,
   })
   @ApiResponse({
@@ -114,9 +116,14 @@ export class AuthController {
     description: 'Invalid or expired token',
     type: ErrorResponseDto,
   })
+  @ApiResponse({
+    status: 400,
+    description: 'Missing token — code: validation.failed',
+    type: ValidationErrorResponseDto,
+  })
   @Get('verify-email')
-  verifyEmail(@Query('token') token: string) {
-    return this.authService.verifyEmail(token);
+  verifyEmail(@Query() query: VerifyEmailQueryDto) {
+    return this.authService.verifyEmail(query.token);
   }
 
   @ApiOperation({ summary: 'Resend verification email' })

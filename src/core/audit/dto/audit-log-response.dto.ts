@@ -1,13 +1,18 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class AuditLogResponseDto {
   @ApiProperty() id: number;
   @ApiProperty({ example: 'user.create' }) action: string;
-  @ApiPropertyOptional({ nullable: true }) actorId: number | null;
-  @ApiPropertyOptional({ nullable: true }) targetId: number | null;
-  @ApiPropertyOptional({ nullable: true, example: 'user' })
+  @ApiProperty({
+    type: Number,
+    nullable: true,
+    description: 'null = system (cron)',
+  })
+  actorId: number | null;
+  @ApiProperty({ type: Number, nullable: true }) targetId: number | null;
+  @ApiProperty({ type: String, nullable: true, example: 'user' })
   targetType: string | null;
-  @ApiPropertyOptional({
+  @ApiProperty({
     nullable: true,
     type: 'object',
     additionalProperties: true,
