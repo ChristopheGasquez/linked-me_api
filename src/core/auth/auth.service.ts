@@ -251,9 +251,13 @@ export class AuthService {
   }
 
   async getSessions(userId: number, query: FindSessionsQueryDto) {
-    return paginate(this.prisma.refreshToken, query, {
+    const result = await paginate(this.prisma.refreshToken, query, {
       where: { userId, expiresAt: { gt: new Date() } },
     });
+    return {
+      ...result,
+      data: result.data.map(({ token: _token, ...session }) => session),
+    };
   }
 
   async revokeSession(userId: number, sessionId: number) {

@@ -9,6 +9,7 @@ import {
   UseGuards,
   ParseIntPipe,
   Request,
+  HttpCode,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -41,8 +42,16 @@ import {
   UnknownPermissionsErrorDto,
 } from './dto/role-error.dto.js';
 import { ApiPaginatedResponse } from '../../../common/pagination/index.js';
+import {
+  ApiAuthErrors,
+  ApiInvalidIdError,
+  ApiThrottleError,
+  ApiValidationError,
+} from '../../../common/swagger/api-common-responses.decorator.js';
 
 @ApiTags('Admin / Roles')
+@ApiAuthErrors()
+@ApiThrottleError()
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @RequirePermissions(Permissions.REALM_ADMIN)
@@ -54,6 +63,9 @@ export class AdminRolesController {
 
   @ApiOperation({ summary: 'List all roles with their permissions' })
   @ApiPaginatedResponse(RoleResponseDto, 'Paginated list of roles')
+  @ApiValidationError(
+    'Invalid query parameter (page, limit, sortBy, sortOrder or filter) — code: validation.failed',
+  )
   @RequirePermissions(Permissions.ADMIN_ROLE_READ)
   @Get('roles')
   findAllRoles(@Query() query: FindRolesQueryDto) {
@@ -71,6 +83,7 @@ export class AdminRolesController {
     description: 'Role not found',
     type: ErrorResponseDto,
   })
+  @ApiInvalidIdError()
   @RequirePermissions(Permissions.ADMIN_ROLE_READ)
   @Get('roles/:id')
   findRoleById(@Param('id', ParseIntPipe) id: number) {
@@ -85,7 +98,8 @@ export class AdminRolesController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Role already exists',
+    description:
+      'Role already exists (admin.role.already_exists, params.name) or validation failed (validation.failed)',
     type: RoleAlreadyExistsErrorDto,
   })
   @RequirePermissions(Permissions.ADMIN_ROLE_MANAGE)
@@ -102,7 +116,8 @@ export class AdminRolesController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Role still assigned to users',
+    description:
+      'Role still assigned to users (admin.role.has_users, params.count) or invalid ID (must be an integer)',
     type: RoleHasUsersErrorDto,
   })
   @ApiResponse({
@@ -126,7 +141,8 @@ export class AdminRolesController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Unknown permissions',
+    description:
+      'Unknown permissions (admin.permission.unknown, params.permissions), validation failed (validation.failed) or invalid ID (must be an integer)',
     type: UnknownPermissionsErrorDto,
   })
   @ApiResponse({
@@ -135,6 +151,7 @@ export class AdminRolesController {
     type: ErrorResponseDto,
   })
   @RequirePermissions(Permissions.ADMIN_ROLE_MANAGE)
+  @HttpCode(200)
   @Post('roles/:id/permissions')
   addPermissions(
     @Request() req: any,
@@ -159,6 +176,7 @@ export class AdminRolesController {
     description: 'Association not found',
     type: ErrorResponseDto,
   })
+  @ApiInvalidIdError()
   @RequirePermissions(Permissions.ADMIN_ROLE_MANAGE)
   @Delete('roles/:id/permissions/:permId')
   removePermission(
@@ -173,6 +191,9 @@ export class AdminRolesController {
 
   @ApiOperation({ summary: 'List all available permissions' })
   @ApiPaginatedResponse(PermissionResponseDto, 'Paginated list of permissions')
+  @ApiValidationError(
+    'Invalid query parameter (page, limit, sortBy, sortOrder or filter) — code: validation.failed',
+  )
   @RequirePermissions(Permissions.ADMIN_PERMISSION_READ)
   @Get('permissions')
   findAllPermissions(@Query() query: FindPermissionsQueryDto) {

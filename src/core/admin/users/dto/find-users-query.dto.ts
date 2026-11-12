@@ -1,9 +1,18 @@
-import { IsOptional, IsString, IsBoolean } from 'class-validator';
+import { IsOptional, IsString, IsBoolean, IsIn } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { PaginationQueryDto } from '../../../../common/pagination/index.js';
 
 export class FindUsersQueryDto extends PaginationQueryDto {
+  @ApiPropertyOptional({
+    enum: ['id', 'email', 'name', 'createdAt', 'updatedAt'],
+    default: 'createdAt',
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn(['id', 'email', 'name', 'createdAt', 'updatedAt'])
+  sortBy: string = 'createdAt';
+
   @ApiPropertyOptional({
     description: 'Filtrer par nom de rôle',
     example: 'ADMIN',

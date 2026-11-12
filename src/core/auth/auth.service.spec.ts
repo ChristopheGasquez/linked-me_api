@@ -387,6 +387,7 @@ describe('AuthService', () => {
       const result = await service.getSessions(1, query);
 
       expect(result.data).toHaveLength(1);
+      expect(result.data[0]).not.toHaveProperty('token');
       expect(result.meta.total).toBe(1);
     });
   });
