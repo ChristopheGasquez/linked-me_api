@@ -1,9 +1,9 @@
 import { NestFactory } from '@nestjs/core';
-import { BadRequestException, ValidationPipe } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 import { AppModule } from './app.module.js';
-import { ResponseCodes } from './common/constants/response-codes.js';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter.js';
+import { validationExceptionFactory } from './common/validators/validation-exception.factory.js';
 import { setupSwagger } from './setup-swagger.js';
 
 async function bootstrap() {
@@ -21,23 +21,7 @@ async function bootstrap() {
     new ValidationPipe({
       whitelist: true,
       transform: true,
-      exceptionFactory: (errors) => {
-        const first = errors[0];
-        const firstConstraint = Object.keys(first.constraints ?? {})[0];
-        return new BadRequestException({
-          message: first.constraints?.[firstConstraint] ?? 'Validation failed',
-          code: ResponseCodes.VALIDATION_FAILED,
-          params: {
-            fields: errors.map((e) => {
-              const constraint = Object.keys(e.constraints ?? {})[0];
-              return {
-                key: e.property,
-                code: `validation.${e.property}.${constraint}`,
-              };
-            }),
-          },
-        });
-      },
+      exceptionFactory: validationExceptionFactory,
     }),
   );
 

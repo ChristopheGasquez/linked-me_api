@@ -5,6 +5,7 @@ jest.mock('bcrypt', () => ({
 
 import { Test, TestingModule } from '@nestjs/testing';
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   NotFoundException,
@@ -47,6 +48,7 @@ describe('AuthService', () => {
     >
   >;
   let auditService: jest.Mocked<Pick<AuditService, 'log'>>;
+  let configService: { getOrThrow: jest.Mock; get: jest.Mock };
 
   beforeEach(async () => {
     prisma = createPrismaServiceMock();
@@ -61,7 +63,7 @@ describe('AuthService', () => {
         .mockResolvedValue({ sub: 1, email: 'test@example.com' }),
     } as any;
 
-    const configService = {
+    configService = {
       getOrThrow: jest.fn().mockReturnValue('mock_secret'),
       get: jest.fn().mockReturnValue('7d'),
     };
@@ -277,6 +279,139 @@ describe('AuthService', () => {
       expect(result).toHaveProperty('access_token');
       expect(result).toHaveProperty('refresh_token');
       expect(result).toHaveProperty('user');
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // session limit (generateTokens via login)
+  // ─────────────────────────────────────────────────────────────
+  describe('session limit', () => {
+    beforeEach(() => {
+      prisma.user.findUnique.mockResolvedValue(mockUser as any);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      prisma.user.update.mockResolvedValue(mockUser as any);
+      prisma.refreshToken.create.mockResolvedValue({} as any);
+    });
+
+    it('should not evict any session when the user has 10 sessions or fewer', async () => {
+      prisma.refreshToken.findMany.mockResolvedValue(
+        Array.from({ length: 10 }, (_, i) => ({ id: i + 1 })) as any,
+      );
+
+      await service.login('test@example.com', 'password');
+
+      expect(prisma.refreshToken.deleteMany).not.toHaveBeenCalled();
+    });
+
+    it('should evict the oldest sessions beyond the limit of 10', async () => {
+      // findMany is ordered by createdAt asc: ids 1 and 2 are the oldest
+      prisma.refreshToken.findMany.mockResolvedValue(
+        Array.from({ length: 12 }, (_, i) => ({ id: i + 1 })) as any,
+      );
+
+      await service.login('test@example.com', 'password');
+
+      expect(prisma.refreshToken.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { userId: mockUser.id },
+          orderBy: { createdAt: 'asc' },
+        }),
+      );
+      expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
+        where: { id: { in: [1, 2] } },
+      });
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // callbackUrl validation
+  // ─────────────────────────────────────────────────────────────
+  describe('callbackUrl validation', () => {
+    const allowOrigins = (origins: string) =>
+      configService.get.mockImplementation((key: string, fallback?: unknown) =>
+        key === 'ALLOWED_REDIRECT_ORIGINS' ? origins : fallback,
+      );
+
+    const expectRejected = async (promise: Promise<unknown>) => {
+      await expect(promise).rejects.toThrow(BadRequestException);
+      await promise.catch((e: BadRequestException) =>
+        expect(e.getResponse()).toMatchObject({
+          code: 'auth.callback_url.not_allowed',
+        }),
+      );
+    };
+
+    it('should reject a malformed callbackUrl', async () => {
+      allowOrigins('https://app.linked-me.test');
+
+      await expectRejected(
+        service.forgotPassword('test@example.com', 'not-a-url'),
+      );
+      expect(prisma.user.findUnique).not.toHaveBeenCalled();
+    });
+
+    it('should reject an origin that is not in ALLOWED_REDIRECT_ORIGINS', async () => {
+      allowOrigins('https://app.linked-me.test');
+
+      await expectRejected(
+        service.forgotPassword('test@example.com', 'https://evil.test/reset'),
+      );
+    });
+
+    it('should reject any callbackUrl when ALLOWED_REDIRECT_ORIGINS is empty', async () => {
+      allowOrigins('');
+
+      await expectRejected(
+        service.forgotPassword(
+          'test@example.com',
+          'https://app.linked-me.test/reset',
+        ),
+      );
+    });
+
+    it('should accept an allowed origin (list with spaces) and forward the callbackUrl to the mail', async () => {
+      allowOrigins('https://other.test, http://localhost:4200');
+      prisma.user.findUnique.mockResolvedValue(mockUser as any);
+      prisma.passwordReset.deleteMany.mockResolvedValue({ count: 0 });
+      prisma.passwordReset.create.mockResolvedValue({} as any);
+
+      await service.forgotPassword(
+        'test@example.com',
+        'http://localhost:4200/reset?lang=fr',
+      );
+
+      expect(mailService.sendPasswordResetEmail).toHaveBeenCalledWith(
+        mockUser.email,
+        mockUser.name,
+        expect.any(String),
+        'http://localhost:4200/reset?lang=fr',
+      );
+    });
+
+    it('should validate the callbackUrl on register before touching the database', async () => {
+      allowOrigins('https://app.linked-me.test');
+
+      await expectRejected(
+        service.register({
+          email: 'new@example.com',
+          password: 'Password1!',
+          name: 'New',
+          callbackUrl: 'https://evil.test/verify',
+        } as any),
+      );
+      expect(prisma.user.findUnique).not.toHaveBeenCalled();
+    });
+
+    it('should validate the callbackUrl on resendVerificationEmail', async () => {
+      allowOrigins('https://app.linked-me.test');
+
+      await expectRejected(
+        service.resendVerificationEmail(
+          'test@example.com',
+          'https://evil.test/verify',
+        ),
+      );
+      expect(prisma.user.findUnique).not.toHaveBeenCalled();
     });
   });
 
