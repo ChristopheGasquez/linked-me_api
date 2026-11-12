@@ -39,8 +39,14 @@ import { MessageResponseDto } from '../../common/dto/message-response.dto.js';
 import { ErrorResponseDto } from '../../common/dto/error-response.dto.js';
 import { ValidationErrorResponseDto } from '../../common/dto/validation-error-response.dto.js';
 import { ApiPaginatedResponse } from '../../common/pagination/index.js';
+import {
+  ApiInvalidIdError,
+  ApiThrottleError,
+  ApiValidationError,
+} from '../../common/swagger/api-common-responses.decorator.js';
 
 @ApiTags('Auth')
+@ApiThrottleError()
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
@@ -97,6 +103,7 @@ export class AuthController {
       'Too many attempts — code: throttle.too_many_requests, params.retryAfter: seconds until retry',
     type: ErrorResponseDto,
   })
+  @ApiValidationError()
   @Throttle({ global: THROTTLE.AUTH })
   @Post('login')
   login(@Body() dto: LoginDto) {
@@ -116,11 +123,7 @@ export class AuthController {
     description: 'Invalid or expired token',
     type: ErrorResponseDto,
   })
-  @ApiResponse({
-    status: 400,
-    description: 'Missing token — code: validation.failed',
-    type: ValidationErrorResponseDto,
-  })
+  @ApiValidationError('Missing token — code: validation.failed')
   @Get('verify-email')
   verifyEmail(@Query() query: VerifyEmailQueryDto) {
     return this.authService.verifyEmail(query.token);
@@ -135,7 +138,7 @@ export class AuthController {
   @ApiResponse({
     status: 400,
     description:
-      'callbackUrl not in whitelist — code: auth.callback_url.not_allowed',
+      'Validation failed (validation.failed) or callbackUrl not in whitelist (auth.callback_url.not_allowed)',
     type: ErrorResponseDto,
   })
   @ApiResponse({
@@ -159,7 +162,7 @@ export class AuthController {
   @ApiResponse({
     status: 400,
     description:
-      'callbackUrl not in whitelist — code: auth.callback_url.not_allowed',
+      'Validation failed (validation.failed) or callbackUrl not in whitelist (auth.callback_url.not_allowed)',
     type: ErrorResponseDto,
   })
   @ApiResponse({
@@ -231,6 +234,7 @@ export class AuthController {
     description: 'Refresh token invalid or revoked',
     type: ErrorResponseDto,
   })
+  @ApiValidationError()
   @Post('refresh')
   refresh(@Body() dto: RefreshTokenDto) {
     return this.authService.refresh(dto.refresh_token);
@@ -242,6 +246,7 @@ export class AuthController {
     type: MessageResponseDto,
     description: 'Refresh token revoked',
   })
+  @ApiValidationError()
   @Post('logout')
   logout(@Body() dto: RefreshTokenDto) {
     return this.authService.logout(dto.refresh_token);
@@ -273,6 +278,9 @@ export class AuthController {
     description: 'Not authenticated',
     type: ErrorResponseDto,
   })
+  @ApiValidationError(
+    'Invalid query parameter (page, limit, sortBy, sortOrder or filter) — code: validation.failed',
+  )
   @UseGuards(JwtAuthGuard)
   @Get('sessions')
   getSessions(@Request() req: any, @Query() query: FindSessionsQueryDto) {
@@ -296,6 +304,7 @@ export class AuthController {
     description: 'Session not found',
     type: ErrorResponseDto,
   })
+  @ApiInvalidIdError()
   @UseGuards(JwtAuthGuard)
   @Delete('sessions/:id')
   revokeSession(@Request() req: any, @Param('id', ParseIntPipe) id: number) {

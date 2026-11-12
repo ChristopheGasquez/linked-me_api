@@ -35,8 +35,16 @@ import {
   UserRoleAlreadyAssignedErrorDto,
 } from './dto/user-error.dto.js';
 import { ApiPaginatedResponse } from '../../../common/pagination/index.js';
+import {
+  ApiAuthErrors,
+  ApiInvalidIdError,
+  ApiThrottleError,
+  ApiValidationError,
+} from '../../../common/swagger/api-common-responses.decorator.js';
 
 @ApiTags('Admin / Users')
+@ApiAuthErrors()
+@ApiThrottleError()
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @RequirePermissions(Permissions.REALM_ADMIN)
@@ -46,6 +54,9 @@ export class AdminUsersController {
 
   @ApiOperation({ summary: 'List users with pagination, sorting and filters' })
   @ApiPaginatedResponse(UserAdminResponseDto, 'Paginated list of users')
+  @ApiValidationError(
+    'Invalid query parameter (page, limit, sortBy, sortOrder or filter) — code: validation.failed',
+  )
   @RequirePermissions(Permissions.ADMIN_USER_READ)
   @Get('users')
   findAllUsers(@Query() query: FindUsersQueryDto) {
@@ -58,11 +69,7 @@ export class AdminUsersController {
     type: UserAdminResponseDto,
     description: 'User found',
   })
-  @ApiResponse({
-    status: 400,
-    description: 'Invalid user ID (must be an integer)',
-    type: ErrorResponseDto,
-  })
+  @ApiInvalidIdError()
   @ApiResponse({
     status: 404,
     description: 'User not found',
@@ -82,7 +89,8 @@ export class AdminUsersController {
   })
   @ApiResponse({
     status: 400,
-    description: 'User already has this role',
+    description:
+      'User already has this role (admin.user.role_already_assigned, params.roleName), validation failed (validation.failed) or invalid ID (must be an integer)',
     type: UserRoleAlreadyAssignedErrorDto,
   })
   @ApiResponse({
@@ -112,6 +120,7 @@ export class AdminUsersController {
     description: 'Association not found',
     type: ErrorResponseDto,
   })
+  @ApiInvalidIdError()
   @RequirePermissions(Permissions.ADMIN_USER_ASSIGN_ROLE)
   @Delete('users/:id/roles/:roleId')
   removeRoleFromUser(
@@ -131,7 +140,7 @@ export class AdminUsersController {
   @ApiResponse({
     status: 400,
     description:
-      'User still has roles, remove them first — code: admin.user.has_roles',
+      'User still has roles, remove them first (admin.user.has_roles) or invalid ID (must be an integer)',
     type: ErrorResponseDto,
   })
   @ApiResponse({
