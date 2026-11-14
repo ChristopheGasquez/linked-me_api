@@ -38,7 +38,7 @@ describe('AuditService', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // ─────────────────────────────────────────────────────────────

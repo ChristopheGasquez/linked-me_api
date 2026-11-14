@@ -13,11 +13,10 @@ export async function paginate<T>(
     findMany: (args: any) => Promise<T[]>;
     count: (args: any) => Promise<number>;
   },
-  query: PaginationQueryDto,
+  query: PaginationQueryDto & { search?: string },
   options: PaginateOptions = {},
 ): Promise<PaginatedResponse<T>> {
-  const { page, limit, sortBy, sortOrder } = query;
-  const search = (query as PaginationQueryDto & { search?: string }).search;
+  const { page, limit, sortBy, sortOrder, search } = query;
   const { searchFields = [], where = {}, include, metaFilters } = options;
 
   const whereClause: Record<string, unknown> = { ...where };
