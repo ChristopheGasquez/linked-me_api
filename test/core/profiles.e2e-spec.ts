@@ -165,7 +165,6 @@ describe('Profiles (e2e)', () => {
       }).expect(200);
       expect(res.body.code).toBe('profile.password.changed');
 
-      // checked before logging in again (see the jti known bug in test/README.md)
       await request(t.http)
         .post('/auth/refresh')
         .send({ refresh_token: user.refreshToken })
@@ -210,9 +209,8 @@ describe('Profiles (e2e)', () => {
       expect(log.metadata).toEqual({ email: user.email });
     });
 
-    // KNOWN BUG (skipped until the fix PR): remove() does not invalidate the
-    // user cache, so the JWT strategy keeps accepting the token for up to 5 min.
-    it.skip('[KNOWN BUG: user cache] the access token of a deleted account is rejected', async () => {
+    // the user cache read by the JWT strategy must be invalidated on deletion
+    it('the access token of a deleted account is rejected', async () => {
       const user = await createVerifiedUser(t);
 
       await request(t.http)

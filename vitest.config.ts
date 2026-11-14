@@ -39,6 +39,9 @@ export default defineConfig({
           globals: true, // describe/it/expect/vi available without imports
           environment: 'node',
           include: ['src/**/*.spec.ts'],
+          // when both projects run (test:cov), unit tests first, then E2E alone:
+          // running them together starves the CPU-heavy E2E tests (bcrypt)
+          sequence: { groupOrder: 0 },
         },
       },
       {
@@ -50,7 +53,10 @@ export default defineConfig({
           include: ['test/**/*.e2e-spec.ts'],
           env: loadTestEnv(),
           globalSetup: ['test/setup/global-setup.ts'],
+          sequence: { groupOrder: 1 },
           fileParallelism: false, // all suites share the same database
+          // real bcrypt + database: margin for slow machines and CI runners
+          testTimeout: 15_000,
           hookTimeout: 30_000,
         },
       },
