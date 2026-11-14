@@ -1,8 +1,8 @@
 import { paginate } from './paginate.js';
 
 const makeModel = (items: unknown[], total: number) => ({
-  findMany: jest.fn().mockResolvedValue(items),
-  count: jest.fn().mockResolvedValue(total),
+  findMany: vi.fn().mockResolvedValue(items),
+  count: vi.fn().mockResolvedValue(total),
 });
 
 const baseQuery = {
@@ -14,7 +14,7 @@ const baseQuery = {
 
 describe('paginate()', () => {
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // ─────────────────────────────────────────────────────────────

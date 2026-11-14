@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import {
   ArgumentsHost,
   BadRequestException,
@@ -9,11 +10,11 @@ import { HttpExceptionFilter } from './http-exception.filter.js';
 
 describe('HttpExceptionFilter', () => {
   const filter = new HttpExceptionFilter();
-  let response: { status: jest.Mock; json: jest.Mock };
+  let response: { status: Mock; json: Mock };
   let host: ArgumentsHost;
 
   beforeEach(() => {
-    response = { status: jest.fn(), json: jest.fn() };
+    response = { status: vi.fn(), json: vi.fn() };
     response.status.mockReturnValue(response);
     host = {
       switchToHttp: () => ({ getResponse: () => response }),

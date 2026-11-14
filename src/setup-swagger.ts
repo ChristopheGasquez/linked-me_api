@@ -31,10 +31,10 @@ function swaggerNav(currentPath: string): string {
 function injectPermissionsInDescriptions(document: any): void {
   for (const path of Object.values(document.paths ?? {})) {
     for (const operation of Object.values(path as object)) {
-      const perms = (operation as any)['x-required-permissions'];
+      const perms = operation['x-required-permissions'];
       if (perms?.length) {
-        (operation as any).description =
-          ((operation as any).description ?? '') +
+        operation.description =
+          (operation.description ?? '') +
           `\n\n**Required permissions:** \`${perms.join('`, `')}\``;
       }
     }
@@ -59,10 +59,9 @@ function injectRealmPermissionsInTags(document: any): void {
       (pathItem as any)['x-class-permissions'] ?? [];
     for (const [method, operation] of Object.entries(pathItem as object)) {
       if (!HTTP_METHODS.includes(method)) continue;
-      const opRealms: string[] =
-        (operation as any)['x-class-permissions'] ?? [];
+      const opRealms: string[] = operation['x-class-permissions'] ?? [];
       const allRealms = [...new Set([...pathItemRealms, ...opRealms])];
-      const tags: string[] = (operation as any)['tags'] ?? [];
+      const tags: string[] = operation['tags'] ?? [];
       for (const tag of tags) {
         if (!tagRealms.has(tag)) tagRealms.set(tag, new Set());
         allRealms.forEach((p) => tagRealms.get(tag)!.add(p));
@@ -123,7 +122,15 @@ export function setupSwagger(app: INestApplication): void {
         .setVersion('1.0')
         .addBearerAuth()
         .build(),
-      { include: [AuthModule, ProfilesModule, AdminModule, AuditModule, TasksModule] },
+      {
+        include: [
+          AuthModule,
+          ProfilesModule,
+          AdminModule,
+          AuditModule,
+          TasksModule,
+        ],
+      },
     ),
   );
   SwaggerModule.setup('docs/core', app, coreDocument);

@@ -101,29 +101,27 @@ npm run start:prod
 | `npm run prisma:reset` | Full database reset + re-seed |
 | `npm run prisma:studio` | Open Prisma Studio (visual DB browser) |
 | `npm test` | Run unit tests |
-| `npm run test:cov` | Run unit tests with coverage report |
-| `npm run test:e2e` | Run E2E tests |
+| `npm run test:watch` | Run unit tests in watch mode |
+| `npm run test:cov` | Run unit + E2E tests with a merged coverage report (requires the test database) |
+| `npm run test:e2e` | Run E2E tests (requires a local `linked_me_test` database) |
 
 ## Testing
 
-Unit tests cover all service-layer business logic with mocked dependencies (Prisma, JWT, Mail).
+Two layers, both on [Vitest](https://vitest.dev): **unit tests** next to the code (`src/**/*.spec.ts`, mocked dependencies) and **E2E tests** in `test/` (Supertest, real PostgreSQL test database).
+
+👉 Strategy, setup, architecture and conventions: **[test/README.md](test/README.md)**
 
 ```bash
-# Run unit tests
-npm test
-
-# Run tests in watch mode
-npm run test:watch
-
-# Generate coverage report (output: coverage/)
-npm run test:cov
+npm test           # unit tests
+npm run test:e2e   # E2E tests (one-time setup: see test/README.md)
+npm run test:cov   # unit + E2E tests, merged coverage report (coverage/)
 ```
 
-**Coverage:** 95 tests across 8 suites — 100% statement coverage on all services (`auth`, `profiles`, `admin/users`, `admin/roles`, `audit`, `tasks`) and the `paginate` utility.
+**Coverage:** ~91% lines (merged unit + E2E, V8 provider). Unit tests: 153 tests across 16 suites, 100% statement coverage on all services (`auth`, `profiles`, `admin/users`, `admin/roles`, `audit`, `tasks`, `mail`, user cache), guards, JWT strategy, exception filters and `src/common/` utilities.
 
-**Stack:** [jest-mock-extended](https://github.com/marchaos/jest-mock-extended) for type-safe Prisma mocks, `jest.mock()` for external modules (bcrypt, mail).
+**Excluded from coverage:** `main.ts`, `*.module.ts` (declarative wiring) and `*.mock.ts` (test helpers). Controllers and DTOs are not unit-tested: E2E tests cover them (see [test/README.md](test/README.md)).
 
-E2E tests (Phase 2 — requires a dedicated test database) will use Supertest to test HTTP endpoints end-to-end.
+**Stack:** [Vitest](https://vitest.dev) with SWC (`unplugin-swc`, needed for Nest decorator metadata), [vitest-mock-extended](https://github.com/eratio08/vitest-mock-extended) for type-safe Prisma mocks, `vi.mock()` for external modules (bcrypt, resend). Test globals (`describe`, `it`, `expect`, `vi`) are enabled, no import needed.
 
 ## API Documentation
 

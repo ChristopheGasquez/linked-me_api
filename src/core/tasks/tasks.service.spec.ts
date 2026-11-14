@@ -1,3 +1,4 @@
+import type { Mock, Mocked } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { TasksService } from './tasks.service.js';
@@ -12,24 +13,24 @@ import {
 describe('TasksService', () => {
   let service: TasksService;
   let prisma: PrismaServiceMock;
-  let profilesService: jest.Mocked<Pick<ProfilesService, 'deleteUnverified'>>;
-  let configService: jest.Mocked<Pick<ConfigService, 'getOrThrow' | 'get'>>;
-  let auditService: jest.Mocked<Pick<AuditService, 'log'>>;
+  let profilesService: Mocked<Pick<ProfilesService, 'deleteUnverified'>>;
+  let configService: { getOrThrow: Mock; get: Mock };
+  let auditService: Mocked<Pick<AuditService, 'log'>>;
 
   beforeEach(async () => {
     prisma = createPrismaServiceMock();
 
     profilesService = {
-      deleteUnverified: jest.fn(),
+      deleteUnverified: vi.fn(),
     };
 
     configService = {
-      getOrThrow: jest.fn(),
-      get: jest.fn(),
+      getOrThrow: vi.fn(),
+      get: vi.fn(),
     };
 
     auditService = {
-      log: jest.fn().mockResolvedValue(undefined),
+      log: vi.fn().mockResolvedValue(undefined),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -46,7 +47,7 @@ describe('TasksService', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // ─────────────────────────────────────────────────────────────

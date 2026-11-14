@@ -18,12 +18,12 @@ describe('UserCacheService', () => {
   let cache: UserCacheService;
 
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     cache = new UserCacheService();
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it('should return null for an unknown user', () => {
@@ -39,18 +39,18 @@ describe('UserCacheService', () => {
 
   it('should still return the data right before the TTL expires', () => {
     cache.set(1, buildUser(1));
-    jest.advanceTimersByTime(USER_CACHE_TTL_MS);
+    vi.advanceTimersByTime(USER_CACHE_TTL_MS);
 
     expect(cache.get(1)).not.toBeNull();
   });
 
   it('should return null and drop the entry once the TTL has expired', () => {
     cache.set(1, buildUser(1));
-    jest.advanceTimersByTime(USER_CACHE_TTL_MS + 1);
+    vi.advanceTimersByTime(USER_CACHE_TTL_MS + 1);
 
     expect(cache.get(1)).toBeNull();
     // the entry is removed, so moving the clock back does not resurrect it
-    jest.setSystemTime(Date.now() - USER_CACHE_TTL_MS);
+    vi.setSystemTime(Date.now() - USER_CACHE_TTL_MS);
     expect(cache.get(1)).toBeNull();
   });
 

@@ -1,3 +1,4 @@
+import type { Mocked } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { AdminRolesService } from './roles.service.js';
@@ -32,21 +33,19 @@ const defaultQuery = {
 describe('AdminRolesService', () => {
   let service: AdminRolesService;
   let prisma: PrismaServiceMock;
-  let auditService: jest.Mocked<Pick<AuditService, 'log'>>;
-  let userCache: jest.Mocked<
-    Pick<UserCacheService, 'invalidate' | 'invalidateAll'>
-  >;
+  let auditService: Mocked<Pick<AuditService, 'log'>>;
+  let userCache: Mocked<Pick<UserCacheService, 'invalidate' | 'invalidateAll'>>;
 
   beforeEach(async () => {
     prisma = createPrismaServiceMock();
 
     auditService = {
-      log: jest.fn().mockResolvedValue(undefined),
+      log: vi.fn().mockResolvedValue(undefined),
     };
 
     userCache = {
-      invalidate: jest.fn(),
-      invalidateAll: jest.fn(),
+      invalidate: vi.fn(),
+      invalidateAll: vi.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -62,7 +61,7 @@ describe('AdminRolesService', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // ─────────────────────────────────────────────────────────────

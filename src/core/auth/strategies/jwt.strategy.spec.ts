@@ -1,3 +1,4 @@
+import type { Mocked } from 'vitest';
 import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './jwt.strategy.js';
@@ -39,13 +40,13 @@ const dbUser = {
 describe('JwtStrategy', () => {
   let strategy: JwtStrategy;
   let prisma: PrismaServiceMock;
-  let userCache: jest.Mocked<Pick<UserCacheService, 'get' | 'set'>>;
+  let userCache: Mocked<Pick<UserCacheService, 'get' | 'set'>>;
 
   beforeEach(() => {
     prisma = createPrismaServiceMock();
-    userCache = { get: jest.fn().mockReturnValue(null), set: jest.fn() };
+    userCache = { get: vi.fn().mockReturnValue(null), set: vi.fn() };
     const config = {
-      getOrThrow: jest.fn().mockReturnValue('jwt_secret'),
+      getOrThrow: vi.fn().mockReturnValue('jwt_secret'),
     } as unknown as ConfigService;
 
     strategy = new JwtStrategy(

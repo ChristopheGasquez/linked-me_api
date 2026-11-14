@@ -1,4 +1,4 @@
-import { mockDeep, DeepMockProxy } from 'jest-mock-extended';
+import { mockDeep, DeepMockProxy } from 'vitest-mock-extended';
 import { PrismaService } from './prisma.service.js';
 
 export type PrismaServiceMock = DeepMockProxy<PrismaService>;

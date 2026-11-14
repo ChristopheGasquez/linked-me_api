@@ -1,9 +1,9 @@
-const sendMock = jest.fn();
+const { sendMock } = vi.hoisted(() => ({ sendMock: vi.fn() }));
 
-jest.mock('resend', () => ({
-  Resend: jest.fn().mockImplementation(() => ({
-    emails: { send: sendMock },
-  })),
+vi.mock('resend', () => ({
+  Resend: vi.fn(function () {
+    return { emails: { send: sendMock } };
+  }),
 }));
 
 import { ConfigService } from '@nestjs/config';
@@ -11,12 +11,12 @@ import { MailService } from './mail.service.js';
 
 const buildService = (env: Record<string, string | undefined>) => {
   const config = {
-    getOrThrow: jest.fn((key: string) => {
+    getOrThrow: vi.fn((key: string) => {
       const value = env[key];
       if (value === undefined) throw new Error(`Missing ${key}`);
       return value;
     }),
-    get: jest.fn((key: string, fallback?: unknown) => env[key] ?? fallback),
+    get: vi.fn((key: string, fallback?: unknown) => env[key] ?? fallback),
   } as unknown as ConfigService;
   return new MailService(config);
 };
