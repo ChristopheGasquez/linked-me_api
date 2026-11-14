@@ -11,6 +11,22 @@ jobs:
     name: CI
     runs-on: ubuntu-latest
 
+    # Disposable PostgreSQL for E2E tests (destroyed with the job)
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: linked_me_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,6 +42,24 @@ jobs:
 
       - name: Unit tests
         run: npm test
+
+      # Fake, public values: no secret needed
+      - name: E2E tests
+        run: npm run test:e2e
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/linked_me_test?schema=public
+          JWT_SECRET: test-secret
+          JWT_ACCESS_EXPIRY: 15m
+          JWT_REFRESH_SECRET: test-refresh-secret
+          JWT_REFRESH_EXPIRY: 7d
+          APP_URL: http://localhost:3000
+          ALLOWED_REDIRECT_ORIGINS: http://localhost:4200
+          RESEND_API_KEY: re_test_fake
+          MAIL_FROM: test@linked-me.test
+          ADMIN_EMAIL: admin@linked-me.test
+          ADMIN_PASSWORD: Admin-Test-123!
+          UNVERIFIED_USER_TTL_HOURS: 24
+          AUDIT_LOG_TTL_DAYS: 30
 
       # develop: on vérifie le style du code
       - name: Lint
