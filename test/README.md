@@ -23,7 +23,7 @@ cp .env.test.example .env.test
 # 3. Run
 npm test            # unit tests (no database needed)
 npm run test:e2e    # E2E tests
-npm run test:cov    # unit tests + coverage report (coverage/)
+npm run test:cov    # unit + E2E tests, merged coverage report (coverage/) — needs the test database
 ```
 
 ## Architecture
@@ -39,6 +39,7 @@ test/
     permissions.helper.ts # createUserWithPermissions: user whose only role holds exactly the given permissions
   core/
     route-security.e2e-spec.ts  # route security net (see below)
+    auth.e2e-spec.ts            # register, email verification, login & lockout, refresh & sessions, forgot/reset password
   setup.e2e-spec.ts       # self-test of the tooling above
   health.e2e-spec.ts
 ```
@@ -105,6 +106,20 @@ Conventions:
 - One file per domain (`test/core/<domain>.e2e-spec.ts`).
 - Never modify the seeded `USER` / `ADMIN` roles: create dedicated roles instead (they are removed by `cleanDatabase()`).
 - `POST` routes return **201** unless they declare `@HttpCode` (login creates a session, hence 201).
+
+## Coverage
+
+`npm run test:cov` runs both Vitest projects (unit + E2E) and writes a single merged V8 report to `coverage/`. Unit tests alone cover the services; E2E tests add controllers, DTOs and guards wiring.
+
+Excluded: `main.ts`, `*.module.ts`, `*.mock.ts`, `*.spec.ts`.
+
+## Known bugs
+
+Bugs found by the E2E tests and not fixed yet. Their tests are skipped with an explicit `[KNOWN BUG: …]` label so they stay visible in every report: un-skip them in the fix PR.
+
+| Bug                                                                                                                                                                                                                                                                                                                        | Skipped tests (`test/core/auth.e2e-spec.ts`)                         |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| **Refresh tokens have no `jti`.** The payload is `{ sub, email }` plus `iat`/`exp` in seconds, so two refresh tokens issued for the same user in the same second are identical: refresh rotation is ineffective, and two devices logging in within the same second share one session (logging out one logs out the other). | `refresh rotates tokens…`, `two logins create two distinct sessions` |
 
 ## CI
 
