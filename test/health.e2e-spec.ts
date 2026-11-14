@@ -1,25 +1,17 @@
-import { Test } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { AppModule } from '../src/app.module.js';
-import { configureApp } from '../src/configure-app.js';
+import { createTestApp, type TestApp } from './setup/app.factory.js';
 
 describe('Health (e2e)', () => {
-  let app: INestApplication;
+  let t: TestApp;
 
   beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-    app = moduleRef.createNestApplication();
-    configureApp(app);
-    await app.init();
+    t = await createTestApp();
   });
 
-  afterAll(() => app.close());
+  afterAll(() => t.app.close());
 
   it('GET / → 200 with status and version', async () => {
-    const res = await request(app.getHttpServer()).get('/').expect(200);
+    const res = await request(t.http).get('/').expect(200);
     expect(res.body).toEqual({
       status: 'ok',
       version: expect.any(String),
