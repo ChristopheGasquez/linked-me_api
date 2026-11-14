@@ -1,6 +1,7 @@
-jest.mock('bcrypt', () => ({
-  hash: jest.fn(),
-  compare: jest.fn(),
+import type { Mock, Mocked } from 'vitest';
+vi.mock('bcrypt', () => ({
+  hash: vi.fn(),
+  compare: vi.fn(),
 }));
 
 import { Test, TestingModule } from '@nestjs/testing';
@@ -38,8 +39,8 @@ const mockUser = {
 describe('AuthService', () => {
   let service: AuthService;
   let prisma: PrismaServiceMock;
-  let jwtService: jest.Mocked<JwtService>;
-  let mailService: jest.Mocked<
+  let jwtService: Mocked<JwtService>;
+  let mailService: Mocked<
     Pick<
       MailService,
       | 'sendVerificationEmail'
@@ -47,35 +48,35 @@ describe('AuthService', () => {
       | 'sendAccountLockedEmail'
     >
   >;
-  let auditService: jest.Mocked<Pick<AuditService, 'log'>>;
-  let configService: { getOrThrow: jest.Mock; get: jest.Mock };
+  let auditService: Mocked<Pick<AuditService, 'log'>>;
+  let configService: { getOrThrow: Mock; get: Mock };
 
   beforeEach(async () => {
     prisma = createPrismaServiceMock();
 
     jwtService = {
-      signAsync: jest.fn().mockResolvedValue('mock_token'),
-      decode: jest
+      signAsync: vi.fn().mockResolvedValue('mock_token'),
+      decode: vi
         .fn()
         .mockReturnValue({ exp: Math.floor(Date.now() / 1000) + 3600 }),
-      verifyAsync: jest
+      verifyAsync: vi
         .fn()
         .mockResolvedValue({ sub: 1, email: 'test@example.com' }),
     } as any;
 
     configService = {
-      getOrThrow: jest.fn().mockReturnValue('mock_secret'),
-      get: jest.fn().mockReturnValue('7d'),
+      getOrThrow: vi.fn().mockReturnValue('mock_secret'),
+      get: vi.fn().mockReturnValue('7d'),
     };
 
     mailService = {
-      sendVerificationEmail: jest.fn().mockResolvedValue(undefined),
-      sendPasswordResetEmail: jest.fn().mockResolvedValue(undefined),
-      sendAccountLockedEmail: jest.fn().mockResolvedValue(undefined),
+      sendVerificationEmail: vi.fn().mockResolvedValue(undefined),
+      sendPasswordResetEmail: vi.fn().mockResolvedValue(undefined),
+      sendAccountLockedEmail: vi.fn().mockResolvedValue(undefined),
     };
 
     auditService = {
-      log: jest.fn().mockResolvedValue(undefined),
+      log: vi.fn().mockResolvedValue(undefined),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -93,7 +94,7 @@ describe('AuthService', () => {
   });
 
   afterEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
   });
 
   // ─────────────────────────────────────────────────────────────
@@ -115,7 +116,7 @@ describe('AuthService', () => {
     it('should create user, send verification email and return user without password', async () => {
       prisma.user.findUnique.mockResolvedValue(null);
       prisma.user.create.mockResolvedValue(mockUser as any);
-      (bcrypt.hash as jest.Mock).mockResolvedValue('hashed_password');
+      (bcrypt.hash as Mock).mockResolvedValue('hashed_password');
 
       prisma.emailVerification.deleteMany.mockResolvedValue({ count: 0 });
       prisma.emailVerification.create.mockResolvedValue({} as any);
@@ -167,7 +168,7 @@ describe('AuthService', () => {
     it('should throw UnauthorizedException and increment failedLoginAttempts on wrong password', async () => {
       const user = { ...mockUser, failedLoginAttempts: 2 };
       prisma.user.findUnique.mockResolvedValue(user as any);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+      (bcrypt.compare as Mock).mockResolvedValue(false);
       prisma.user.update.mockResolvedValue(user as any);
 
       await expect(
@@ -185,7 +186,7 @@ describe('AuthService', () => {
     it('should lock account and send email on 5th failed attempt', async () => {
       const user = { ...mockUser, failedLoginAttempts: 4 };
       prisma.user.findUnique.mockResolvedValue(user as any);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+      (bcrypt.compare as Mock).mockResolvedValue(false);
       prisma.user.update.mockResolvedValue(user as any);
 
       await expect(
@@ -220,7 +221,7 @@ describe('AuthService', () => {
         lockedUntil: new Date(Date.now() - 1000),
       };
       prisma.user.findUnique.mockResolvedValue(user as any);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+      (bcrypt.compare as Mock).mockResolvedValue(false);
       prisma.user.update.mockResolvedValue(user as any);
 
       await expect(
@@ -236,7 +237,7 @@ describe('AuthService', () => {
 
     it('should reset failedLoginAttempts to 0 on successful login', async () => {
       prisma.user.findUnique.mockResolvedValue(mockUser as any);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      (bcrypt.compare as Mock).mockResolvedValue(true);
       prisma.user.update.mockResolvedValue(mockUser as any);
 
       const result = await service.validateUser('test@example.com', 'password');
@@ -259,7 +260,7 @@ describe('AuthService', () => {
     it('should throw UnauthorizedException if email not verified', async () => {
       const unverifiedUser = { ...mockUser, isEmailChecked: false };
       prisma.user.findUnique.mockResolvedValue(unverifiedUser as any);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      (bcrypt.compare as Mock).mockResolvedValue(true);
       prisma.user.update.mockResolvedValue(unverifiedUser as any);
 
       await expect(
@@ -269,7 +270,7 @@ describe('AuthService', () => {
 
     it('should return tokens and user on success', async () => {
       prisma.user.findUnique.mockResolvedValue(mockUser as any);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      (bcrypt.compare as Mock).mockResolvedValue(true);
       prisma.user.update.mockResolvedValue(mockUser as any);
       prisma.refreshToken.create.mockResolvedValue({} as any);
       prisma.refreshToken.findMany.mockResolvedValue([]);
@@ -288,7 +289,7 @@ describe('AuthService', () => {
   describe('session limit', () => {
     beforeEach(() => {
       prisma.user.findUnique.mockResolvedValue(mockUser as any);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      (bcrypt.compare as Mock).mockResolvedValue(true);
       prisma.user.update.mockResolvedValue(mockUser as any);
       prisma.refreshToken.create.mockResolvedValue({} as any);
     });
@@ -649,7 +650,7 @@ describe('AuthService', () => {
         expiresAt: new Date(Date.now() + 3600000),
       };
       prisma.passwordReset.findFirst.mockResolvedValue(resetRecord as any);
-      (bcrypt.hash as jest.Mock).mockResolvedValue('new_hashed_password');
+      (bcrypt.hash as Mock).mockResolvedValue('new_hashed_password');
       prisma.$transaction.mockImplementation((ops: any) =>
         Array.isArray(ops) ? Promise.all(ops) : ops(prisma),
       );

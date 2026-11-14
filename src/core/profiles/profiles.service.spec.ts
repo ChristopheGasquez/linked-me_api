@@ -1,6 +1,7 @@
-jest.mock('bcrypt', () => ({
-  hash: jest.fn(),
-  compare: jest.fn(),
+import type { Mock, Mocked } from 'vitest';
+vi.mock('bcrypt', () => ({
+  hash: vi.fn(),
+  compare: vi.fn(),
 }));
 
 import { Test, TestingModule } from '@nestjs/testing';
@@ -30,18 +31,18 @@ const mockUser = {
 describe('ProfilesService', () => {
   let service: ProfilesService;
   let prisma: PrismaServiceMock;
-  let auditService: jest.Mocked<Pick<AuditService, 'log'>>;
-  let userCache: jest.Mocked<Pick<UserCacheService, 'invalidate'>>;
+  let auditService: Mocked<Pick<AuditService, 'log'>>;
+  let userCache: Mocked<Pick<UserCacheService, 'invalidate'>>;
 
   beforeEach(async () => {
     prisma = createPrismaServiceMock();
 
     auditService = {
-      log: jest.fn().mockResolvedValue(undefined),
+      log: vi.fn().mockResolvedValue(undefined),
     };
 
     userCache = {
-      invalidate: jest.fn(),
+      invalidate: vi.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -57,7 +58,7 @@ describe('ProfilesService', () => {
   });
 
   afterEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
   });
 
   // ─────────────────────────────────────────────────────────────
@@ -163,7 +164,7 @@ describe('ProfilesService', () => {
 
     it('should throw UnauthorizedException if current password is wrong', async () => {
       prisma.user.findUnique.mockResolvedValue(mockUser as any);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+      (bcrypt.compare as Mock).mockResolvedValue(false);
 
       await expect(
         service.changePassword(1, 'wrong_password', 'new'),
@@ -172,8 +173,8 @@ describe('ProfilesService', () => {
 
     it('should update password, revoke sessions and log audit on success', async () => {
       prisma.user.findUnique.mockResolvedValue(mockUser as any);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-      (bcrypt.hash as jest.Mock).mockResolvedValue('new_hashed_password');
+      (bcrypt.compare as Mock).mockResolvedValue(true);
+      (bcrypt.hash as Mock).mockResolvedValue('new_hashed_password');
       prisma.$transaction.mockImplementation((ops: any) =>
         Array.isArray(ops) ? Promise.all(ops) : ops(prisma),
       );

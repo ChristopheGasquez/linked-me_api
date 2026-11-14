@@ -38,7 +38,7 @@ describe('CustomThrottlerGuard', () => {
   });
 
   it('should produce a normalized 429 body once caught by HttpExceptionFilter', () => {
-    const response = { status: jest.fn(), json: jest.fn() };
+    const response = { status: vi.fn(), json: vi.fn() };
     response.status.mockReturnValue(response);
     const host = {
       switchToHttp: () => ({ getResponse: () => response }),

@@ -101,8 +101,8 @@ npm run start:prod
 | `npm run prisma:reset` | Full database reset + re-seed |
 | `npm run prisma:studio` | Open Prisma Studio (visual DB browser) |
 | `npm test` | Run unit tests |
+| `npm run test:watch` | Run unit tests in watch mode |
 | `npm run test:cov` | Run unit tests with coverage report |
-| `npm run test:e2e` | Run E2E tests |
 
 ## Testing
 
@@ -119,9 +119,11 @@ npm run test:watch
 npm run test:cov
 ```
 
-**Coverage:** 95 tests across 8 suites — 100% statement coverage on all services (`auth`, `profiles`, `admin/users`, `admin/roles`, `audit`, `tasks`) and the `paginate` utility.
+**Coverage:** 153 tests across 16 suites — 100% statement coverage on all services (`auth`, `profiles`, `admin/users`, `admin/roles`, `audit`, `tasks`, `mail`, user cache), guards, JWT strategy, exception filters and `src/common/` utilities.
 
-**Stack:** [jest-mock-extended](https://github.com/marchaos/jest-mock-extended) for type-safe Prisma mocks, `jest.mock()` for external modules (bcrypt, mail).
+**Excluded from coverage:** `main.ts`, `*.module.ts` (declarative wiring) and `*.mock.ts` (test helpers). Controllers and DTOs are counted but not unit-tested: they will be covered by E2E tests, which explains the global figure (~79% lines with the V8 provider).
+
+**Stack:** [Vitest](https://vitest.dev) with SWC (`unplugin-swc`, needed for Nest decorator metadata), [vitest-mock-extended](https://github.com/eratio08/vitest-mock-extended) for type-safe Prisma mocks, `vi.mock()` for external modules (bcrypt, resend). Test globals (`describe`, `it`, `expect`, `vi`) are enabled, no import needed.
 
 E2E tests (Phase 2 — requires a dedicated test database) will use Supertest to test HTTP endpoints end-to-end.
 
