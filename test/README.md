@@ -40,6 +40,7 @@ test/
   core/
     route-security.e2e-spec.ts  # route security net (see below)
     auth.e2e-spec.ts            # register, email verification, login & lockout, refresh & sessions, forgot/reset password
+    profiles.e2e-spec.ts        # public profile, update (DTO whitelist, cache), password change, account deletion
   setup.e2e-spec.ts       # self-test of the tooling above
   health.e2e-spec.ts
 ```
@@ -117,9 +118,10 @@ Excluded: `main.ts`, `*.module.ts`, `*.mock.ts`, `*.spec.ts`.
 
 Bugs found by the E2E tests and not fixed yet. Their tests are skipped with an explicit `[KNOWN BUG: …]` label so they stay visible in every report: un-skip them in the fix PR.
 
-| Bug                                                                                                                                                                                                                                                                                                                        | Skipped tests (`test/core/auth.e2e-spec.ts`)                         |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| **Refresh tokens have no `jti`.** The payload is `{ sub, email }` plus `iat`/`exp` in seconds, so two refresh tokens issued for the same user in the same second are identical: refresh rotation is ineffective, and two devices logging in within the same second share one session (logging out one logs out the other). | `refresh rotates tokens…`, `two logins create two distinct sessions` |
+| Bug                                                                                                                                                                                                                                                                                                                        | Skipped tests                                                                            |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| **Refresh tokens have no `jti`.** The payload is `{ sub, email }` plus `iat`/`exp` in seconds, so two refresh tokens issued for the same user in the same second are identical: refresh rotation is ineffective, and two devices logging in within the same second share one session (logging out one logs out the other). | `auth.e2e-spec.ts`: `refresh rotates tokens…`, `two logins create two distinct sessions` |
+| **Deleted account still authenticated for up to 5 min.** `ProfilesService.remove()` does not invalidate the user cache (unlike `update()`), and `JwtStrategy.validate()` reads the cache before the database: the access token of a deleted account keeps working on protected routes, with its cached permissions.        | `profiles.e2e-spec.ts`: `the access token of a deleted account is rejected`              |
 
 ## CI
 
