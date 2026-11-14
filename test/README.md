@@ -2,10 +2,10 @@
 
 ## Strategy
 
-| Layer | Tool | Where | What it covers |
-|---|---|---|---|
-| **Unit** | Vitest | `src/**/*.spec.ts` (next to the file) | Business logic in isolation: services, guards, JWT strategy, filters, `src/common/` utilities. Prisma, JWT, mail and bcrypt are mocked. |
-| **E2E** | Vitest + Supertest | `test/**/*.e2e-spec.ts` | The assembled HTTP pipeline on a real PostgreSQL database: routes, guards and permissions, DTO validation, filters, response shapes. |
+| Layer    | Tool               | Where                                 | What it covers                                                                                                                          |
+| -------- | ------------------ | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| **Unit** | Vitest             | `src/**/*.spec.ts` (next to the file) | Business logic in isolation: services, guards, JWT strategy, filters, `src/common/` utilities. Prisma, JWT, mail and bcrypt are mocked. |
+| **E2E**  | Vitest + Supertest | `test/**/*.e2e-spec.ts`               | The assembled HTTP pipeline on a real PostgreSQL database: routes, guards and permissions, DTO validation, filters, response shapes.    |
 
 **Why controllers, DTOs and modules are not unit-tested:** controllers only delegate to services, and their real behaviour lives in decorators (`@UseGuards`, `@RequirePermissions`, `@Body` + class-validator, pipes) that only run when a real request goes through the Nest pipeline. A unit test calling the method directly would bypass all of it. E2E tests cover them instead.
 
@@ -36,9 +36,28 @@ test/
     fake-mail.service.ts  # replaces MailService, records mails and their tokens
     db.ts                 # cleanDatabase(): removes test data, keeps seed data
     auth.helper.ts        # createVerifiedUser, login, loginAsAdmin, bearer, uniqueEmail
+    permissions.helper.ts # createUserWithPermissions: user whose only role holds exactly the given permissions
+  core/
+    route-security.e2e-spec.ts  # route security net (see below)
   setup.e2e-spec.ts       # self-test of the tooling above
   health.e2e-spec.ts
 ```
+
+## Route security net
+
+`test/core/route-security.e2e-spec.ts` lists **every route of the app** in one of three tables:
+
+| Table                  | Checks                                                                                                                                                                     |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PROTECTED_ROUTES`     | 401 without token · 403 for **each** required permission when it is the only one missing (realm and route permission are both enforced) · access granted with exactly them |
+| `AUTHENTICATED_ROUTES` | 401 without token · access granted to a user without any permission                                                                                                        |
+| `PUBLIC_ROUTES`        | reachable without token (never 401/403)                                                                                                                                    |
+
+A **route inventory** test compares the tables with the routes actually registered in Express: adding a route without listing it fails the suite.
+
+"Access granted" means the status is neither 401 nor 403. Path params use `999999` and bodies are empty, so 400/404 are expected and fine: Nest runs guards before pipes and handlers, so reaching them proves the guard let the request through. Business behaviour is tested in the domain suites.
+
+**When you add a route:** add one line to the matching table, with the full set of required permissions (class-level realm + method-level permission, since `PermissionsGuard` merges both and requires all of them). Mark it `destructive: true` if the call deletes the calling user.
 
 ## Technical choices
 
@@ -82,6 +101,7 @@ describe('Profiles (e2e)', () => {
 ```
 
 Conventions:
+
 - One file per domain (`test/core/<domain>.e2e-spec.ts`).
 - Never modify the seeded `USER` / `ADMIN` roles: create dedicated roles instead (they are removed by `cleanDatabase()`).
 - `POST` routes return **201** unless they declare `@HttpCode` (login creates a session, hence 201).
