@@ -261,9 +261,7 @@ describe('Auth (e2e)', () => {
   // Refresh, sessions, logout
   // ─────────────────────────────────────────────────────────────
   describe('Refresh tokens & sessions', () => {
-    // KNOWN BUG (skipped until the fix PR): refresh tokens have no jti, so two
-    // tokens issued in the same second are identical. See test/README.md.
-    it.skip('[KNOWN BUG: no jti] refresh rotates tokens: the previous refresh token is rejected', async () => {
+    it('refresh rotates tokens: the previous refresh token is rejected', async () => {
       const user = await createVerifiedUser(t);
 
       const res = await refreshReq(user.refreshToken).expect(201);
@@ -296,8 +294,8 @@ describe('Auth (e2e)', () => {
       await refreshReq(user.refreshToken).expect(401);
     });
 
-    // KNOWN BUG (skipped until the fix PR): same cause as above.
-    it.skip('[KNOWN BUG: no jti] two logins create two distinct sessions', async () => {
+    // two logins in the same second must still create distinct sessions (jti)
+    it('two logins create two distinct sessions', async () => {
       const user = await createVerifiedUser(t);
       const second = await login(t, user.email, user.password);
 
@@ -412,8 +410,6 @@ describe('Auth (e2e)', () => {
       const res = await reset(token, NEW_PASSWORD).expect(201);
       expect(res.body.code).toBe('auth.password_reset.success');
 
-      // checked before logging in again: with the known jti bug, a new login
-      // in the same second would re-issue the exact same refresh token
       await refreshReq(user.refreshToken).expect(401);
       await loginReq(user.email, user.password).expect(401);
       await loginReq(user.email, NEW_PASSWORD).expect(201);

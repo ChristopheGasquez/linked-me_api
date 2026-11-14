@@ -281,6 +281,24 @@ describe('AuthService', () => {
       expect(result).toHaveProperty('refresh_token');
       expect(result).toHaveProperty('user');
     });
+
+    it('should sign the refresh token with a unique jti', async () => {
+      prisma.user.findUnique.mockResolvedValue(mockUser as any);
+      (bcrypt.compare as Mock).mockResolvedValue(true);
+      prisma.user.update.mockResolvedValue(mockUser as any);
+      prisma.refreshToken.create.mockResolvedValue({} as any);
+      prisma.refreshToken.findMany.mockResolvedValue([]);
+
+      await service.login('test@example.com', 'password');
+      await service.login('test@example.com', 'password');
+
+      const refreshPayloads = jwtService.signAsync.mock.calls
+        .filter(([, options]) => options?.secret) // refresh tokens only
+        .map(([payload]) => payload as { jti?: string });
+      expect(refreshPayloads).toHaveLength(2);
+      expect(refreshPayloads[0].jti).toEqual(expect.any(String));
+      expect(refreshPayloads[0].jti).not.toBe(refreshPayloads[1].jti);
+    });
   });
 
   // ─────────────────────────────────────────────────────────────

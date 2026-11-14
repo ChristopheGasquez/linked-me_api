@@ -174,10 +174,14 @@ export class AuthService {
 
     const access_token = await this.jwtService.signAsync(payload);
 
-    const refresh_token = await this.jwtService.signAsync(payload, {
-      secret: this.config.getOrThrow('JWT_REFRESH_SECRET'),
-      expiresIn: this.config.get('JWT_REFRESH_EXPIRY', '7d'),
-    });
+    // jti makes every refresh token unique, even when issued in the same second
+    const refresh_token = await this.jwtService.signAsync(
+      { ...payload, jti: crypto.randomUUID() },
+      {
+        secret: this.config.getOrThrow('JWT_REFRESH_SECRET'),
+        expiresIn: this.config.get('JWT_REFRESH_EXPIRY', '7d'),
+      },
+    );
 
     const hash = crypto
       .createHash('sha256')

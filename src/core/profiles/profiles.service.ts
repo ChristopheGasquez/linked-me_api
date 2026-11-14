@@ -71,6 +71,7 @@ export class ProfilesService {
         code: ResponseCodes.PROFILE_USER_NOT_FOUND,
       });
     await this.prisma.user.delete({ where: { id } });
+    this.userCache.invalidate(id);
     await this.auditService.log('profile.delete', id, id, 'user', {
       email: user.email,
     });

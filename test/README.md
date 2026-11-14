@@ -71,6 +71,7 @@ A **route inventory** test compares the tables with the routes actually register
 - **Mail.** `MailService` is replaced by `FakeMailService`: nothing is sent, and tests read verification and reset tokens with `t.mail.lastToken(email, type)`.
 - **Throttling disabled.** The throttler is a global `APP_GUARD`, which `overrideGuard()` cannot replace, so the factory overrides the throttler module options with `skipIf: () => true`.
 - **Sequential files.** All suites share one database, so files run one after another (`fileParallelism: false`).
+- **Unit first, then E2E.** When both projects run (`test:cov`), `sequence.groupOrder` runs unit tests first and E2E tests alone afterwards: running them together starved the CPU-heavy E2E tests (bcrypt) and caused random timeouts. E2E tests also get a 15s `testTimeout` as a margin for slow machines.
 - **Unique data.** Use `uniqueEmail()` for every user, so tests never depend on each other's data.
 
 ## Writing an E2E test
@@ -116,12 +117,11 @@ Excluded: `main.ts`, `*.module.ts`, `*.mock.ts`, `*.spec.ts`.
 
 ## Known bugs
 
-Bugs found by the E2E tests and not fixed yet. Their tests are skipped with an explicit `[KNOWN BUG: …]` label so they stay visible in every report: un-skip them in the fix PR.
+None at the moment.
 
-| Bug                                                                                                                                                                                                                                                                                                                        | Skipped tests                                                                            |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| **Refresh tokens have no `jti`.** The payload is `{ sub, email }` plus `iat`/`exp` in seconds, so two refresh tokens issued for the same user in the same second are identical: refresh rotation is ineffective, and two devices logging in within the same second share one session (logging out one logs out the other). | `auth.e2e-spec.ts`: `refresh rotates tokens…`, `two logins create two distinct sessions` |
-| **Deleted account still authenticated for up to 5 min.** `ProfilesService.remove()` does not invalidate the user cache (unlike `update()`), and `JwtStrategy.validate()` reads the cache before the database: the access token of a deleted account keeps working on protected routes, with its cached permissions.        | `profiles.e2e-spec.ts`: `the access token of a deleted account is rejected`              |
+When an E2E test reveals a bug that is not fixed in the same PR, skip it with an explicit label (`it.skip('[KNOWN BUG: <short cause>] …')`, never `it.fails` for timing-dependent bugs), describe it in a table here (bug, skipped tests), and un-skip it in the fix PR.
+
+Fixed so far: refresh tokens without `jti` (identical tokens issued in the same second), deleted account still authenticated through the user cache.
 
 ## CI
 

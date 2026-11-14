@@ -139,6 +139,7 @@ describe('ProfilesService', () => {
       const result = await service.remove(1);
 
       expect(prisma.user.delete).toHaveBeenCalledWith({ where: { id: 1 } });
+      expect(userCache.invalidate).toHaveBeenCalledWith(1);
       expect(auditService.log).toHaveBeenCalledWith(
         'profile.delete',
         1,
