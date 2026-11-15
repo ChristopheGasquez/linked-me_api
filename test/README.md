@@ -39,8 +39,12 @@ test/
     permissions.helper.ts # createUserWithPermissions: user whose only role holds exactly the given permissions
   core/
     route-security.e2e-spec.ts  # route security net (see below)
-    auth.e2e-spec.ts            # register, email verification, login & lockout, refresh & sessions, forgot/reset password
+    auth.e2e-spec.ts            # register, email verification, login & lockout, refresh & sessions, forgot/reset password, [CONTRACT] expired access token
     profiles.e2e-spec.ts        # public profile, update (DTO whitelist, cache), password change, account deletion
+    admin-roles.e2e-spec.ts     # roles CRUD, role permissions, permissions list, immediate effect on logged-in users
+    admin-users.e2e-spec.ts     # users list & filters, role assignment, admin deletion, immediate effect on logged-in users
+    audit.e2e-spec.ts           # audit logs list: fields, filters, pagination, real actions recorded
+    tasks.e2e-spec.ts           # real effects of the 4 cleanup tasks + their own audit log
   setup.e2e-spec.ts       # self-test of the tooling above
   health.e2e-spec.ts
 ```
@@ -60,6 +64,20 @@ A **route inventory** test compares the tables with the routes actually register
 "Access granted" means the status is neither 401 nor 403. Path params use `999999` and bodies are empty, so 400/404 are expected and fine: Nest runs guards before pipes and handlers, so reaching them proves the guard let the request through. Business behaviour is tested in the domain suites.
 
 **When you add a route:** add one line to the matching table, with the full set of required permissions (class-level realm + method-level permission, since `PermissionsGuard` merges both and requires all of them). Mark it `destructive: true` if the call deletes the calling user.
+
+## Contracts with the front
+
+Some tests guard a behaviour the front depends on. They are prefixed with `[CONTRACT]`: **if one fails, discuss with the front before changing the test**, never just update the expected value.
+
+| Contract                                                                                                  | Test                                                   | Why                                                                                                                     |
+| --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| Protected route + expired access token → `401` **without `code`** (`{ statusCode, error, message }` only) | `auth.e2e-spec.ts` › `[CONTRACT] expired access token` | The front triggers its automatic refresh on this exact response. An invalid signature currently gets the same response. |
+
+## Not covered on purpose
+
+- The real `429` of the throttler (disabled in E2E tests).
+- `setup-swagger.ts`.
+- Cron scheduling: the tasks themselves are tested through `/tasks/*`, not the `@Cron` triggers.
 
 ## Technical choices
 
