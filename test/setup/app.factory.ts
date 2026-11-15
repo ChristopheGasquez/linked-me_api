@@ -7,6 +7,7 @@ import { THROTTLE } from '../../src/common/constants.js';
 import { configureApp } from '../../src/configure-app.js';
 import { MailService } from '../../src/core/mail/mail.service.js';
 import { PrismaService } from '../../src/core/prisma/prisma.service.js';
+import { setupSwagger } from '../../src/setup-swagger.js';
 import { FakeMailService } from './fake-mail.service.js';
 
 export type TestApp = {
@@ -20,8 +21,11 @@ export type TestApp = {
 /**
  * Boots the full AppModule with the production configuration (configureApp),
  * mail replaced by FakeMailService and throttling disabled.
+ * `swagger: true` also mounts the Swagger docs, as main.ts does with SWAGGER_ENABLED.
  */
-export async function createTestApp(): Promise<TestApp> {
+export async function createTestApp(
+  options: { swagger?: boolean } = {},
+): Promise<TestApp> {
   const mail = new FakeMailService();
 
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
@@ -38,6 +42,7 @@ export async function createTestApp(): Promise<TestApp> {
 
   const app = moduleRef.createNestApplication();
   configureApp(app);
+  if (options.swagger) setupSwagger(app);
   await app.init();
 
   return {

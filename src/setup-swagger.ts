@@ -130,6 +130,9 @@ export function setupSwagger(app: INestApplication): void {
           AuditModule,
           TasksModule,
         ],
+        // AdminModule has no controller of its own: scan its imported
+        // modules (AdminRolesModule, AdminUsersModule) too
+        deepScanRoutes: true,
       },
     ),
   );
