@@ -41,6 +41,8 @@ test/
     route-security.e2e-spec.ts  # route security net (see below)
     auth.e2e-spec.ts            # register, email verification, login & lockout, refresh & sessions, forgot/reset password
     profiles.e2e-spec.ts        # public profile, update (DTO whitelist, cache), password change, account deletion
+    admin-roles.e2e-spec.ts     # roles CRUD, role permissions, permissions list, immediate effect on logged-in users
+    admin-users.e2e-spec.ts     # users list & filters, role assignment, admin deletion, immediate effect on logged-in users
   setup.e2e-spec.ts       # self-test of the tooling above
   health.e2e-spec.ts
 ```
