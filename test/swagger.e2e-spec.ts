@@ -1,0 +1,147 @@
+import request from 'supertest';
+import { ResponseCodes } from '../src/common/constants/response-codes.js';
+import { Permissions } from '../src/core/auth/permissions.constants.js';
+import { createTestApp, type TestApp } from './setup/app.factory.js';
+
+type OpenApiDoc = {
+  paths: Record<string, Record<string, { description?: string }>>;
+  tags?: { name: string; description?: string }[];
+  components?: { schemas?: Record<string, any> };
+};
+
+const HTTP_METHODS = ['get', 'post', 'put', 'patch', 'delete'];
+
+/** "/admin/roles/{id}" and "/admin/roles/:id" → "/admin/roles/:param" */
+const pattern = (path: string) =>
+  path.replace(/\/(\{[^}]+\}|:[^/]+)/g, '/:param');
+
+/** "GET /admin/roles/:param" for every operation of the document. */
+const operationsOf = (doc: OpenApiDoc) =>
+  Object.entries(doc.paths).flatMap(([path, item]) =>
+    Object.keys(item)
+      .filter((m) => HTTP_METHODS.includes(m))
+      .map((m) => `${m.toUpperCase()} ${pattern(path)}`),
+  );
+
+describe('Swagger docs (e2e)', () => {
+  let t: TestApp;
+  let global: OpenApiDoc;
+  let core: OpenApiDoc;
+  let constants: OpenApiDoc;
+
+  const fetchDoc = async (url: string) =>
+    (await request(t.http).get(url).expect(200)).body as OpenApiDoc;
+
+  beforeAll(async () => {
+    t = await createTestApp({ swagger: true });
+    [global, core, constants] = await Promise.all([
+      fetchDoc('/docs-json'),
+      fetchDoc('/docs/core-json'),
+      fetchDoc('/docs/constants-json'),
+    ]);
+  });
+
+  afterAll(() => t.app.close());
+
+  it('serves the Swagger UI pages', async () => {
+    for (const url of ['/docs', '/docs/core', '/docs/constants']) {
+      const res = await request(t.http).get(url).redirects(1);
+      expect(res.status).toBe(200);
+      expect(res.text).toContain('swagger');
+    }
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // /docs/constants — the front builds its i18n from it
+  // ─────────────────────────────────────────────────────────────
+  describe('/docs/constants', () => {
+    it('exposes every response code with its value', () => {
+      const schema = constants.components?.schemas?.ResponseCodes;
+
+      expect(schema).toBeDefined();
+      expect(schema.properties).toEqual(
+        Object.fromEntries(
+          Object.entries(ResponseCodes).map(([key, value]) => [
+            key,
+            { type: 'string', example: value },
+          ]),
+        ),
+      );
+    });
+
+    it('contains no endpoint', () => {
+      expect(constants.paths).toEqual({});
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // Permissions injected into the docs
+  // ─────────────────────────────────────────────────────────────
+  describe('permissions', () => {
+    it('adds the route permissions to the operation description', () => {
+      const op = global.paths['/admin/users/{id}'].delete;
+
+      expect(op.description).toContain(
+        `**Required permissions:** \`${Permissions.ADMIN_USER_DELETE}\``,
+      );
+    });
+
+    it('does not add a permissions note to routes without route permission', () => {
+      const op = global.paths['/auth/login'].post;
+
+      expect(op.description ?? '').not.toContain('Required permissions');
+    });
+
+    it.each([
+      ['Admin / Users', Permissions.REALM_ADMIN],
+      ['Admin / Roles', Permissions.REALM_ADMIN],
+      ['Profiles', Permissions.REALM_PROFILE],
+      ['Tasks', Permissions.REALM_TASK],
+      ['Admin — Audit', Permissions.REALM_AUDIT],
+    ])('adds the realm to the "%s" tag', (tagName, realm) => {
+      const tag = global.tags?.find((t) => t.name === tagName);
+
+      expect(tag?.description).toContain(`**Required realm:** \`${realm}\``);
+    });
+
+    it('does not add a realm to the "Auth" tag (no class-level permission)', () => {
+      const tag = global.tags?.find((t) => t.name === 'Auth');
+
+      expect(tag?.description ?? '').not.toContain('Required realm');
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // Completeness
+  // ─────────────────────────────────────────────────────────────
+  describe('completeness', () => {
+    /** Every route registered in Express, except the Swagger routes themselves. */
+    const appRoutes = () =>
+      t.app
+        .getHttpAdapter()
+        .getInstance()
+        .router.stack.filter((layer: any) => layer.route)
+        .flatMap((layer: any) =>
+          Object.keys(layer.route.methods).map(
+            (m) => `${m.toUpperCase()} ${pattern(layer.route.path)}`,
+          ),
+        )
+        .filter((route: string) => !/ \/docs(\/|-|$)/.test(route));
+
+    it('/docs documents every route of the app', () => {
+      expect([...operationsOf(global)].sort()).toEqual(
+        [...new Set(appRoutes())].sort(),
+      );
+    });
+
+    it('/docs/core documents every core route (auth, profiles, admin, audit, tasks) and only them', () => {
+      const coreRoutes = appRoutes().filter((route: string) =>
+        /^\w+ \/(auth|profiles|admin|tasks)(\/|$)/.test(route),
+      );
+
+      expect([...operationsOf(core)].sort()).toEqual(
+        [...new Set(coreRoutes)].sort(),
+      );
+    });
+  });
+});
