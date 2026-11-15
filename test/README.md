@@ -32,7 +32,7 @@ npm run test:cov    # unit + E2E tests, merged coverage report (coverage/) — n
 test/
   setup/
     global-setup.ts       # once per run: safety check, migrate deploy, truncate, seed
-    app.factory.ts        # createTestApp(): full app, production config, mail faked, throttling off
+    app.factory.ts        # createTestApp(): full app, production config, mail faked, throttling off ({ swagger: true } mounts the docs)
     fake-mail.service.ts  # replaces MailService, records mails and their tokens
     db.ts                 # cleanDatabase(): removes test data, keeps seed data
     auth.helper.ts        # createVerifiedUser, login, loginAsAdmin, bearer, uniqueEmail
@@ -46,6 +46,7 @@ test/
     audit.e2e-spec.ts           # audit logs list: fields, filters, pagination, real actions recorded
     tasks.e2e-spec.ts           # real effects of the 4 cleanup tasks + their own audit log
   setup.e2e-spec.ts       # self-test of the tooling above
+  swagger.e2e-spec.ts     # Swagger docs: response codes in /docs/constants, permissions/realms notes, every route documented
   health.e2e-spec.ts
 ```
 
@@ -76,7 +77,6 @@ Some tests guard a behaviour the front depends on. They are prefixed with `[CONT
 ## Not covered on purpose
 
 - The real `429` of the throttler (disabled in E2E tests).
-- `setup-swagger.ts`.
 - Cron scheduling: the tasks themselves are tested through `/tasks/*`, not the `@Cron` triggers.
 
 ## Technical choices
@@ -133,14 +133,22 @@ Conventions:
 
 Excluded: `main.ts`, `*.module.ts`, `*.mock.ts`, `*.spec.ts`.
 
+**Thresholds.** `vitest.config.ts` sets global thresholds, checked only when coverage runs (`test:cov`, which is what the CI runs): `npm run test:cov` fails if the merged coverage drops below them.
+
+| Statements | Branches | Functions | Lines |
+| ---------- | -------- | --------- | ----- |
+| 97 %       | 90 %     | 97 %      | 97 %  |
+
+They sit a few points below the current level, so a small change is not blocked but an untested module is. Raise them by hand from time to time; never lower them without a reason. They are global, not per file: a defensive branch that cannot be reached should not block the CI.
+
 ## Known bugs
 
 None at the moment.
 
 When an E2E test reveals a bug that is not fixed in the same PR, skip it with an explicit label (`it.skip('[KNOWN BUG: <short cause>] …')`, never `it.fails` for timing-dependent bugs), describe it in a table here (bug, skipped tests), and un-skip it in the fix PR.
 
-Fixed so far: refresh tokens without `jti` (identical tokens issued in the same second), deleted account still authenticated through the user cache.
+Fixed so far: refresh tokens without `jti` (identical tokens issued in the same second), deleted account still authenticated through the user cache, admin roles/users routes missing from `/docs/core`.
 
 ## CI
 
-`.github/workflows/ci.yml` starts a disposable `postgres:17` service container (database `linked_me_test`, destroyed with the job) and runs `npm test` then `npm run test:e2e`. Env values are declared in the workflow: they are fake and public, no secret is needed.
+`.github/workflows/ci.yml` starts a disposable `postgres:17` service container (database `linked_me_test`, destroyed with the job) and runs `npm run test:cov` (unit tests, then E2E tests, then the coverage thresholds). Env values are declared in the workflow: they are fake and public, no secret is needed.

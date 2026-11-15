@@ -30,6 +30,15 @@ export default defineConfig({
         'src/**/*.spec.ts',
       ],
       reportsDirectory: './coverage',
+      // Merged unit + E2E coverage (npm run test:cov), checked in CI.
+      // Set a few points below the current level (2026-11-15: 99.4 / 94.8 / 100 / 99.8):
+      // raise them by hand from time to time, never lower them without a reason.
+      thresholds: {
+        statements: 97,
+        branches: 90,
+        functions: 97,
+        lines: 97,
+      },
     },
     projects: [
       {
