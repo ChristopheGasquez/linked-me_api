@@ -1,3 +1,4 @@
+import { JwtService } from '@nestjs/jwt';
 import request from 'supertest';
 import { createTestApp, type TestApp } from '../setup/app.factory.js';
 import {
@@ -417,6 +418,70 @@ describe('Auth (e2e)', () => {
       const reused = await reset(token, 'Another-Pass-789!').expect(401);
       expect(reused.body.code).toBe('auth.password_reset.invalid_token');
       expect(await auditActions(user.userId)).toContain('password.reset');
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // CONTRACT WITH THE FRONT — expired access token
+  // The front triggers its automatic refresh on "401 without code".
+  // If this test fails, discuss with the front before updating it.
+  // ─────────────────────────────────────────────────────────────
+  describe('[CONTRACT] expired access token', () => {
+    const jwt = new JwtService();
+    const now = () => Math.floor(Date.now() / 1000);
+
+    /** Same payload and secret as a real access token, already expired. */
+    const expiredToken = (userId: number, email: string) =>
+      jwt.sign(
+        { sub: userId, email, iat: now() - 120, exp: now() - 60 },
+        { secret: process.env.JWT_SECRET },
+      );
+
+    const UNAUTHORIZED_WITHOUT_CODE = {
+      statusCode: 401,
+      error: 'UNAUTHORIZED',
+      message: 'Unauthorized',
+    };
+
+    it('[CONTRACT] protected route + expired access token → 401 WITHOUT code (front auto-refresh relies on it)', async () => {
+      const user = await createVerifiedUser(t);
+
+      const res = await request(t.http)
+        .get('/auth/me')
+        .set(bearer(expiredToken(user.userId, user.email)))
+        .expect(401);
+
+      expect(res.body).toEqual(UNAUTHORIZED_WITHOUT_CODE);
+      expect(res.body).not.toHaveProperty('code');
+    });
+
+    it('[CONTRACT] the refresh token still works after the access token expired', async () => {
+      const user = await createVerifiedUser(t);
+
+      await request(t.http)
+        .get('/auth/me')
+        .set(bearer(expiredToken(user.userId, user.email)))
+        .expect(401);
+
+      const refreshed = await refreshReq(user.refreshToken).expect(201);
+      await request(t.http)
+        .get('/auth/me')
+        .set(bearer(refreshed.body.access_token))
+        .expect(200);
+    });
+
+    it('an invalid signature gets the same response as an expired token (indistinguishable)', async () => {
+      const user = await createVerifiedUser(t);
+      const forged = jwt.sign(
+        { sub: user.userId, email: user.email },
+        { secret: 'not-the-secret', expiresIn: '15m' },
+      );
+
+      const res = await request(t.http)
+        .get('/auth/me')
+        .set(bearer(forged))
+        .expect(401);
+      expect(res.body).toEqual(UNAUTHORIZED_WITHOUT_CODE);
     });
   });
 });
