@@ -133,6 +133,14 @@ Conventions:
 
 Excluded: `main.ts`, `*.module.ts`, `*.mock.ts`, `*.spec.ts`.
 
+**Thresholds.** `vitest.config.ts` sets global thresholds, checked only when coverage runs (`test:cov`, which is what the CI runs): `npm run test:cov` fails if the merged coverage drops below them.
+
+| Statements | Branches | Functions | Lines |
+| ---------- | -------- | --------- | ----- |
+| 97 %       | 90 %     | 97 %      | 97 %  |
+
+They sit a few points below the current level, so a small change is not blocked but an untested module is. Raise them by hand from time to time; never lower them without a reason. They are global, not per file: a defensive branch that cannot be reached should not block the CI.
+
 ## Known bugs
 
 None at the moment.
@@ -143,4 +151,4 @@ Fixed so far: refresh tokens without `jti` (identical tokens issued in the same 
 
 ## CI
 
-`.github/workflows/ci.yml` starts a disposable `postgres:17` service container (database `linked_me_test`, destroyed with the job) and runs `npm test` then `npm run test:e2e`. Env values are declared in the workflow: they are fake and public, no secret is needed.
+`.github/workflows/ci.yml` starts a disposable `postgres:17` service container (database `linked_me_test`, destroyed with the job) and runs `npm run test:cov` (unit tests, then E2E tests, then the coverage thresholds). Env values are declared in the workflow: they are fake and public, no secret is needed.
