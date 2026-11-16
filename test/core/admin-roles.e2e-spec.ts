@@ -447,6 +447,8 @@ describe('Admin roles (e2e)', () => {
           Permissions.ADMIN_USER_READ,
           Permissions.ADMIN_USER_ASSIGN_ROLE,
           Permissions.ADMIN_USER_DELETE,
+          Permissions.ADMIN_USER_SESSION_READ,
+          Permissions.ADMIN_USER_SESSION_REVOKE,
         ].sort(),
       );
       expect(res.body.meta.search).toBe('ADMIN:USER');

@@ -8,6 +8,7 @@ import { AuditService } from '../../audit/audit.service.js';
 import { UserCacheService } from '../../auth/cache/user-cache.service.js';
 import { paginate } from '../../../common/pagination/index.js';
 import { FindUsersQueryDto } from './dto/find-users-query.dto.js';
+import { FindSessionsQueryDto } from '../../auth/dto/find-sessions-query.dto.js';
 import { ResponseCodes } from '../../../common/constants/response-codes.js';
 
 @Injectable()
@@ -157,5 +158,77 @@ export class AdminUsersService {
       code: ResponseCodes.ADMIN_USER_DELETED,
       params: { userId },
     };
+  }
+
+  async findUserSessions(userId: number, query: FindSessionsQueryDto) {
+    await this.assertUserExists(userId);
+    const result = await paginate(this.prisma.refreshToken, query, {
+      where: { userId, expiresAt: { gt: new Date() } },
+    });
+    return {
+      ...result,
+      data: result.data.map(({ token: _token, ...session }: any) => session),
+    };
+  }
+
+  async revokeUserSession(actorId: number, userId: number, sessionId: number) {
+    const session = await this.prisma.refreshToken.findFirst({
+      where: { id: sessionId, userId },
+    });
+    if (!session)
+      throw new NotFoundException({
+        message: 'Session not found',
+        code: ResponseCodes.ADMIN_USER_SESSION_NOT_FOUND,
+      });
+
+    await this.prisma.refreshToken.delete({ where: { id: sessionId } });
+    await this.auditService.log(
+      'user.session.revoke',
+      actorId,
+      userId,
+      'user',
+      { sessionId },
+    );
+    return {
+      message: 'Session revoked',
+      code: ResponseCodes.ADMIN_USER_SESSION_REVOKED,
+      params: { userId, sessionId },
+    };
+  }
+
+  async revokeAllUserSessions(actorId: number, userId: number) {
+    await this.assertUserExists(userId);
+    // Expired tokens are deleted too, but only active sessions are counted:
+    // expired ones are already considered gone (the cleanup cron removes them).
+    const [count] = await this.prisma.$transaction([
+      this.prisma.refreshToken.count({
+        where: { userId, expiresAt: { gt: new Date() } },
+      }),
+      this.prisma.refreshToken.deleteMany({ where: { userId } }),
+    ]);
+    await this.auditService.log(
+      'user.session.revoke_all',
+      actorId,
+      userId,
+      'user',
+      { count },
+    );
+    return {
+      message: 'All sessions revoked',
+      code: ResponseCodes.ADMIN_USER_SESSIONS_REVOKED,
+      params: { userId, count },
+    };
+  }
+
+  private async assertUserExists(userId: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
+    if (!user)
+      throw new NotFoundException({
+        message: 'User not found',
+        code: ResponseCodes.ADMIN_USER_NOT_FOUND,
+      });
   }
 }
