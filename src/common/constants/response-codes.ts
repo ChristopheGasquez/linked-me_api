@@ -40,11 +40,14 @@ export const ResponseCodes = {
   ADMIN_USER_ROLE_ALREADY_ASSIGNED: 'admin.user.role.already_assigned',
   ADMIN_USER_ROLE_NOT_ASSIGNED: 'admin.user.role.not_assigned',
   ADMIN_USER_HAS_ROLES: 'admin.user.has_roles',
+  ADMIN_USER_SESSION_NOT_FOUND: 'admin.user.session.not_found',
 
   // ─── Admin Users — success ───────────────────────────────
   ADMIN_USER_ROLE_ASSIGNED: 'admin.user.role.assigned',
   ADMIN_USER_ROLE_REMOVED: 'admin.user.role.removed',
   ADMIN_USER_DELETED: 'admin.user.deleted',
+  ADMIN_USER_SESSION_REVOKED: 'admin.user.session.revoked',
+  ADMIN_USER_SESSIONS_REVOKED: 'admin.user.sessions.revoked',
 
   // ─── Admin Roles — errors ────────────────────────────────
   ADMIN_ROLE_ALREADY_EXISTS: 'admin.role.already_exists',

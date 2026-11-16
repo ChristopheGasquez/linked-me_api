@@ -4,6 +4,7 @@ import {
   bearer,
   createVerifiedUser,
   DEFAULT_PASSWORD,
+  login,
   loginAsAdmin,
   uniqueEmail,
   type AuthTokens,
@@ -372,6 +373,142 @@ describe('Admin users (e2e)', () => {
     it('404 admin.user.not_found for an unknown id', async () => {
       const res = await request(t.http)
         .delete('/admin/users/999999')
+        .set(bearer(admin.accessToken))
+        .expect(404);
+      expect(res.body.code).toBe('admin.user.not_found');
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // Sessions of a user
+  // ─────────────────────────────────────────────────────────────
+  /** A verified user with two sessions; the first one is expired when asked. */
+  async function userWithTwoSessions(opts: { expireFirst?: boolean } = {}) {
+    const user = await createVerifiedUser(t);
+    const second = await login(t, user.email, user.password);
+    const sessions = await t.prisma.refreshToken.findMany({
+      where: { userId: user.userId },
+      orderBy: { id: 'asc' },
+    });
+    if (opts.expireFirst) {
+      await t.prisma.refreshToken.update({
+        where: { id: sessions[0].id },
+        data: { expiresAt: new Date(Date.now() - 1000) },
+      });
+    }
+    return { user, second, sessionIds: sessions.map((s) => s.id) };
+  }
+
+  const refresh = (refreshToken: string) =>
+    request(t.http).post('/auth/refresh').send({ refresh_token: refreshToken });
+
+  describe('GET /admin/users/:id/sessions', () => {
+    it("200 lists the user's active sessions only, without the token hash", async () => {
+      const { user, sessionIds } = await userWithTwoSessions({
+        expireFirst: true,
+      });
+
+      const res = await request(t.http)
+        .get(`/admin/users/${user.userId}/sessions`)
+        .set(bearer(admin.accessToken))
+        .expect(200);
+
+      expect(res.body.data).toHaveLength(1);
+      expect(res.body.data[0]).toMatchObject({
+        id: sessionIds[1],
+        userId: user.userId,
+      });
+      expect(res.body.data[0]).not.toHaveProperty('token');
+      expect(res.body.meta).toMatchObject({ page: 1, total: 1 });
+    });
+
+    it('404 admin.user.not_found for an unknown user', async () => {
+      const res = await request(t.http)
+        .get('/admin/users/999999/sessions')
+        .set(bearer(admin.accessToken))
+        .expect(404);
+      expect(res.body.code).toBe('admin.user.not_found');
+    });
+
+    it('400 validation.failed for an unknown sortBy', async () => {
+      const res = await request(t.http)
+        .get(`/admin/users/${admin.userId}/sessions`)
+        .set(bearer(admin.accessToken))
+        .query({ sortBy: 'token' })
+        .expect(400);
+      expect(res.body.code).toBe('validation.failed');
+    });
+  });
+
+  describe('DELETE /admin/users/:id/sessions/:sessionId', () => {
+    it('200 revokes only that session and audits it', async () => {
+      const { user, second, sessionIds } = await userWithTwoSessions();
+
+      const res = await request(t.http)
+        .delete(`/admin/users/${user.userId}/sessions/${sessionIds[0]}`)
+        .set(bearer(admin.accessToken))
+        .expect(200);
+      expect(res.body).toMatchObject({
+        code: 'admin.user.session.revoked',
+        params: { userId: user.userId, sessionId: sessionIds[0] },
+      });
+
+      await refresh(user.refreshToken).expect(401);
+      await refresh(second.refreshToken).expect(201);
+
+      const [log] = await auditLogs(user.userId, 'user.session.revoke');
+      expect(log).toMatchObject({
+        actorId: admin.userId,
+        metadata: { sessionId: sessionIds[0] },
+      });
+    });
+
+    it('404 admin.user.session.not_found when the session belongs to another user', async () => {
+      const owner = await createVerifiedUser(t);
+      const other = await createVerifiedUser(t);
+      const session = await t.prisma.refreshToken.findFirstOrThrow({
+        where: { userId: owner.userId },
+      });
+
+      const res = await request(t.http)
+        .delete(`/admin/users/${other.userId}/sessions/${session.id}`)
+        .set(bearer(admin.accessToken))
+        .expect(404);
+      expect(res.body.code).toBe('admin.user.session.not_found');
+      await refresh(owner.refreshToken).expect(201);
+    });
+  });
+
+  describe('DELETE /admin/users/:id/sessions', () => {
+    it('200 revokes all sessions, counts only active ones, audits it', async () => {
+      const { user, second } = await userWithTwoSessions({
+        expireFirst: true,
+      });
+
+      const res = await request(t.http)
+        .delete(`/admin/users/${user.userId}/sessions`)
+        .set(bearer(admin.accessToken))
+        .expect(200);
+      expect(res.body).toMatchObject({
+        code: 'admin.user.sessions.revoked',
+        params: { userId: user.userId, count: 1 },
+      });
+
+      expect(
+        await t.prisma.refreshToken.count({ where: { userId: user.userId } }),
+      ).toBe(0);
+      await refresh(second.refreshToken).expect(401);
+
+      const [log] = await auditLogs(user.userId, 'user.session.revoke_all');
+      expect(log).toMatchObject({
+        actorId: admin.userId,
+        metadata: { count: 1 },
+      });
+    });
+
+    it('404 admin.user.not_found for an unknown user', async () => {
+      const res = await request(t.http)
+        .delete('/admin/users/999999/sessions')
         .set(bearer(admin.accessToken))
         .expect(404);
       expect(res.body.code).toBe('admin.user.not_found');

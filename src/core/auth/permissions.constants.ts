@@ -15,6 +15,8 @@ export const Permissions = {
   ADMIN_USER_READ: 'admin:user:read',
   ADMIN_USER_ASSIGN_ROLE: 'admin:user:assign-role',
   ADMIN_USER_DELETE: 'admin:user:delete',
+  ADMIN_USER_SESSION_READ: 'admin:user:session:read',
+  ADMIN_USER_SESSION_REVOKE: 'admin:user:session:revoke',
 
   // Tasks
   REALM_TASK: 'realm:task',
