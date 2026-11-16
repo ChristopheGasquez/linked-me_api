@@ -23,7 +23,10 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { PermissionsGuard } from '../auth/guards/permissions.guard.js';
 import { RequirePermissions } from '../auth/decorators/permissions.decorator.js';
 import { Permissions } from '../auth/permissions.constants.js';
-import { MessageResponseDto } from '../../common/dto/message-response.dto.js';
+import {
+  PasswordChangedResponseDto,
+  ProfileDeletedResponseDto,
+} from './dto/profile-success.dto.js';
 import { ErrorResponseDto } from '../../common/dto/error-response.dto.js';
 import { ValidationErrorResponseDto } from '../../common/dto/validation-error-response.dto.js';
 import {
@@ -77,7 +80,7 @@ export class ProfilesController {
   @ApiOperation({ summary: 'Change your password' })
   @ApiResponse({
     status: 200,
-    type: MessageResponseDto,
+    type: PasswordChangedResponseDto,
     description: 'Password changed, all sessions revoked',
   })
   @ApiResponse({
@@ -103,7 +106,7 @@ export class ProfilesController {
   @ApiOperation({ summary: 'Delete your own account' })
   @ApiResponse({
     status: 200,
-    type: MessageResponseDto,
+    type: ProfileDeletedResponseDto,
     description: 'Account deleted',
   })
   @RequirePermissions(Permissions.PROFILE_DELETE_OWN)

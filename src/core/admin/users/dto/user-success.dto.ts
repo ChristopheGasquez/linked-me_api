@@ -9,13 +9,25 @@ class UserRoleAssignedParamsDto {
 }
 
 export class UserRoleAssignedResponseDto extends MessageResponseDto {
+  @ApiProperty({ example: 'Role assigned to user' })
+  declare message: string;
+
+  @ApiProperty({ example: 'admin.user.role.assigned' })
+  declare code: string;
+
   @ApiProperty({ type: UserRoleAssignedParamsDto })
   declare params: UserRoleAssignedParamsDto;
 }
 
 // ─── Role removed from user ────────────────────────────────────────────────────
 
-export class UserRoleRemovedResponseDto extends MessageResponseDto {}
+export class UserRoleRemovedResponseDto extends MessageResponseDto {
+  @ApiProperty({ example: 'Role removed from user' })
+  declare message: string;
+
+  @ApiProperty({ example: 'admin.user.role.removed' })
+  declare code: string;
+}
 
 // ─── User deleted ──────────────────────────────────────────────────────────────
 
@@ -24,6 +36,12 @@ class UserDeletedParamsDto {
 }
 
 export class UserDeletedResponseDto extends MessageResponseDto {
+  @ApiProperty({ example: 'User deleted' })
+  declare message: string;
+
+  @ApiProperty({ example: 'admin.user.deleted' })
+  declare code: string;
+
   @ApiProperty({ type: UserDeletedParamsDto })
   declare params: UserDeletedParamsDto;
 }
@@ -36,6 +54,12 @@ class UserSessionRevokedParamsDto {
 }
 
 export class UserSessionRevokedResponseDto extends MessageResponseDto {
+  @ApiProperty({ example: 'Session revoked' })
+  declare message: string;
+
+  @ApiProperty({ example: 'admin.user.session.revoked' })
+  declare code: string;
+
   @ApiProperty({ type: UserSessionRevokedParamsDto })
   declare params: UserSessionRevokedParamsDto;
 }
@@ -52,6 +76,12 @@ class UserSessionsRevokedParamsDto {
 }
 
 export class UserSessionsRevokedResponseDto extends MessageResponseDto {
+  @ApiProperty({ example: 'All sessions revoked' })
+  declare message: string;
+
+  @ApiProperty({ example: 'admin.user.sessions.revoked' })
+  declare code: string;
+
   @ApiProperty({ type: UserSessionsRevokedParamsDto })
   declare params: UserSessionsRevokedParamsDto;
 }
