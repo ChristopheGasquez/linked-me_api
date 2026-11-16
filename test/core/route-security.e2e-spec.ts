@@ -90,6 +90,21 @@ const PROTECTED_ROUTES: ProtectedRoute[] = [
     path: `/admin/users/${NO_ID}`,
     permissions: [P.REALM_ADMIN, P.ADMIN_USER_DELETE],
   },
+  {
+    method: 'get',
+    path: `/admin/users/${NO_ID}/sessions`,
+    permissions: [P.REALM_ADMIN, P.ADMIN_USER_SESSION_READ],
+  },
+  {
+    method: 'delete',
+    path: `/admin/users/${NO_ID}/sessions/${NO_ID}`,
+    permissions: [P.REALM_ADMIN, P.ADMIN_USER_SESSION_REVOKE],
+  },
+  {
+    method: 'delete',
+    path: `/admin/users/${NO_ID}/sessions`,
+    permissions: [P.REALM_ADMIN, P.ADMIN_USER_SESSION_REVOKE],
+  },
   // Audit
   {
     method: 'get',

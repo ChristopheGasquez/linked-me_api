@@ -269,4 +269,126 @@ describe('AdminUsersService', () => {
       });
     });
   });
+
+  // ─────────────────────────────────────────────────────────────
+  // findUserSessions()
+  // ─────────────────────────────────────────────────────────────
+  describe('findUserSessions()', () => {
+    it('should throw NotFoundException if user does not exist', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+
+      await expect(service.findUserSessions(99, defaultQuery)).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(prisma.refreshToken.findMany).not.toHaveBeenCalled();
+    });
+
+    it('should return the active sessions of the user without the token hash', async () => {
+      prisma.user.findUnique.mockResolvedValue({ id: 1 } as any);
+      prisma.refreshToken.findMany.mockResolvedValue([
+        {
+          id: 7,
+          userId: 1,
+          token: 'hash',
+          expiresAt: new Date(),
+          createdAt: new Date(),
+        },
+      ] as any);
+      prisma.refreshToken.count.mockResolvedValue(1);
+
+      const result = await service.findUserSessions(1, defaultQuery);
+
+      expect(prisma.refreshToken.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { userId: 1, expiresAt: { gt: expect.any(Date) } },
+        }),
+      );
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0]).not.toHaveProperty('token');
+      expect(result.meta.total).toBe(1);
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // revokeUserSession()
+  // ─────────────────────────────────────────────────────────────
+  describe('revokeUserSession()', () => {
+    it('should throw NotFoundException if the session does not belong to the user', async () => {
+      prisma.refreshToken.findFirst.mockResolvedValue(null);
+
+      await expect(service.revokeUserSession(2, 1, 99)).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(prisma.refreshToken.findFirst).toHaveBeenCalledWith({
+        where: { id: 99, userId: 1 },
+      });
+      expect(prisma.refreshToken.delete).not.toHaveBeenCalled();
+      expect(auditService.log).not.toHaveBeenCalled();
+    });
+
+    it('should delete the session and log audit', async () => {
+      prisma.refreshToken.findFirst.mockResolvedValue({ id: 7 } as any);
+      prisma.refreshToken.delete.mockResolvedValue({ id: 7 } as any);
+
+      const result = await service.revokeUserSession(2, 1, 7);
+
+      expect(prisma.refreshToken.delete).toHaveBeenCalledWith({
+        where: { id: 7 },
+      });
+      expect(auditService.log).toHaveBeenCalledWith(
+        'user.session.revoke',
+        2,
+        1,
+        'user',
+        { sessionId: 7 },
+      );
+      expect(result).toMatchObject({
+        code: 'admin.user.session.revoked',
+        params: { userId: 1, sessionId: 7 },
+      });
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // revokeAllUserSessions()
+  // ─────────────────────────────────────────────────────────────
+  describe('revokeAllUserSessions()', () => {
+    it('should throw NotFoundException if user does not exist', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+
+      await expect(service.revokeAllUserSessions(2, 99)).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('should delete all tokens, count only active ones and log audit', async () => {
+      prisma.user.findUnique.mockResolvedValue({ id: 1 } as any);
+      prisma.$transaction.mockImplementation((ops: any) =>
+        Array.isArray(ops) ? Promise.all(ops) : ops(prisma),
+      );
+      prisma.refreshToken.count.mockResolvedValue(2);
+      prisma.refreshToken.deleteMany.mockResolvedValue({ count: 3 });
+
+      const result = await service.revokeAllUserSessions(2, 1);
+
+      expect(prisma.refreshToken.count).toHaveBeenCalledWith({
+        where: { userId: 1, expiresAt: { gt: expect.any(Date) } },
+      });
+      expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
+        where: { userId: 1 },
+      });
+      expect(auditService.log).toHaveBeenCalledWith(
+        'user.session.revoke_all',
+        2,
+        1,
+        'user',
+        { count: 2 },
+      );
+      expect(result).toMatchObject({
+        code: 'admin.user.sessions.revoked',
+        params: { userId: 1, count: 2 },
+      });
+    });
+  });
 });

@@ -29,7 +29,12 @@ import {
   UserRoleAssignedResponseDto,
   UserRoleRemovedResponseDto,
   UserDeletedResponseDto,
+  UserSessionRevokedResponseDto,
+  UserSessionsRevokedResponseDto,
 } from './dto/user-success.dto.js';
+import { FindSessionsQueryDto } from '../../auth/dto/find-sessions-query.dto.js';
+import { SessionResponseDto } from '../../auth/dto/session-response.dto.js';
+import { ValidationErrorResponseDto } from '../../../common/dto/validation-error-response.dto.js';
 import {
   RoleNotFoundErrorDto,
   UserRoleAlreadyAssignedErrorDto,
@@ -152,5 +157,75 @@ export class AdminUsersController {
   @Delete('users/:id')
   deleteUser(@Request() req: any, @Param('id', ParseIntPipe) id: number) {
     return this.usersService.deleteUser(req.user.id, id);
+  }
+
+  @ApiOperation({ summary: "List a user's active sessions" })
+  @ApiPaginatedResponse(
+    SessionResponseDto,
+    "Paginated list of the user's active (non-expired) sessions",
+  )
+  @ApiResponse({
+    status: 400,
+    description:
+      'Invalid query parameter (validation.failed) or invalid ID (must be an integer)',
+    type: ValidationErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found (admin.user.not_found)',
+    type: ErrorResponseDto,
+  })
+  @RequirePermissions(Permissions.ADMIN_USER_SESSION_READ)
+  @Get('users/:id/sessions')
+  findUserSessions(
+    @Param('id', ParseIntPipe) id: number,
+    @Query() query: FindSessionsQueryDto,
+  ) {
+    return this.usersService.findUserSessions(id, query);
+  }
+
+  @ApiOperation({ summary: 'Revoke a specific session of a user' })
+  @ApiResponse({
+    status: 200,
+    type: UserSessionRevokedResponseDto,
+    description: 'Session revoked',
+  })
+  @ApiInvalidIdError()
+  @ApiResponse({
+    status: 404,
+    description:
+      'Session not found for this user (admin.user.session.not_found)',
+    type: ErrorResponseDto,
+  })
+  @RequirePermissions(Permissions.ADMIN_USER_SESSION_REVOKE)
+  @Delete('users/:id/sessions/:sessionId')
+  revokeUserSession(
+    @Request() req: any,
+    @Param('id', ParseIntPipe) userId: number,
+    @Param('sessionId', ParseIntPipe) sessionId: number,
+  ) {
+    return this.usersService.revokeUserSession(req.user.id, userId, sessionId);
+  }
+
+  @ApiOperation({ summary: 'Revoke all sessions of a user' })
+  @ApiResponse({
+    status: 200,
+    type: UserSessionsRevokedResponseDto,
+    description:
+      'All sessions revoked (params.count = number of active sessions revoked)',
+  })
+  @ApiInvalidIdError()
+  @ApiResponse({
+    status: 404,
+    description: 'User not found (admin.user.not_found)',
+    type: ErrorResponseDto,
+  })
+  @RequirePermissions(Permissions.ADMIN_USER_SESSION_REVOKE)
+  @Delete('users/:id/sessions')
+  revokeAllUserSessions(
+    @Request() req: any,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.usersService.revokeAllUserSessions(req.user.id, id);
   }
 }
