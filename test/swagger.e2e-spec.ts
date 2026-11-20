@@ -144,4 +144,69 @@ describe('Swagger docs (e2e)', () => {
       );
     });
   });
+
+  // ─────────────────────────────────────────────────────────────
+  // Success responses — the front reads `code` from the examples
+  // ─────────────────────────────────────────────────────────────
+  describe('success responses', () => {
+    type Operation = {
+      responses?: Record<
+        string,
+        { content?: Record<string, { schema?: { $ref?: string } }> }
+      >;
+    };
+
+    /** "GET /auth/me" → schema name, for every 2xx response with a $ref. */
+    const successSchemas = () =>
+      Object.entries(global.paths).flatMap(([path, item]) =>
+        Object.entries(item as Record<string, Operation>)
+          .filter(([m]) => HTTP_METHODS.includes(m))
+          .flatMap(([method, op]) =>
+            Object.entries(op.responses ?? {})
+              .filter(([status]) => status.startsWith('2'))
+              .map(([, res]) => res.content?.['application/json']?.schema?.$ref)
+              .filter((ref): ref is string => !!ref)
+              .map((ref) => ({
+                route: `${method.toUpperCase()} ${path}`,
+                schema: ref.split('/').pop()!,
+              })),
+          ),
+      );
+
+    it('no route documents the generic MessageResponseDto as its success response', () => {
+      const generic = successSchemas()
+        .filter(({ schema }) => schema === 'MessageResponseDto')
+        .map(({ route }) => route);
+
+      expect(generic).toEqual([]);
+    });
+
+    it('every success "code" example is an existing response code', () => {
+      const codes = new Set<string>(Object.values(ResponseCodes));
+      const schemas = global.components?.schemas ?? {};
+
+      const invalid = successSchemas()
+        .map(({ route, schema }) => ({
+          route,
+          example: schemas[schema]?.properties?.code?.example as
+            | string
+            | undefined,
+        }))
+        .filter(({ example }) => example !== undefined && !codes.has(example));
+
+      expect(invalid).toEqual([]);
+    });
+
+    it('success responses with a "code" do not share the same example', () => {
+      const schemas = global.components?.schemas ?? {};
+      const byCode = new Map<string, Set<string>>();
+      for (const { schema } of successSchemas()) {
+        const code = schemas[schema]?.properties?.code?.example;
+        if (code) byCode.set(code, (byCode.get(code) ?? new Set()).add(schema));
+      }
+
+      const shared = [...byCode].filter(([, s]) => s.size > 1);
+      expect(shared).toEqual([]);
+    });
+  });
 });

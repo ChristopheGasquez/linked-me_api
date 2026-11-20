@@ -8,6 +8,12 @@ class CleanupUnverifiedUsersParamsDto {
 }
 
 export class CleanupUnverifiedUsersResponseDto extends MessageResponseDto {
+  @ApiProperty({ example: '5 unverified account(s) deleted' })
+  declare message: string;
+
+  @ApiProperty({ example: 'task.cleanup.unverified_users.done' })
+  declare code: string;
+
   @ApiProperty({ type: CleanupUnverifiedUsersParamsDto })
   declare params: CleanupUnverifiedUsersParamsDto;
 }
@@ -21,6 +27,12 @@ class CleanupExpiredTokensParamsDto {
 }
 
 export class CleanupExpiredTokensResponseDto extends MessageResponseDto {
+  @ApiProperty({ example: '8 expired token(s) deleted' })
+  declare message: string;
+
+  @ApiProperty({ example: 'task.cleanup.expired_tokens.done' })
+  declare code: string;
+
   @ApiProperty({ type: CleanupExpiredTokensParamsDto })
   declare params: CleanupExpiredTokensParamsDto;
 }
@@ -33,6 +45,12 @@ class CleanupAuditLogsParamsDto {
 }
 
 export class CleanupAuditLogsResponseDto extends MessageResponseDto {
+  @ApiProperty({ example: '120 audit log(s) deleted' })
+  declare message: string;
+
+  @ApiProperty({ example: 'task.cleanup.audit_logs.done' })
+  declare code: string;
+
   @ApiProperty({ type: CleanupAuditLogsParamsDto })
   declare params: CleanupAuditLogsParamsDto;
 }
@@ -46,6 +64,16 @@ class CleanupOrphanedPermissionsParamsDto {
 }
 
 export class CleanupOrphanedPermissionsResponseDto extends MessageResponseDto {
+  @ApiProperty({ example: '2 orphaned permission(s) deleted' })
+  declare message: string;
+
+  @ApiProperty({
+    example: 'task.cleanup.orphaned_permissions.done',
+    description:
+      'or task.cleanup.orphaned_permissions.none when there is nothing to delete',
+  })
+  declare code: string;
+
   @ApiProperty({ type: CleanupOrphanedPermissionsParamsDto })
   declare params: CleanupOrphanedPermissionsParamsDto;
 }

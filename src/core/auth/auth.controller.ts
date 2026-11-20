@@ -35,7 +35,15 @@ import { MeResponseDto } from './dto/me-response.dto.js';
 import { SessionResponseDto } from './dto/session-response.dto.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
 import { THROTTLE } from '../../common/constants.js';
-import { MessageResponseDto } from '../../common/dto/message-response.dto.js';
+import {
+  EmailVerifiedResponseDto,
+  VerificationEmailResentResponseDto,
+  ForgotPasswordResponseDto,
+  PasswordResetResponseDto,
+  LogoutResponseDto,
+  LogoutAllResponseDto,
+  SessionRevokedResponseDto,
+} from './dto/auth-success.dto.js';
 import { ErrorResponseDto } from '../../common/dto/error-response.dto.js';
 import { ValidationErrorResponseDto } from '../../common/dto/validation-error-response.dto.js';
 import { ApiPaginatedResponse } from '../../common/pagination/index.js';
@@ -115,7 +123,7 @@ export class AuthController {
   })
   @ApiResponse({
     status: 200,
-    type: MessageResponseDto,
+    type: EmailVerifiedResponseDto,
     description: 'Email verified successfully',
   })
   @ApiResponse({
@@ -132,7 +140,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Resend verification email' })
   @ApiResponse({
     status: 200,
-    type: MessageResponseDto,
+    type: VerificationEmailResentResponseDto,
     description: 'Email sent if account exists and is not verified',
   })
   @ApiResponse({
@@ -156,7 +164,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Request a password reset' })
   @ApiResponse({
     status: 200,
-    type: MessageResponseDto,
+    type: ForgotPasswordResponseDto,
     description: 'Email sent if account exists',
   })
   @ApiResponse({
@@ -180,7 +188,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Reset password with the token received by email' })
   @ApiResponse({
     status: 200,
-    type: MessageResponseDto,
+    type: PasswordResetResponseDto,
     description: 'Password reset, all sessions revoked',
   })
   @ApiResponse({
@@ -243,7 +251,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Sign out (revoke the refresh token)' })
   @ApiResponse({
     status: 200,
-    type: MessageResponseDto,
+    type: LogoutResponseDto,
     description: 'Refresh token revoked',
   })
   @ApiValidationError()
@@ -256,7 +264,7 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiResponse({
     status: 200,
-    type: MessageResponseDto,
+    type: LogoutAllResponseDto,
     description: 'All refresh tokens revoked',
   })
   @ApiResponse({
@@ -291,7 +299,7 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiResponse({
     status: 200,
-    type: MessageResponseDto,
+    type: SessionRevokedResponseDto,
     description: 'Session revoked',
   })
   @ApiResponse({
