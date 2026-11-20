@@ -64,6 +64,8 @@ cp .env.example .env
 | `UNVERIFIED_USER_TTL_HOURS` | Hours before unverified accounts are deleted (default: `24`) |
 | `AUDIT_LOG_TTL_DAYS` | Days before audit logs are deleted by the nightly cron (default: `30`) |
 | `SWAGGER_ENABLED` | Set to `true` to enable Swagger UI |
+| `TRUST_PROXY` | Proxy hops to trust for the client IP, used by rate limiting (number or addresses, never `true`; unset = not trusted) |
+| `LOG_CLIENT_IP` | Set to `true` to log the client IP seen by the app on every request (diagnostic only) |
 
 ### Database
 
