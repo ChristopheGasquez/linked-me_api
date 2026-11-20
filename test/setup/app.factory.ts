@@ -22,23 +22,25 @@ export type TestApp = {
  * Boots the full AppModule with the production configuration (configureApp),
  * mail replaced by FakeMailService and throttling disabled.
  * `swagger: true` also mounts the Swagger docs, as main.ts does with SWAGGER_ENABLED.
+ * `throttle: true` keeps the real throttler (rate limiting tests).
  */
 export async function createTestApp(
-  options: { swagger?: boolean } = {},
+  options: { swagger?: boolean; throttle?: boolean } = {},
 ): Promise<TestApp> {
   const mail = new FakeMailService();
 
-  const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+  let builder = Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(MailService)
-    .useValue(mail)
+    .useValue(mail);
+  if (!options.throttle) {
     // The throttler is a global APP_GUARD, which overrideGuard() can't replace:
     // override the module options instead, with the official skipIf hook
-    .overrideProvider(getOptionsToken())
-    .useValue({
+    builder = builder.overrideProvider(getOptionsToken()).useValue({
       throttlers: [{ name: 'global', ...THROTTLE.GLOBAL }],
       skipIf: () => true,
-    })
-    .compile();
+    });
+  }
+  const moduleRef = await builder.compile();
 
   const app = moduleRef.createNestApplication();
   configureApp(app);
