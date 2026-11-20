@@ -78,6 +78,14 @@ npx prisma generate
 npx prisma db seed
 ```
 
+> **Re-run the seed after pulling a new permission.** Permissions are defined in
+> `src/core/auth/permissions.constants.ts` and created by the seed (upserts only,
+> safe to re-run). On Railway the seed runs on every start; locally `start:dev`
+> does not run it, so run `npx prisma db seed` after each change to that file,
+> otherwise the new permissions are missing from the database and the routes
+> using them answer 403. A running server keeps each user's permissions in cache
+> for up to 5 min: restart it or wait.
+
 ### Run
 
 ```bash
