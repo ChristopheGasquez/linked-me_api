@@ -1,4 +1,5 @@
 import request from 'supertest';
+import type { Prisma } from '../../generated/prisma/client.js';
 import { createTestApp, type TestApp } from '../setup/app.factory.js';
 import {
   bearer,
@@ -35,7 +36,7 @@ describe('Audit logs (e2e)', () => {
     actorId?: number | null;
     targetId?: number | null;
     targetType?: string | null;
-    metadata?: Record<string, unknown>;
+    metadata?: Prisma.InputJsonValue;
   }) => t.prisma.auditLog.create({ data });
 
   it('200 returns a paginated list with every field of the log', async () => {
