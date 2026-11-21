@@ -11,6 +11,10 @@ class TestableThrottlerGuard extends CustomThrottlerGuard {
       detail as ThrottlerLimitDetail,
     );
   }
+
+  trackerOf(req: Record<string, any>) {
+    return this.getTracker(req);
+  }
 }
 
 describe('CustomThrottlerGuard', () => {
@@ -53,6 +57,48 @@ describe('CustomThrottlerGuard', () => {
       message: 'Too Many Requests',
       code: 'throttle.too_many_requests',
       params: { retryAfter: 7 },
+    });
+  });
+
+  describe('getTracker()', () => {
+    afterEach(() => {
+      delete process.env.CLIENT_IP_HEADER;
+    });
+
+    const req = (headers: Record<string, unknown> = {}) => ({
+      ip: '100.64.0.5',
+      headers,
+    });
+
+    it('should use req.ip when CLIENT_IP_HEADER is unset, ignoring headers', async () => {
+      await expect(
+        guard.trackerOf(req({ 'x-real-ip': '203.0.113.9' })),
+      ).resolves.toBe('100.64.0.5');
+    });
+
+    it('should use the configured header (name case-insensitive)', async () => {
+      process.env.CLIENT_IP_HEADER = ' X-Real-IP ';
+      await expect(
+        guard.trackerOf(req({ 'x-real-ip': ' 203.0.113.9 ' })),
+      ).resolves.toBe('203.0.113.9');
+    });
+
+    it('should fall back to req.ip when the header is missing or empty', async () => {
+      process.env.CLIENT_IP_HEADER = 'x-real-ip';
+      await expect(guard.trackerOf(req())).resolves.toBe('100.64.0.5');
+      await expect(guard.trackerOf(req({ 'x-real-ip': ' ' }))).resolves.toBe(
+        '100.64.0.5',
+      );
+      await expect(guard.trackerOf({ ip: '100.64.0.5' })).resolves.toBe(
+        '100.64.0.5',
+      );
+    });
+
+    it('should fall back to req.ip when the header is not a string', async () => {
+      process.env.CLIENT_IP_HEADER = 'x-real-ip';
+      await expect(
+        guard.trackerOf(req({ 'x-real-ip': ['1.1.1.1', '2.2.2.2'] })),
+      ).resolves.toBe('100.64.0.5');
     });
   });
 });
