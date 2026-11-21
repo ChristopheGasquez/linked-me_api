@@ -77,7 +77,13 @@
 					],
 					"request": {
 						"method": "POST",
-						"header": [],
+						"header": [
+							{
+								"key": "X-Turnstile-Token",
+								"value": "{{turnstileToken}}",
+								"type": "text"
+							}
+						],
 						"body": {
 							"mode": "raw",
 							"raw": "{\n    \"email\": \"{{credentialAdmin}}\",\n    \"password\": \"{{passwordAdmin}}\"\n}",
@@ -104,7 +110,13 @@
 					"name": "auth/register",
 					"request": {
 						"method": "POST",
-						"header": [],
+						"header": [
+							{
+								"key": "X-Turnstile-Token",
+								"value": "{{turnstileToken}}",
+								"type": "text"
+							}
+						],
 						"body": {
 							"mode": "raw",
 							"raw": "{\n    \"email\": \"test1@example.com\",\n    \"password\": \"monMotDePasse123\",\n    \"name\": \"Test Premier\",\n    \"callbackUrl\": \"http://localhost:4200/verify-email\"\n}",
@@ -155,7 +167,13 @@
 					"name": "auth/resend-verification",
 					"request": {
 						"method": "POST",
-						"header": [],
+						"header": [
+							{
+								"key": "X-Turnstile-Token",
+								"value": "{{turnstileToken}}",
+								"type": "text"
+							}
+						],
 						"body": {
 							"mode": "raw",
 							"raw": "{\n    \"email\": \"user@example.com\",\n    \"callbackUrl\": \"http://localhost:4200/verify-email\"\n}",
@@ -381,7 +399,13 @@
 					"name": "auth/forgot-password",
 					"request": {
 						"method": "POST",
-						"header": [],
+						"header": [
+							{
+								"key": "X-Turnstile-Token",
+								"value": "{{turnstileToken}}",
+								"type": "text"
+							}
+						],
 						"body": {
 							"mode": "raw",
 							"raw": "{\n    \"email\": \"user@example.com\",\n    \"callbackUrl\": \"http://localhost:4200/reset-password\"\n}",
@@ -1531,6 +1555,11 @@
 		{
 			"key": "subRefreshTocken",
 			"value": ""
+		},
+		{
+			"key": "turnstileToken",
+			"value": "XXXX.DUMMY.TOKEN.XXXX",
+			"type": "string"
 		}
 	]
 }
