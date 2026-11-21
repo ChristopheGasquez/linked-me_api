@@ -6,7 +6,11 @@ import {
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { AuditService } from '../../audit/audit.service.js';
 import { UserCacheService } from '../../auth/cache/user-cache.service.js';
-import { paginate } from '../../../common/pagination/index.js';
+import {
+  paginate,
+  PaginatedResponse,
+} from '../../../common/pagination/index.js';
+import type { Prisma } from '../../../../generated/prisma/client.js';
 import { FindUsersQueryDto } from './dto/find-users-query.dto.js';
 import { FindSessionsQueryDto } from '../../auth/dto/find-sessions-query.dto.js';
 import { ResponseCodes } from '../../../common/constants/response-codes.js';
@@ -33,18 +37,20 @@ export class AdminUsersService {
       metaFilters.isEmailChecked = query.isEmailChecked;
     }
 
-    const result = await paginate(this.prisma.user, query, {
+    const result = (await paginate(this.prisma.user, query, {
       searchFields: ['email', 'name'],
       where,
       include: { roles: { include: { role: true } } },
       metaFilters,
-    });
+    })) as PaginatedResponse<
+      Prisma.UserGetPayload<{ include: { roles: { include: { role: true } } } }>
+    >;
 
     return {
       ...result,
-      data: result.data.map(({ password: _password, ...user }: any) => ({
+      data: result.data.map(({ password: _password, ...user }) => ({
         ...user,
-        roles: user.roles.map((ur: any) => ur.role),
+        roles: user.roles.map((ur) => ur.role),
       })),
     };
   }
@@ -167,7 +173,7 @@ export class AdminUsersService {
     });
     return {
       ...result,
-      data: result.data.map(({ token: _token, ...session }: any) => session),
+      data: result.data.map(({ token: _token, ...session }) => session),
     };
   }
 

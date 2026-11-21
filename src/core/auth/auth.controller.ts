@@ -8,7 +8,6 @@ import {
   Param,
   ParseIntPipe,
   UseGuards,
-  Request,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -53,6 +52,8 @@ import {
   ApiThrottleError,
   ApiValidationError,
 } from '../../common/swagger/api-common-responses.decorator.js';
+import { CurrentUser } from './decorators/current-user.decorator.js';
+import type { CachedUser } from './cache/user-cache.service.js';
 
 @ApiTags('Auth')
 @ApiThrottleError()
@@ -250,8 +251,8 @@ export class AuthController {
   })
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  getMe(@Request() req: any) {
-    return req.user;
+  getMe(@CurrentUser() user: CachedUser) {
+    return user;
   }
 
   @ApiOperation({ summary: 'Refresh tokens (rotation)' })
@@ -297,8 +298,8 @@ export class AuthController {
   })
   @UseGuards(JwtAuthGuard)
   @Post('logout-all')
-  logoutAll(@Request() req: any) {
-    return this.authService.logoutAll(req.user.id);
+  logoutAll(@CurrentUser() user: CachedUser) {
+    return this.authService.logoutAll(user.id);
   }
 
   @ApiOperation({ summary: 'List active sessions' })
@@ -314,8 +315,11 @@ export class AuthController {
   )
   @UseGuards(JwtAuthGuard)
   @Get('sessions')
-  getSessions(@Request() req: any, @Query() query: FindSessionsQueryDto) {
-    return this.authService.getSessions(req.user.id, query);
+  getSessions(
+    @CurrentUser() user: CachedUser,
+    @Query() query: FindSessionsQueryDto,
+  ) {
+    return this.authService.getSessions(user.id, query);
   }
 
   @ApiOperation({ summary: 'Revoke a specific session' })
@@ -338,7 +342,10 @@ export class AuthController {
   @ApiInvalidIdError()
   @UseGuards(JwtAuthGuard)
   @Delete('sessions/:id')
-  revokeSession(@Request() req: any, @Param('id', ParseIntPipe) id: number) {
-    return this.authService.revokeSession(req.user.id, id);
+  revokeSession(
+    @CurrentUser() user: CachedUser,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.authService.revokeSession(user.id, id);
   }
 }

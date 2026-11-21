@@ -1,18 +1,10 @@
-import {
-  Controller,
-  Post,
-  Body,
-  UseGuards,
-  HttpCode,
-  Req,
-} from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, HttpCode } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import type { Request } from 'express';
 import { TasksService } from './tasks.service.js';
 import { CleanupAuditLogsDto } from './dto/cleanup-audit-logs.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
@@ -30,6 +22,8 @@ import {
   ApiThrottleError,
   ApiValidationError,
 } from '../../common/swagger/api-common-responses.decorator.js';
+import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
+import type { CachedUser } from '../auth/cache/user-cache.service.js';
 
 @ApiTags('Tasks')
 @ApiAuthErrors()
@@ -50,10 +44,8 @@ export class TasksController {
   @RequirePermissions(Permissions.TASK_CLEAN_USERS)
   @Post('cleanup-unverified-users')
   @HttpCode(200)
-  cleanupUnverifiedUsers(@Req() req: Request) {
-    return this.tasksService.cleanupUnverifiedUsers(
-      (req.user as any).id as number,
-    );
+  cleanupUnverifiedUsers(@CurrentUser() user: CachedUser) {
+    return this.tasksService.cleanupUnverifiedUsers(user.id);
   }
 
   @ApiOperation({
@@ -67,10 +59,8 @@ export class TasksController {
   @RequirePermissions(Permissions.TASK_CLEAN_TOKENS)
   @Post('cleanup-expired-tokens')
   @HttpCode(200)
-  cleanupExpiredTokens(@Req() req: Request) {
-    return this.tasksService.cleanupExpiredTokens(
-      (req.user as any).id as number,
-    );
+  cleanupExpiredTokens(@CurrentUser() user: CachedUser) {
+    return this.tasksService.cleanupExpiredTokens(user.id);
   }
 
   @ApiOperation({
@@ -84,10 +74,8 @@ export class TasksController {
   @RequirePermissions(Permissions.TASK_CLEAN_PERMISSIONS)
   @Post('cleanup-orphaned-permissions')
   @HttpCode(200)
-  cleanupOrphanedPermissions(@Req() req: Request) {
-    return this.tasksService.cleanupOrphanedPermissions(
-      (req.user as any).id as number,
-    );
+  cleanupOrphanedPermissions(@CurrentUser() user: CachedUser) {
+    return this.tasksService.cleanupOrphanedPermissions(user.id);
   }
 
   @ApiOperation({ summary: 'Delete audit logs older than N days' })
@@ -102,10 +90,10 @@ export class TasksController {
   @RequirePermissions(Permissions.TASK_CLEAN_AUDIT)
   @Post('cleanup-audit-logs')
   @HttpCode(200)
-  cleanupAuditLogs(@Req() req: Request, @Body() dto: CleanupAuditLogsDto) {
-    return this.tasksService.cleanupAuditLogs(
-      dto.olderThanDays,
-      (req.user as any).id as number,
-    );
+  cleanupAuditLogs(
+    @CurrentUser() user: CachedUser,
+    @Body() dto: CleanupAuditLogsDto,
+  ) {
+    return this.tasksService.cleanupAuditLogs(dto.olderThanDays, user.id);
   }
 }

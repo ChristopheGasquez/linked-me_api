@@ -1,7 +1,9 @@
 import { Transform } from 'class-transformer';
 
 const mapString = (fn: (s: string) => string) =>
-  Transform(({ value }) => (typeof value === 'string' ? fn(value) : value));
+  Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? fn(value) : value,
+  );
 
 /** Trim surrounding whitespace */
 export const Trim = () => mapString((s) => s.trim());
