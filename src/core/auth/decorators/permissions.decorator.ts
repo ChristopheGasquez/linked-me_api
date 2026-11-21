@@ -13,12 +13,15 @@ export function RequirePermissions(
     descriptor?: PropertyDescriptor,
   ): any => {
     SetMetadata(PERMISSIONS_KEY, permissions)(
-      target as any,
+      target,
       propertyKey as string,
       descriptor as PropertyDescriptor,
     );
     if (propertyKey === undefined) {
-      ApiExtension('x-class-permissions', permissions)(target as any);
+      ApiExtension(
+        'x-class-permissions',
+        permissions,
+      )(target as new (...args: unknown[]) => unknown);
     } else {
       ApiExtension('x-required-permissions', permissions)(
         target,

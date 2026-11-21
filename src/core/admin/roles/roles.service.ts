@@ -6,7 +6,11 @@ import {
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { AuditService } from '../../audit/audit.service.js';
 import { UserCacheService } from '../../auth/cache/user-cache.service.js';
-import { paginate } from '../../../common/pagination/index.js';
+import {
+  paginate,
+  PaginatedResponse,
+} from '../../../common/pagination/index.js';
+import type { Prisma } from '../../../../generated/prisma/client.js';
 import { FindRolesQueryDto } from './dto/find-roles-query.dto.js';
 import { FindPermissionsQueryDto } from './dto/find-permissions-query.dto.js';
 import { ResponseCodes } from '../../../common/constants/response-codes.js';
@@ -20,15 +24,19 @@ export class AdminRolesService {
   ) {}
 
   async findAllRoles(query: FindRolesQueryDto) {
-    const result = await paginate(this.prisma.role, query, {
+    const result = (await paginate(this.prisma.role, query, {
       searchFields: ['name'],
       include: { permissions: { include: { permission: true } } },
-    });
+    })) as PaginatedResponse<
+      Prisma.RoleGetPayload<{
+        include: { permissions: { include: { permission: true } } };
+      }>
+    >;
     return {
       ...result,
-      data: result.data.map((role: any) => ({
+      data: result.data.map((role) => ({
         ...role,
-        permissions: role.permissions.map((rp: any) => rp.permission),
+        permissions: role.permissions.map((rp) => rp.permission),
       })),
     };
   }

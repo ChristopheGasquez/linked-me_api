@@ -8,7 +8,6 @@ import {
   Query,
   UseGuards,
   ParseIntPipe,
-  Request,
   HttpCode,
 } from '@nestjs/common';
 import {
@@ -48,6 +47,8 @@ import {
   ApiThrottleError,
   ApiValidationError,
 } from '../../../common/swagger/api-common-responses.decorator.js';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator.js';
+import type { CachedUser } from '../../auth/cache/user-cache.service.js';
 
 @ApiTags('Admin / Roles')
 @ApiAuthErrors()
@@ -104,8 +105,8 @@ export class AdminRolesController {
   })
   @RequirePermissions(Permissions.ADMIN_ROLE_MANAGE)
   @Post('roles')
-  createRole(@Request() req: any, @Body() dto: CreateRoleDto) {
-    return this.rolesService.createRole(req.user.id, dto.name);
+  createRole(@CurrentUser() user: CachedUser, @Body() dto: CreateRoleDto) {
+    return this.rolesService.createRole(user.id, dto.name);
   }
 
   @ApiOperation({ summary: 'Delete a role (if not assigned to any user)' })
@@ -127,8 +128,11 @@ export class AdminRolesController {
   })
   @RequirePermissions(Permissions.ADMIN_ROLE_MANAGE)
   @Delete('roles/:id')
-  deleteRole(@Request() req: any, @Param('id', ParseIntPipe) id: number) {
-    return this.rolesService.deleteRole(req.user.id, id);
+  deleteRole(
+    @CurrentUser() user: CachedUser,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.rolesService.deleteRole(user.id, id);
   }
 
   // ─── Permissions sur un rôle ─────────────────────────────
@@ -154,15 +158,11 @@ export class AdminRolesController {
   @HttpCode(200)
   @Post('roles/:id/permissions')
   addPermissions(
-    @Request() req: any,
+    @CurrentUser() user: CachedUser,
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: AssignPermissionsDto,
   ) {
-    return this.rolesService.addPermissionsToRole(
-      req.user.id,
-      id,
-      dto.permissions,
-    );
+    return this.rolesService.addPermissionsToRole(user.id, id, dto.permissions);
   }
 
   @ApiOperation({ summary: 'Remove a permission from a role' })
@@ -180,11 +180,11 @@ export class AdminRolesController {
   @RequirePermissions(Permissions.ADMIN_ROLE_MANAGE)
   @Delete('roles/:id/permissions/:permId')
   removePermission(
-    @Request() req: any,
+    @CurrentUser() user: CachedUser,
     @Param('id', ParseIntPipe) id: number,
     @Param('permId', ParseIntPipe) permId: number,
   ) {
-    return this.rolesService.removePermissionFromRole(req.user.id, id, permId);
+    return this.rolesService.removePermissionFromRole(user.id, id, permId);
   }
 
   // ─── Permissions (consultation) ──────────────────────────

@@ -30,7 +30,7 @@ export class FindUsersQueryDto extends PaginationQueryDto {
     description: 'Filtrer par statut de vérification email',
   })
   @IsOptional()
-  @Transform(({ value }) =>
+  @Transform(({ value }: { value: unknown }) =>
     value === 'true' ? true : value === 'false' ? false : value,
   )
   @IsBoolean()
