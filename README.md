@@ -18,6 +18,7 @@ API REST pour la plateforme linked-me.
 - [Authentication](#authentication)
 - [Response format](#response-format)
 - [Rate Limiting](#rate-limiting)
+- [Captcha (Cloudflare Turnstile)](#captcha-cloudflare-turnstile)
 - [Architecture](#architecture)
 - [Cron Jobs](#cron-jobs)
 - [Pagination](#pagination)
@@ -59,12 +60,15 @@ cp .env.example .env
 | `MAIL_FROM` | Sender email address (must be verified in Resend) |
 | `RESEND_API_KEY` | API key for transactional emails (Resend) |
 | `CORS_ORIGIN` | Allowed CORS origin (optional, all origins if unset) |
+| `ALLOWED_REDIRECT_ORIGINS` | Comma-separated origins allowed for `callbackUrl` in emails (optional, `callbackUrl` rejected if unset) |
 | `ADMIN_EMAIL` | Initial admin account email |
 | `ADMIN_PASSWORD` | Initial admin account password |
 | `UNVERIFIED_USER_TTL_HOURS` | Hours before unverified accounts are deleted (default: `24`) |
 | `AUDIT_LOG_TTL_DAYS` | Days before audit logs are deleted by the nightly cron (default: `30`) |
 | `SWAGGER_ENABLED` | Set to `true` to enable Swagger UI |
 | `CLIENT_IP_HEADER` | Header holding the client IP, overwritten by a trusted proxy (Railway: `x-real-ip`), used as the rate limiting key (unset = `req.ip`) |
+| `TURNSTILE_ENABLED` | Set to `true` to require a Cloudflare Turnstile captcha on public auth routes (must be `true` in production) |
+| `TURNSTILE_SECRET_KEY` | Turnstile widget secret key (required when `TURNSTILE_ENABLED=true`) |
 
 ### Database
 
@@ -236,6 +240,28 @@ Rate limit errors follow the same normalized format as other errors, with `param
   "params": { "retryAfter": 42 }
 }
 ```
+
+## Captcha (Cloudflare Turnstile)
+
+When `TURNSTILE_ENABLED=true`, these routes require a [Cloudflare Turnstile](https://developers.cloudflare.com/turnstile/) token in the `X-Turnstile-Token` header:
+`POST /auth/register`, `/auth/login`, `/auth/forgot-password`, `/auth/resend-verification`.
+
+The token is checked with Cloudflare (with the client IP, see `CLIENT_IP_HEADER`) after rate limiting:
+
+| Status | Code | Meaning |
+|--------|------|---------|
+| `400` | `captcha.missing` | No token in `X-Turnstile-Token` |
+| `403` | `captcha.invalid` | Token rejected (invalid, expired or already used) |
+| `503` | `captcha.unavailable` | Cloudflare unreachable or misconfigured secret key: the request is refused |
+
+A token is single use and valid 5 minutes: the frontend must reset the widget after each failed request.
+The allowed frontend domains are set on the widget in the Cloudflare dashboard, not in the API.
+
+Local development: keep `TURNSTILE_ENABLED=false`, or use Cloudflare's test keys
+(site key `1x00000000000000000000AA`, secret key `1x0000000000000000000000000000000AA`, token `XXXX.DUMMY.TOKEN.XXXX`).
+
+Going to production: deploy the API with `TURNSTILE_ENABLED=false`, deploy the frontend sending the header,
+then set `TURNSTILE_SECRET_KEY` and `TURNSTILE_ENABLED=true` — enabling it first would block every sign-in.
 
 Access control is based on **RBAC** (Role-Based Access Control):
 - Each user has one or more **roles** (USER, ADMIN...)

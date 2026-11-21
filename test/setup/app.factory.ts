@@ -7,20 +7,24 @@ import { THROTTLE } from '../../src/common/constants.js';
 import { configureApp } from '../../src/configure-app.js';
 import { MailService } from '../../src/core/mail/mail.service.js';
 import { PrismaService } from '../../src/core/prisma/prisma.service.js';
+import { TurnstileService } from '../../src/core/turnstile/turnstile.service.js';
 import { setupSwagger } from '../../src/setup-swagger.js';
 import { FakeMailService } from './fake-mail.service.js';
+import { FakeTurnstileService } from './fake-turnstile.service.js';
 
 export type TestApp = {
   app: INestApplication;
   /** supertest target: request(t.http) */
   http: App;
   mail: FakeMailService;
+  captcha: FakeTurnstileService;
   prisma: PrismaService;
 };
 
 /**
  * Boots the full AppModule with the production configuration (configureApp),
- * mail replaced by FakeMailService and throttling disabled.
+ * mail replaced by FakeMailService, captcha by FakeTurnstileService (disabled)
+ * and throttling disabled.
  * `swagger: true` also mounts the Swagger docs, as main.ts does with SWAGGER_ENABLED.
  * `throttle: true` keeps the real throttler (rate limiting tests).
  */
@@ -28,10 +32,13 @@ export async function createTestApp(
   options: { swagger?: boolean; throttle?: boolean } = {},
 ): Promise<TestApp> {
   const mail = new FakeMailService();
+  const captcha = new FakeTurnstileService();
 
   let builder = Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(MailService)
-    .useValue(mail);
+    .useValue(mail)
+    .overrideProvider(TurnstileService)
+    .useValue(captcha);
   if (!options.throttle) {
     // The throttler is a global APP_GUARD, which overrideGuard() can't replace:
     // override the module options instead, with the official skipIf hook
@@ -51,6 +58,7 @@ export async function createTestApp(
     app,
     http: app.getHttpServer() as App,
     mail,
+    captcha,
     prisma: app.get(PrismaService),
   };
 }
