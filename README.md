@@ -221,6 +221,10 @@ All endpoints are limited to **60 requests per minute** per IP.
 Authentication endpoints (`/auth/login`, `/auth/register`) have a stricter limit: **10 requests per 15 minutes** per IP.
 `/auth/resend-verification` is limited to **3 requests per hour** per IP. Exceeding these limits returns a `429 Too Many Requests`.
 
+The client IP is read from the header named by `CLIENT_IP_HEADER` (falls back to the socket address when unset).
+Only set it to a header that the reverse proxy **overwrites** on every request (Railway: `x-real-ip`), never `X-Forwarded-For`,
+which clients can forge. Requests that bypass the proxy (e.g. Railway private network `*.railway.internal`) can set it freely.
+
 Rate limit errors follow the same normalized format as other errors, with `params.retryAfter` indicating how many seconds to wait before retrying:
 
 ```json
@@ -310,6 +314,7 @@ Deployed on **Railway** via push to `master`.
 - Build: `npm run build`
 - Start: migrations + seed + server (automatic)
 - Config: `railway.toml`
+- Required variable: `CLIENT_IP_HEADER=x-real-ip`, otherwise every client shares the proxy addresses and per-IP rate limiting is ineffective
 
 ## Git flow
 
