@@ -47,6 +47,7 @@ import {
 import { ErrorResponseDto } from '../../common/dto/error-response.dto.js';
 import { ValidationErrorResponseDto } from '../../common/dto/validation-error-response.dto.js';
 import { ApiPaginatedResponse } from '../../common/pagination/index.js';
+import { RequireCaptcha } from '../turnstile/require-captcha.decorator.js';
 import {
   ApiInvalidIdError,
   ApiThrottleError,
@@ -68,8 +69,13 @@ export class AuthController {
   @ApiResponse({
     status: 400,
     description:
-      'Validation failed (email format, password format) or callbackUrl not in whitelist — code: auth.callback_url.not_allowed',
+      'Validation failed (email format, password format), callbackUrl not in whitelist (auth.callback_url.not_allowed) or captcha token missing (captcha.missing)',
     type: ValidationErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Captcha verification failed — code: captcha.invalid',
+    type: ErrorResponseDto,
   })
   @ApiResponse({
     status: 409,
@@ -83,6 +89,7 @@ export class AuthController {
     type: ErrorResponseDto,
   })
   @Throttle({ global: THROTTLE.AUTH })
+  @RequireCaptcha()
   @Post('register')
   register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
@@ -102,7 +109,8 @@ export class AuthController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Account temporarily locked',
+    description:
+      'Account temporarily locked (auth.login.account_locked) or captcha verification failed (captcha.invalid)',
     type: ErrorResponseDto,
   })
   @ApiResponse({
@@ -111,8 +119,11 @@ export class AuthController {
       'Too many attempts — code: throttle.too_many_requests, params.retryAfter: seconds until retry',
     type: ErrorResponseDto,
   })
-  @ApiValidationError()
+  @ApiValidationError(
+    'Validation failed (validation.failed) or captcha token missing (captcha.missing)',
+  )
   @Throttle({ global: THROTTLE.AUTH })
+  @RequireCaptcha()
   @Post('login')
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto.email, dto.password);
@@ -146,7 +157,12 @@ export class AuthController {
   @ApiResponse({
     status: 400,
     description:
-      'Validation failed (validation.failed) or callbackUrl not in whitelist (auth.callback_url.not_allowed)',
+      'Validation failed (validation.failed), callbackUrl not in whitelist (auth.callback_url.not_allowed) or captcha token missing (captcha.missing)',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Captcha verification failed — code: captcha.invalid',
     type: ErrorResponseDto,
   })
   @ApiResponse({
@@ -156,6 +172,7 @@ export class AuthController {
     type: ErrorResponseDto,
   })
   @Throttle({ global: THROTTLE.SENSITIVE })
+  @RequireCaptcha()
   @Post('resend-verification')
   resendVerification(@Body() dto: ResendVerificationDto) {
     return this.authService.resendVerificationEmail(dto.email, dto.callbackUrl);
@@ -170,7 +187,12 @@ export class AuthController {
   @ApiResponse({
     status: 400,
     description:
-      'Validation failed (validation.failed) or callbackUrl not in whitelist (auth.callback_url.not_allowed)',
+      'Validation failed (validation.failed), callbackUrl not in whitelist (auth.callback_url.not_allowed) or captcha token missing (captcha.missing)',
+    type: ErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Captcha verification failed — code: captcha.invalid',
     type: ErrorResponseDto,
   })
   @ApiResponse({
@@ -180,6 +202,7 @@ export class AuthController {
     type: ErrorResponseDto,
   })
   @Throttle({ global: THROTTLE.SENSITIVE })
+  @RequireCaptcha()
   @Post('forgot-password')
   forgotPassword(@Body() dto: ForgotPasswordDto) {
     return this.authService.forgotPassword(dto.email, dto.callbackUrl);

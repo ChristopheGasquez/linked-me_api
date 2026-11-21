@@ -13,6 +13,7 @@ import { AdminModule } from './core/admin/admin.module.js';
 import { MailModule } from './core/mail/mail.module.js';
 import { TasksModule } from './core/tasks/tasks.module.js';
 import { AuditModule } from './core/audit/audit.module.js';
+import { TurnstileModule } from './core/turnstile/turnstile.module.js';
 import { THROTTLE } from './common/constants.js';
 
 @Module({
@@ -27,6 +28,7 @@ import { THROTTLE } from './common/constants.js';
     AdminModule,
     TasksModule,
     AuditModule,
+    TurnstileModule,
   ],
   controllers: [AppController],
   providers: [
