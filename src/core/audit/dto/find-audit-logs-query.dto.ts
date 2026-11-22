@@ -2,6 +2,7 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsIn, IsInt, IsOptional, IsString, Min } from 'class-validator';
 import { PaginationQueryDto } from '../../../common/pagination/index.js';
+import { AuditAction } from '../audit-actions.constants.js';
 
 export class FindAuditLogsQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ enum: ['id', 'createdAt'], default: 'createdAt' })
@@ -10,7 +11,11 @@ export class FindAuditLogsQueryDto extends PaginationQueryDto {
   @IsIn(['id', 'createdAt'])
   sortBy: string = 'createdAt';
 
-  @ApiPropertyOptional({ description: 'Filtrer par action (ex: user.delete)' })
+  @ApiPropertyOptional({
+    enum: AuditAction,
+    enumName: 'AuditAction',
+    description: 'Filtrer par action',
+  })
   @IsOptional()
   @IsString()
   action?: string;

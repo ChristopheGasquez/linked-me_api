@@ -6,6 +6,7 @@ import { AdminModule } from './core/admin/admin.module.js';
 import { AuditModule } from './core/audit/audit.module.js';
 import { TasksModule } from './core/tasks/tasks.module.js';
 import { ResponseCodes } from './common/constants/response-codes.js';
+import { AuditAction } from './core/audit/audit-actions.constants.js';
 
 const SWAGGER_SECTIONS = [
   { label: 'Global API', path: '/docs', description: 'All endpoints' },
@@ -179,6 +180,11 @@ export function setupSwagger(app: INestApplication): void {
             { type: 'string', example: value },
           ]),
         ),
+      },
+      AuditAction: {
+        description: 'Audit log actions (GET /admin/audit-logs)',
+        type: 'string',
+        enum: Object.values(AuditAction),
       },
     },
   };

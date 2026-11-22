@@ -1,6 +1,7 @@
 import request from 'supertest';
 import { ResponseCodes } from '../src/common/constants/response-codes.js';
 import { Permissions } from '../src/core/auth/permissions.constants.js';
+import { AuditAction } from '../src/core/audit/audit-actions.constants.js';
 import { createTestApp, type TestApp } from './setup/app.factory.js';
 
 type OpenApiDoc = {
@@ -69,8 +70,48 @@ describe('Swagger docs (e2e)', () => {
       );
     });
 
+    it('exposes every audit action', () => {
+      expect(constants.components?.schemas?.AuditAction).toMatchObject({
+        type: 'string',
+        enum: Object.values(AuditAction),
+      });
+    });
+
     it('contains no endpoint', () => {
       expect(constants.paths).toEqual({});
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // Audit actions — the front checks its list against the enum
+  // ─────────────────────────────────────────────────────────────
+  describe('AuditAction enum', () => {
+    const ref = { $ref: '#/components/schemas/AuditAction' };
+
+    it('is a shared schema listing every audit action', () => {
+      for (const doc of [global, core]) {
+        expect(doc.components?.schemas?.AuditAction).toEqual({
+          type: 'string',
+          enum: Object.values(AuditAction),
+        });
+      }
+    });
+
+    it('is referenced by the "action" query param of GET /admin/audit-logs', () => {
+      const operation = core.paths['/admin/audit-logs'].get as {
+        parameters: { name: string; in: string; schema?: unknown }[];
+      };
+      const param = operation.parameters.find(
+        (p) => p.name === 'action' && p.in === 'query',
+      );
+
+      expect(param?.schema).toEqual(ref);
+    });
+
+    it('is referenced by the "action" field of AuditLogResponseDto', () => {
+      expect(
+        core.components?.schemas?.AuditLogResponseDto.properties.action,
+      ).toEqual({ allOf: [ref] });
     });
   });
 
