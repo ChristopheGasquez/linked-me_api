@@ -3,13 +3,14 @@ import { Prisma } from '../../../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { FindAuditLogsQueryDto } from './dto/find-audit-logs-query.dto.js';
 import { paginate } from '../../common/pagination/index.js';
+import type { AuditAction } from './audit-actions.constants.js';
 
 @Injectable()
 export class AuditService {
   constructor(private prisma: PrismaService) {}
 
   async log(
-    action: string,
+    action: AuditAction,
     actorId: number | null,
     targetId: number | null,
     targetType: string | null,

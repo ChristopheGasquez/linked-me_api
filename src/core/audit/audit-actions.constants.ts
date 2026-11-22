@@ -1,0 +1,25 @@
+export const AuditAction = {
+  USER_CREATE: 'user.create',
+  USER_DELETE: 'user.delete',
+  USER_ROLE_ASSIGN: 'user.role.assign',
+  USER_ROLE_REVOKE: 'user.role.revoke',
+  USER_SESSION_REVOKE: 'user.session.revoke',
+  USER_SESSION_REVOKE_ALL: 'user.session.revoke_all',
+  LOGIN_FAILED: 'login.failed',
+  LOGIN_LOCKED: 'login.locked',
+  EMAIL_VERIFIED: 'email.verified',
+  PASSWORD_RESET: 'password.reset',
+  PROFILE_UPDATE: 'profile.update',
+  PROFILE_DELETE: 'profile.delete',
+  PROFILE_PASSWORD_CHANGE: 'profile.password.change',
+  ROLE_CREATE: 'role.create',
+  ROLE_DELETE: 'role.delete',
+  ROLE_PERMISSION_ASSIGN: 'role.permission.assign',
+  ROLE_PERMISSION_REVOKE: 'role.permission.revoke',
+  TASK_CLEANUP_UNVERIFIED_USERS: 'task.cleanup.unverified-users',
+  TASK_CLEANUP_EXPIRED_TOKENS: 'task.cleanup.expired-tokens',
+  TASK_CLEANUP_ORPHANED_PERMISSIONS: 'task.cleanup.orphaned-permissions',
+  TASK_CLEANUP_AUDIT_LOGS: 'task.cleanup.audit-logs',
+} as const;
+
+export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction];

@@ -1,8 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { AuditAction } from '../audit-actions.constants.js';
 
 export class AuditLogResponseDto {
   @ApiProperty() id: number;
-  @ApiProperty({ example: 'user.create' }) action: string;
+  @ApiProperty({ enum: AuditAction, enumName: 'AuditAction' })
+  action: AuditAction;
   @ApiProperty({
     type: Number,
     nullable: true,
