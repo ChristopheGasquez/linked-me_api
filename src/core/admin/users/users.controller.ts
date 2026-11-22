@@ -8,7 +8,6 @@ import {
   Query,
   UseGuards,
   ParseIntPipe,
-  Request,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -46,6 +45,8 @@ import {
   ApiThrottleError,
   ApiValidationError,
 } from '../../../common/swagger/api-common-responses.decorator.js';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator.js';
+import type { CachedUser } from '../../auth/cache/user-cache.service.js';
 
 @ApiTags('Admin / Users')
 @ApiAuthErrors()
@@ -107,11 +108,11 @@ export class AdminUsersController {
   @RequirePermissions(Permissions.ADMIN_USER_ASSIGN_ROLE)
   @Post('users/:id/roles')
   addRoleToUser(
-    @Request() req: any,
+    @CurrentUser() user: CachedUser,
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: AssignRoleDto,
   ) {
-    return this.usersService.addRoleToUser(req.user.id, id, dto.role);
+    return this.usersService.addRoleToUser(user.id, id, dto.role);
   }
 
   @ApiOperation({ summary: 'Remove a role from a user' })
@@ -129,11 +130,11 @@ export class AdminUsersController {
   @RequirePermissions(Permissions.ADMIN_USER_ASSIGN_ROLE)
   @Delete('users/:id/roles/:roleId')
   removeRoleFromUser(
-    @Request() req: any,
+    @CurrentUser() user: CachedUser,
     @Param('id', ParseIntPipe) userId: number,
     @Param('roleId', ParseIntPipe) roleId: number,
   ) {
-    return this.usersService.removeRoleFromUser(req.user.id, userId, roleId);
+    return this.usersService.removeRoleFromUser(user.id, userId, roleId);
   }
 
   @ApiOperation({ summary: 'Delete a user' })
@@ -155,8 +156,11 @@ export class AdminUsersController {
   })
   @RequirePermissions(Permissions.ADMIN_USER_DELETE)
   @Delete('users/:id')
-  deleteUser(@Request() req: any, @Param('id', ParseIntPipe) id: number) {
-    return this.usersService.deleteUser(req.user.id, id);
+  deleteUser(
+    @CurrentUser() user: CachedUser,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.usersService.deleteUser(user.id, id);
   }
 
   @ApiOperation({ summary: "List a user's active sessions" })
@@ -200,11 +204,11 @@ export class AdminUsersController {
   @RequirePermissions(Permissions.ADMIN_USER_SESSION_REVOKE)
   @Delete('users/:id/sessions/:sessionId')
   revokeUserSession(
-    @Request() req: any,
+    @CurrentUser() user: CachedUser,
     @Param('id', ParseIntPipe) userId: number,
     @Param('sessionId', ParseIntPipe) sessionId: number,
   ) {
-    return this.usersService.revokeUserSession(req.user.id, userId, sessionId);
+    return this.usersService.revokeUserSession(user.id, userId, sessionId);
   }
 
   @ApiOperation({ summary: 'Revoke all sessions of a user' })
@@ -223,9 +227,9 @@ export class AdminUsersController {
   @RequirePermissions(Permissions.ADMIN_USER_SESSION_REVOKE)
   @Delete('users/:id/sessions')
   revokeAllUserSessions(
-    @Request() req: any,
+    @CurrentUser() user: CachedUser,
     @Param('id', ParseIntPipe) id: number,
   ) {
-    return this.usersService.revokeAllUserSessions(req.user.id, id);
+    return this.usersService.revokeAllUserSessions(user.id, id);
   }
 }

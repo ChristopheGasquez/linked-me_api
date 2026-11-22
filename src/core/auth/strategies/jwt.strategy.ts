@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PrismaService } from '../../prisma/prisma.service.js';
-import { UserCacheService } from '../cache/user-cache.service.js';
+import { CachedUser, UserCacheService } from '../cache/user-cache.service.js';
 
 interface JwtPayload {
   sub: number; // JWT standard claim: user id
@@ -24,7 +24,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: JwtPayload) {
+  async validate(payload: JwtPayload): Promise<CachedUser> {
     const cached = this.userCache.get(payload.sub);
     if (cached) return cached;
 

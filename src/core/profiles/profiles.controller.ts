@@ -6,7 +6,6 @@ import {
   Param,
   Body,
   UseGuards,
-  Request,
   ParseIntPipe,
 } from '@nestjs/common';
 import {
@@ -35,6 +34,8 @@ import {
   ApiThrottleError,
   ApiValidationError,
 } from '../../common/swagger/api-common-responses.decorator.js';
+import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
+import type { CachedUser } from '../auth/cache/user-cache.service.js';
 
 @ApiTags('Profiles')
 @ApiAuthErrors()
@@ -73,8 +74,8 @@ export class ProfilesController {
   @ApiValidationError()
   @RequirePermissions(Permissions.PROFILE_UPDATE_OWN)
   @Patch('me')
-  update(@Request() req: any, @Body() dto: UpdateProfileDto) {
-    return this.profilesService.update(req.user.id, dto);
+  update(@CurrentUser() user: CachedUser, @Body() dto: UpdateProfileDto) {
+    return this.profilesService.update(user.id, dto);
   }
 
   @ApiOperation({ summary: 'Change your password' })
@@ -95,9 +96,12 @@ export class ProfilesController {
   })
   @RequirePermissions(Permissions.PROFILE_UPDATE_OWN)
   @Patch('me/password')
-  changePassword(@Request() req: any, @Body() dto: ChangePasswordDto) {
+  changePassword(
+    @CurrentUser() user: CachedUser,
+    @Body() dto: ChangePasswordDto,
+  ) {
     return this.profilesService.changePassword(
-      req.user.id,
+      user.id,
       dto.currentPassword,
       dto.newPassword,
     );
@@ -111,7 +115,7 @@ export class ProfilesController {
   })
   @RequirePermissions(Permissions.PROFILE_DELETE_OWN)
   @Delete('me')
-  remove(@Request() req: any) {
-    return this.profilesService.remove(req.user.id);
+  remove(@CurrentUser() user: CachedUser) {
+    return this.profilesService.remove(user.id);
   }
 }

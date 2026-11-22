@@ -117,6 +117,9 @@ npm run start:prod
 | `npm run test:watch` | Run unit tests in watch mode |
 | `npm run test:cov` | Run unit + E2E tests with a merged coverage report (requires the test database) |
 | `npm run test:e2e` | Run E2E tests (requires a local `linked_me_test` database) |
+| `npm run lint` | Lint and auto-fix |
+| `npm run lint:check` | Lint without fixing (CI) |
+| `npm run typecheck` | Type-check the whole project, tests included (CI) |
 
 ## Testing
 

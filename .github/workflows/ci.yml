@@ -40,6 +40,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Type check
+        run: npm run typecheck
+
       # Unit then E2E tests (sequence.groupOrder), merged coverage checked
       # against the thresholds of vitest.config.ts
       # Fake, public values: no secret needed
@@ -63,7 +66,7 @@ jobs:
       # develop: on vérifie le style du code
       - name: Lint
         if: github.base_ref == 'develop' || github.ref == 'refs/heads/develop'
-        run: npm run lint
+        run: npm run lint:check
 
       # master: on vérifie que le build compile sans erreur
       - name: Build

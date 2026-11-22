@@ -187,7 +187,7 @@ export class AuthService {
       .createHash('sha256')
       .update(refresh_token)
       .digest('hex');
-    const decoded = this.jwtService.decode(refresh_token);
+    const decoded = this.jwtService.decode<{ exp: number }>(refresh_token);
 
     await this.prisma.refreshToken.create({
       data: {

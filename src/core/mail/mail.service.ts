@@ -24,9 +24,9 @@ export class MailService {
       url.searchParams.set('token', token);
       resetUrl = url.toString();
     } else {
-      const frontendUrl = this.config.get(
+      const frontendUrl = this.config.get<string>(
         'FRONTEND_URL',
-        this.config.getOrThrow('APP_URL'),
+        this.config.getOrThrow<string>('APP_URL'),
       );
       resetUrl = `${frontendUrl}/reset-password?token=${token}`;
     }
