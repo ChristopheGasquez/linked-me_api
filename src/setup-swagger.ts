@@ -1,5 +1,5 @@
 import { INestApplication } from '@nestjs/common';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { SwaggerModule, DocumentBuilder, OpenAPIObject } from '@nestjs/swagger';
 import { AuthModule } from './core/auth/auth.module.js';
 import { ProfilesModule } from './core/profiles/profiles.module.js';
 import { AdminModule } from './core/admin/admin.module.js';
@@ -21,6 +21,13 @@ const SWAGGER_SECTIONS = [
   },
 ];
 
+type OperationExtensions = {
+  tags?: string[];
+  description?: string;
+  'x-required-permissions'?: string[];
+  'x-class-permissions'?: string[];
+};
+
 function swaggerNav(currentPath: string): string {
   const links = SWAGGER_SECTIONS.filter((s) => s.path !== currentPath)
     .map((s) => `- **[${s.label}](${s.path})** — ${s.description}`)
@@ -28,9 +35,11 @@ function swaggerNav(currentPath: string): string {
   return `\n\n## Documentation sections\n${links}`;
 }
 
-function injectPermissionsInDescriptions(document: any): void {
-  for (const path of Object.values(document.paths ?? {})) {
-    for (const operation of Object.values(path as object)) {
+function injectPermissionsInDescriptions(document: OpenAPIObject): void {
+  for (const pathItem of Object.values(document.paths)) {
+    for (const operation of Object.values(
+      pathItem as Record<string, OperationExtensions>,
+    )) {
       const perms = operation['x-required-permissions'];
       if (perms?.length) {
         operation.description =
@@ -41,7 +50,7 @@ function injectPermissionsInDescriptions(document: any): void {
   }
 }
 
-function injectRealmPermissionsInTags(document: any): void {
+function injectRealmPermissionsInTags(document: OpenAPIObject): void {
   const HTTP_METHODS = [
     'get',
     'post',
@@ -54,14 +63,16 @@ function injectRealmPermissionsInTags(document: any): void {
   ];
   const tagRealms = new Map<string, Set<string>>();
 
-  for (const pathItem of Object.values(document.paths ?? {})) {
-    const pathItemRealms: string[] =
-      (pathItem as any)['x-class-permissions'] ?? [];
-    for (const [method, operation] of Object.entries(pathItem as object)) {
+  for (const pathItem of Object.values(document.paths)) {
+    const pathItemRealms =
+      (pathItem as OperationExtensions)['x-class-permissions'] ?? [];
+    for (const [method, operation] of Object.entries(
+      pathItem as Record<string, OperationExtensions>,
+    )) {
       if (!HTTP_METHODS.includes(method)) continue;
-      const opRealms: string[] = operation['x-class-permissions'] ?? [];
+      const opRealms = operation['x-class-permissions'] ?? [];
       const allRealms = [...new Set([...pathItemRealms, ...opRealms])];
-      const tags: string[] = operation['tags'] ?? [];
+      const tags = operation.tags ?? [];
       for (const tag of tags) {
         if (!tagRealms.has(tag)) tagRealms.set(tag, new Set());
         allRealms.forEach((p) => tagRealms.get(tag)!.add(p));
@@ -69,11 +80,11 @@ function injectRealmPermissionsInTags(document: any): void {
     }
   }
 
-  if (!document.tags) document.tags = [];
+  document.tags ??= [];
   for (const [tagName, realms] of tagRealms) {
     if (realms.size === 0) continue;
     const realmNote = `**Required realm:** \`${[...realms].join('`, `')}\``;
-    const existing = document.tags.find((t: any) => t.name === tagName);
+    const existing = document.tags.find((t) => t.name === tagName);
     if (existing) {
       existing.description = (existing.description ?? '') + '\n\n' + realmNote;
     } else {
@@ -82,7 +93,10 @@ function injectRealmPermissionsInTags(document: any): void {
   }
 }
 
-function buildDocument(app: INestApplication, document: any): any {
+function buildDocument(
+  app: INestApplication,
+  document: OpenAPIObject,
+): OpenAPIObject {
   injectPermissionsInDescriptions(document);
   injectRealmPermissionsInTags(document);
   return document;
