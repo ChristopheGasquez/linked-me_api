@@ -173,6 +173,16 @@ describe('Swagger docs (e2e)', () => {
           ),
       );
 
+    it('GET / is documented under the "Health" tag with HealthResponseDto', () => {
+      const operation = global.paths['/']?.get as { tags?: string[] };
+
+      expect(operation.tags).toEqual(['Health']);
+      expect(successSchemas()).toContainEqual({
+        route: 'GET /',
+        schema: 'HealthResponseDto',
+      });
+    });
+
     it('no route documents the generic MessageResponseDto as its success response', () => {
       const generic = successSchemas()
         .filter(({ schema }) => schema === 'MessageResponseDto')
