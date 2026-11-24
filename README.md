@@ -300,7 +300,7 @@ Scheduled tasks run automatically via `TasksModule`:
 | Cleanup expired tokens | Daily at 2:00 AM | Deletes expired rows in `refresh_tokens` and `password_resets` |
 | Cleanup audit logs | Daily at 3:00 AM | Deletes audit logs older than `AUDIT_LOG_TTL_DAYS` (default: 30 days) |
 
-All tasks can also be triggered manually via `POST /tasks/*` (requires `realm:task` permission).
+All tasks can also be triggered manually via `POST /tasks/*` (requires `realm:task` permission). `GET /tasks` lists them with their cron, effective config, whether the current user can run them (`canRun`) and their last run (from the audit logs).
 
 ## Pagination
 

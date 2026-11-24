@@ -1,4 +1,11 @@
-import { Controller, Post, Body, UseGuards, HttpCode } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  UseGuards,
+  HttpCode,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -17,6 +24,7 @@ import {
   CleanupOrphanedPermissionsResponseDto,
   CleanupAuditLogsResponseDto,
 } from './dto/cleanup-response.dto.js';
+import { TaskListResponseDto } from './dto/task-list-response.dto.js';
 import {
   ApiAuthErrors,
   ApiThrottleError,
@@ -34,6 +42,15 @@ import type { CachedUser } from '../auth/cache/user-cache.service.js';
 @Controller('tasks')
 export class TasksController {
   constructor(private tasksService: TasksService) {}
+
+  @ApiOperation({
+    summary: 'List maintenance tasks (schedule, config, permission, last run)',
+  })
+  @ApiResponse({ status: 200, type: TaskListResponseDto, description: 'Tasks' })
+  @Get()
+  findAll(@CurrentUser() user: CachedUser) {
+    return this.tasksService.findAll(user.permissions);
+  }
 
   @ApiOperation({ summary: 'Force cleanup of unverified accounts' })
   @ApiResponse({

@@ -7,6 +7,8 @@ import { AuditService } from '../audit/audit.service.js';
 import { Permissions } from '../auth/permissions.constants.js';
 import { MS_PER_DAY } from '../../common/constants.js';
 import { ResponseCodes } from '../../common/constants/response-codes.js';
+import { AuditAction } from '../audit/audit-actions.constants.js';
+import { TaskCron, type TaskName } from './tasks.constants.js';
 
 @Injectable()
 export class TasksService {
@@ -19,11 +21,9 @@ export class TasksService {
     private auditService: AuditService,
   ) {}
 
-  @Cron('0 */6 * * *')
+  @Cron(TaskCron.UNVERIFIED_USERS)
   async cleanupUnverifiedUsers(actorId: number | null = null) {
-    const ttl = +this.configService.getOrThrow<string>(
-      'UNVERIFIED_USER_TTL_HOURS',
-    );
+    const ttl = this.unverifiedUserTtlHours();
     const count = await this.profilesService.deleteUnverified(ttl);
     if (count > 0) {
       this.logger.log(`Deleted ${count} unverified user(s)`);
@@ -42,7 +42,7 @@ export class TasksService {
     };
   }
 
-  @Cron('0 2 * * *')
+  @Cron(TaskCron.EXPIRED_TOKENS)
   async cleanupExpiredTokens(actorId: number | null = null) {
     const now = new Date();
     const [refreshResult, resetResult] = await Promise.all([
@@ -64,7 +64,11 @@ export class TasksService {
       actorId,
       null,
       'task',
-      { refreshTokens: refreshResult.count, passwordResets: resetResult.count },
+      {
+        count: total,
+        refreshTokens: refreshResult.count,
+        passwordResets: resetResult.count,
+      },
     );
     return {
       message: `${total} expired token(s) deleted`,
@@ -77,14 +81,12 @@ export class TasksService {
     };
   }
 
-  @Cron('0 3 * * *')
+  @Cron(TaskCron.AUDIT_LOGS)
   async cleanupAuditLogs(
     olderThanDays?: number,
     actorId: number | null = null,
   ) {
-    const days =
-      olderThanDays ??
-      +(this.configService.get<string>('AUDIT_LOG_TTL_DAYS') ?? '30');
+    const days = olderThanDays ?? this.auditLogTtlDays();
     const cutoff = new Date(Date.now() - days * MS_PER_DAY);
     const result = await this.prisma.auditLog.deleteMany({
       where: { createdAt: { lt: cutoff } },
@@ -147,5 +149,73 @@ export class TasksService {
       code: ResponseCodes.TASK_CLEANUP_ORPHANED_PERMISSIONS_DONE,
       params: { count: orphaned.length, deleted: orphaned.map((p) => p.name) },
     };
+  }
+
+  async findAll(permissions: string[]) {
+    const tasks: {
+      name: TaskName;
+      permission: string;
+      cron: string | null;
+      action: AuditAction;
+      config: { ttlHours?: number; retentionDays?: number };
+    }[] = [
+      {
+        name: 'unverified-users',
+        permission: Permissions.TASK_CLEAN_USERS,
+        cron: TaskCron.UNVERIFIED_USERS,
+        action: AuditAction.TASK_CLEANUP_UNVERIFIED_USERS,
+        config: { ttlHours: this.unverifiedUserTtlHours() },
+      },
+      {
+        name: 'expired-tokens',
+        permission: Permissions.TASK_CLEAN_TOKENS,
+        cron: TaskCron.EXPIRED_TOKENS,
+        action: AuditAction.TASK_CLEANUP_EXPIRED_TOKENS,
+        config: {},
+      },
+      {
+        name: 'audit-logs',
+        permission: Permissions.TASK_CLEAN_AUDIT,
+        cron: TaskCron.AUDIT_LOGS,
+        action: AuditAction.TASK_CLEANUP_AUDIT_LOGS,
+        config: { retentionDays: this.auditLogTtlDays() },
+      },
+      {
+        name: 'orphaned-permissions',
+        permission: Permissions.TASK_CLEAN_PERMISSIONS,
+        cron: null,
+        action: AuditAction.TASK_CLEANUP_ORPHANED_PERMISSIONS,
+        config: {},
+      },
+    ];
+    const lastLogs = await Promise.all(
+      tasks.map((task) =>
+        this.prisma.auditLog.findFirst({
+          where: { action: task.action },
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        }),
+      ),
+    );
+    return {
+      data: tasks.map(({ action: _action, cron, ...task }, i) => {
+        const log = lastLogs[i];
+        return {
+          ...task,
+          canRun: permissions.includes(task.permission),
+          schedule: { cron, automatic: cron !== null },
+          lastRun: log
+            ? { at: log.createdAt, actorId: log.actorId, result: log.metadata }
+            : null,
+        };
+      }),
+    };
+  }
+
+  private unverifiedUserTtlHours() {
+    return +this.configService.getOrThrow<string>('UNVERIFIED_USER_TTL_HOURS');
+  }
+
+  private auditLogTtlDays() {
+    return +(this.configService.get<string>('AUDIT_LOG_TTL_DAYS') ?? '30');
   }
 }

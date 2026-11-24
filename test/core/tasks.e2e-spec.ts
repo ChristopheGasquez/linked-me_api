@@ -9,6 +9,8 @@ import {
   type AuthTokens,
 } from '../setup/auth.helper.js';
 import { cleanDatabase } from '../setup/db.js';
+import { createUserWithPermissions } from '../setup/permissions.helper.js';
+import { Permissions } from '../../src/core/auth/permissions.constants.js';
 
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
@@ -50,6 +52,102 @@ describe('Tasks (e2e)', () => {
 
   const exists = async (userId: number) =>
     (await t.prisma.user.count({ where: { id: userId } })) === 1;
+
+  // ─────────────────────────────────────────────────────────────
+  // GET /tasks
+  // ─────────────────────────────────────────────────────────────
+  describe('GET /tasks', () => {
+    const listTasks = (accessToken: string) =>
+      request(t.http).get('/tasks').set(bearer(accessToken));
+
+    it('200 lists the 4 tasks with schedule, config and canRun for an admin', async () => {
+      const res = await listTasks(admin.accessToken).expect(200);
+
+      expect(Object.keys(res.body)).toEqual(['data']);
+      expect(res.body.data).toEqual([
+        expect.objectContaining({
+          name: 'unverified-users',
+          permission: Permissions.TASK_CLEAN_USERS,
+          canRun: true,
+          schedule: { cron: '0 */6 * * *', automatic: true },
+          config: { ttlHours: 24 },
+        }),
+        expect.objectContaining({
+          name: 'expired-tokens',
+          permission: Permissions.TASK_CLEAN_TOKENS,
+          canRun: true,
+          schedule: { cron: '0 2 * * *', automatic: true },
+          config: {},
+        }),
+        expect.objectContaining({
+          name: 'audit-logs',
+          permission: Permissions.TASK_CLEAN_AUDIT,
+          canRun: true,
+          schedule: { cron: '0 3 * * *', automatic: true },
+          config: { retentionDays: 30 },
+        }),
+        expect.objectContaining({
+          name: 'orphaned-permissions',
+          permission: Permissions.TASK_CLEAN_PERMISSIONS,
+          canRun: true,
+          schedule: { cron: null, automatic: false },
+          config: {},
+        }),
+      ]);
+    });
+
+    it('200 lastRun reflects the latest run: manual (actorId) then cron (null)', async () => {
+      await runTask('cleanup-expired-tokens').expect(200);
+
+      const afterManual = await listTasks(admin.accessToken).expect(200);
+      const manual = afterManual.body.data[1].lastRun;
+      expect(manual).toEqual({
+        at: expect.any(String),
+        actorId: admin.userId,
+        result: {
+          count: expect.any(Number),
+          refreshTokens: expect.any(Number),
+          passwordResets: expect.any(Number),
+        },
+      });
+
+      await t.prisma.auditLog.create({
+        data: {
+          action: 'task.cleanup.expired-tokens',
+          actorId: null,
+          targetType: 'task',
+          metadata: { count: 0, refreshTokens: 0, passwordResets: 0 },
+        },
+      });
+
+      const afterCron = await listTasks(admin.accessToken).expect(200);
+      expect(afterCron.body.data[1].lastRun).toEqual({
+        at: expect.any(String),
+        actorId: null,
+        result: { count: 0, refreshTokens: 0, passwordResets: 0 },
+      });
+    });
+
+    it('200 lastRun null for a task that never ran', async () => {
+      await t.prisma.auditLog.deleteMany({
+        where: { action: 'task.cleanup.unverified-users' },
+      });
+
+      const res = await listTasks(admin.accessToken).expect(200);
+
+      expect(res.body.data[0].lastRun).toBeNull();
+    });
+
+    it('200 canRun false everywhere with realm:task only', async () => {
+      const user = await createUserWithPermissions(t, [Permissions.REALM_TASK]);
+
+      const res = await listTasks(user.accessToken).expect(200);
+
+      expect(
+        res.body.data.map((task: { canRun: boolean }) => task.canRun),
+      ).toEqual([false, false, false, false]);
+    });
+  });
 
   // ─────────────────────────────────────────────────────────────
   // POST /tasks/cleanup-unverified-users (TTL: UNVERIFIED_USER_TTL_HOURS=24)
@@ -155,7 +253,7 @@ describe('Tasks (e2e)', () => {
       const log = await lastTaskLog('task.cleanup.expired-tokens');
       expect(log).toMatchObject({
         actorId: admin.userId,
-        metadata: { refreshTokens: 1, passwordResets: 1 },
+        metadata: { count: 2, refreshTokens: 1, passwordResets: 1 },
       });
     });
   });
