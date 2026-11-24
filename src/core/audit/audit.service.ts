@@ -31,6 +31,7 @@ export class AuditService {
     const where: Record<string, unknown> = {};
     if (query.action) where.action = query.action;
     if (query.actorId) where.actorId = query.actorId;
+    if (query.targetId) where.targetId = query.targetId;
     if (query.targetType) where.targetType = query.targetType;
 
     return paginate(this.prisma.auditLog, query, { where });

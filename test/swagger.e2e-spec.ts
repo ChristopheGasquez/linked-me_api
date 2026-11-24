@@ -123,7 +123,15 @@ describe('Swagger docs (e2e)', () => {
       const op = global.paths['/admin/users/{id}'].delete;
 
       expect(op.description).toContain(
-        `**Required permissions:** \`${Permissions.ADMIN_USER_DELETE}\``,
+        `**Required permissions:** \`${Permissions.REALM_ADMIN}\`, \`${Permissions.ADMIN_USER_DELETE}\``,
+      );
+    });
+
+    it('adds the class-level permissions to the operation description', () => {
+      const op = global.paths['/admin/audit-logs'].get;
+
+      expect(op.description).toContain(
+        `**Required permissions:** \`${Permissions.REALM_AUDIT}\`, \`${Permissions.AUDIT_LOG_READ}\``,
       );
     });
 
@@ -143,6 +151,12 @@ describe('Swagger docs (e2e)', () => {
       const tag = global.tags?.find((t) => t.name === tagName);
 
       expect(tag?.description).toContain(`**Required realm:** \`${realm}\``);
+    });
+
+    it('only lists realms in the tag, not class-level permissions', () => {
+      const tag = global.tags?.find((t) => t.name === 'Admin — Audit');
+
+      expect(tag?.description).not.toContain(Permissions.AUDIT_LOG_READ);
     });
 
     it('does not add a realm to the "Auth" tag (no class-level permission)', () => {

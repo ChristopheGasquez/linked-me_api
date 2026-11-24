@@ -27,6 +27,13 @@ export class FindAuditLogsQueryDto extends PaginationQueryDto {
   @Min(1)
   actorId?: number;
 
+  @ApiPropertyOptional({ description: 'Filtrer par cible (id)' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  targetId?: number;
+
   @ApiPropertyOptional({
     description: 'Filtrer par type de cible (user, role)',
   })
