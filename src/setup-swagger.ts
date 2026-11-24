@@ -36,13 +36,30 @@ function swaggerNav(currentPath: string): string {
   return `\n\n## Documentation sections\n${links}`;
 }
 
+const HTTP_METHODS = [
+  'get',
+  'post',
+  'put',
+  'patch',
+  'delete',
+  'options',
+  'head',
+  'trace',
+];
+
 function injectPermissionsInDescriptions(document: OpenAPIObject): void {
   for (const pathItem of Object.values(document.paths)) {
-    for (const operation of Object.values(
+    for (const [method, operation] of Object.entries(
       pathItem as Record<string, OperationExtensions>,
     )) {
-      const perms = operation['x-required-permissions'];
-      if (perms?.length) {
+      if (!HTTP_METHODS.includes(method)) continue;
+      const perms = [
+        ...new Set([
+          ...(operation['x-class-permissions'] ?? []),
+          ...(operation['x-required-permissions'] ?? []),
+        ]),
+      ];
+      if (perms.length) {
         operation.description =
           (operation.description ?? '') +
           `\n\n**Required permissions:** \`${perms.join('`, `')}\``;
@@ -52,16 +69,6 @@ function injectPermissionsInDescriptions(document: OpenAPIObject): void {
 }
 
 function injectRealmPermissionsInTags(document: OpenAPIObject): void {
-  const HTTP_METHODS = [
-    'get',
-    'post',
-    'put',
-    'patch',
-    'delete',
-    'options',
-    'head',
-    'trace',
-  ];
   const tagRealms = new Map<string, Set<string>>();
 
   for (const pathItem of Object.values(document.paths)) {
@@ -72,7 +79,9 @@ function injectRealmPermissionsInTags(document: OpenAPIObject): void {
     )) {
       if (!HTTP_METHODS.includes(method)) continue;
       const opRealms = operation['x-class-permissions'] ?? [];
-      const allRealms = [...new Set([...pathItemRealms, ...opRealms])];
+      const allRealms = [...new Set([...pathItemRealms, ...opRealms])].filter(
+        (p) => p.startsWith('realm:'),
+      );
       const tags = operation.tags ?? [];
       for (const tag of tags) {
         if (!tagRealms.has(tag)) tagRealms.set(tag, new Set());

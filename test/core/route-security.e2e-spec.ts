@@ -134,6 +134,7 @@ const PROTECTED_ROUTES: ProtectedRoute[] = [
     destructive: true,
   },
   // Tasks
+  { method: 'get', path: '/tasks', permissions: [P.REALM_TASK] },
   {
     method: 'post',
     path: '/tasks/cleanup-unverified-users',

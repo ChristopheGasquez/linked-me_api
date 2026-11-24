@@ -118,5 +118,8 @@ model AuditLog {
   metadata   Json?
   createdAt  DateTime @default(now())
 
+  @@index([action, createdAt])
+  @@index([actorId, createdAt])
+  @@index([targetType, targetId, createdAt])
   @@map("audit_logs")
 }

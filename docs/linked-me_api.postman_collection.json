@@ -1213,6 +1213,33 @@
 					"name": "tasks",
 					"item": [
 						{
+							"name": "tasks",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{subTocken}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/tasks",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"tasks"
+									]
+								}
+							},
+							"response": []
+						},
+						{
 							"name": "tasks/cleanup-unverified-users",
 							"request": {
 								"auth": {
@@ -1398,6 +1425,12 @@
 											"key": "actorId",
 											"value": "",
 											"description": "Filtrer par acteur (id)",
+											"disabled": true
+										},
+										{
+											"key": "targetId",
+											"value": "",
+											"description": "Filtrer par cible (id)",
 											"disabled": true
 										},
 										{
