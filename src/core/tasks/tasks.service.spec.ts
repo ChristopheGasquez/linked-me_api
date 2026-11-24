@@ -147,7 +147,7 @@ describe('TasksService', () => {
         7,
         null,
         'task',
-        { refreshTokens: 3, passwordResets: 1 },
+        { count: 4, refreshTokens: 3, passwordResets: 1 },
       );
     });
   });
@@ -276,6 +276,117 @@ describe('TasksService', () => {
         'task',
         { count: 1, deleted: ['obsolete:permission'] },
       );
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // findAll()
+  // ─────────────────────────────────────────────────────────────
+  describe('findAll()', () => {
+    const ALL_PERMISSIONS = [
+      'task:clean-users',
+      'task:clean-tokens',
+      'task:clean-audit',
+      'task:clean-permissions',
+    ];
+
+    beforeEach(() => {
+      configService.getOrThrow.mockReturnValue('24');
+      configService.get.mockReturnValue('45');
+      prisma.auditLog.findFirst.mockResolvedValue(null);
+    });
+
+    it('should list the 4 tasks in a stable order with schedule and config', async () => {
+      const { data } = await service.findAll(ALL_PERMISSIONS);
+
+      expect(data.map((task) => task.name)).toEqual([
+        'unverified-users',
+        'expired-tokens',
+        'audit-logs',
+        'orphaned-permissions',
+      ]);
+      expect(data[0]).toMatchObject({
+        permission: 'task:clean-users',
+        schedule: { cron: '0 */6 * * *', automatic: true },
+        config: { ttlHours: 24 },
+      });
+      expect(data[1]).toMatchObject({
+        schedule: { cron: '0 2 * * *', automatic: true },
+        config: {},
+      });
+      expect(data[2]).toMatchObject({
+        schedule: { cron: '0 3 * * *', automatic: true },
+        config: { retentionDays: 45 },
+      });
+      expect(data[3]).toMatchObject({
+        schedule: { cron: null, automatic: false },
+        config: {},
+      });
+      expect(data[0]).not.toHaveProperty('action');
+    });
+
+    it('should default the audit log retention to 30 days', async () => {
+      configService.get.mockReturnValue(undefined);
+
+      const { data } = await service.findAll([]);
+
+      expect(data[2].config).toEqual({ retentionDays: 30 });
+    });
+
+    it('should set canRun from the permissions of the user', async () => {
+      const { data } = await service.findAll(['task:clean-tokens']);
+
+      expect(data.map((task) => task.canRun)).toEqual([
+        false,
+        true,
+        false,
+        false,
+      ]);
+    });
+
+    it('should return lastRun null when the task never ran', async () => {
+      const { data } = await service.findAll(ALL_PERMISSIONS);
+
+      expect(data.every((task) => task.lastRun === null)).toBe(true);
+    });
+
+    it('should build lastRun from the latest audit log of each task (cron or manual)', async () => {
+      const cronRun = {
+        id: 1,
+        action: 'task.cleanup.unverified-users',
+        actorId: null,
+        targetId: null,
+        targetType: 'task',
+        metadata: { count: 2, ttlHours: 24 },
+        createdAt: new Date('2026-11-24T06:00:00Z'),
+      };
+      const manualRun = {
+        ...cronRun,
+        id: 2,
+        action: 'task.cleanup.expired-tokens',
+        actorId: 7,
+        metadata: { count: 0, refreshTokens: 0, passwordResets: 0 },
+      };
+      prisma.auditLog.findFirst
+        .mockResolvedValueOnce(cronRun as any)
+        .mockResolvedValueOnce(manualRun as any);
+
+      const { data } = await service.findAll(ALL_PERMISSIONS);
+
+      expect(prisma.auditLog.findFirst).toHaveBeenCalledWith({
+        where: { action: 'task.cleanup.unverified-users' },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      });
+      expect(data[0].lastRun).toEqual({
+        at: cronRun.createdAt,
+        actorId: null,
+        result: { count: 2, ttlHours: 24 },
+      });
+      expect(data[1].lastRun).toEqual({
+        at: manualRun.createdAt,
+        actorId: 7,
+        result: { count: 0, refreshTokens: 0, passwordResets: 0 },
+      });
     });
   });
 });
