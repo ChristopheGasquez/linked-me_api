@@ -123,6 +123,17 @@ describe('AuditService', () => {
       );
     });
 
+    it('should filter by targetId when provided', async () => {
+      prisma.auditLog.findMany.mockResolvedValue([] as any);
+      prisma.auditLog.count.mockResolvedValue(0);
+
+      await service.findAll({ ...defaultQuery, targetId: 7 } as any);
+
+      expect(prisma.auditLog.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { targetId: 7 } }),
+      );
+    });
+
     it('should filter by targetType when provided', async () => {
       prisma.auditLog.findMany.mockResolvedValue([] as any);
       prisma.auditLog.count.mockResolvedValue(0);

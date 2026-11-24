@@ -1401,6 +1401,12 @@
 											"disabled": true
 										},
 										{
+											"key": "targetId",
+											"value": "",
+											"description": "Filtrer par cible (id)",
+											"disabled": true
+										},
+										{
 											"key": "targetType",
 											"value": "",
 											"description": "Filtrer par type (user, role)",

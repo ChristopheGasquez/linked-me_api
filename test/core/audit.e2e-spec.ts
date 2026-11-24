@@ -118,6 +118,57 @@ describe('Audit logs (e2e)', () => {
     expect(both.body.data).toHaveLength(1);
   });
 
+  it('filters by targetId, alone and combined with targetType and actorId', async () => {
+    const action = uniqueAction();
+    const other = await createVerifiedUser(t);
+    await createLog({
+      action,
+      actorId: admin.userId,
+      targetId: 7,
+      targetType: 'user',
+    });
+    await createLog({
+      action,
+      actorId: admin.userId,
+      targetId: 7,
+      targetType: 'role',
+    });
+    await createLog({
+      action,
+      actorId: other.userId,
+      targetId: 7,
+      targetType: 'user',
+    });
+    await createLog({
+      action,
+      actorId: admin.userId,
+      targetId: 8,
+      targetType: 'user',
+    });
+
+    const byTarget = await list({ action, targetId: 7 }).expect(200);
+    expect(byTarget.body.data).toHaveLength(3);
+
+    const withType = await list({
+      action,
+      targetId: 7,
+      targetType: 'user',
+    }).expect(200);
+    expect(withType.body.data).toHaveLength(2);
+
+    const withActor = await list({
+      action,
+      targetId: 7,
+      targetType: 'user',
+      actorId: other.userId,
+    }).expect(200);
+    expect(withActor.body.data).toHaveLength(1);
+    expect(withActor.body.data[0]).toMatchObject({
+      actorId: other.userId,
+      targetId: 7,
+    });
+  });
+
   it('paginates and sorts by id', async () => {
     const action = uniqueAction();
     const ids: number[] = [];
@@ -158,6 +209,8 @@ describe('Audit logs (e2e)', () => {
     ['sortOrder=up', { sortOrder: 'up' }],
     ['actorId=abc', { actorId: 'abc' }],
     ['actorId=0', { actorId: 0 }],
+    ['targetId=abc', { targetId: 'abc' }],
+    ['targetId=0', { targetId: 0 }],
     ['limit=101', { limit: 101 }],
     ['page=0', { page: 0 }],
   ])('400 validation.failed for %s', async (_label, query) => {
