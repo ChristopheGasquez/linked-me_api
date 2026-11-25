@@ -7,6 +7,7 @@ import { AuditModule } from './core/audit/audit.module.js';
 import { TasksModule } from './core/tasks/tasks.module.js';
 import { ResponseCodes } from './common/constants/response-codes.js';
 import { AuditAction } from './core/audit/audit-actions.constants.js';
+import { UUID_V7_EXAMPLE } from './common/swagger/api-id-property.decorator.js';
 
 const SWAGGER_SECTIONS = [
   { label: 'Global API', path: '/docs', description: 'All endpoints' },
@@ -25,6 +26,11 @@ const SWAGGER_SECTIONS = [
 type OperationExtensions = {
   tags?: string[];
   description?: string;
+  parameters?: {
+    in?: string;
+    description?: string;
+    schema?: Record<string, unknown>;
+  }[];
   'x-required-permissions'?: string[];
   'x-class-permissions'?: string[];
 };
@@ -103,12 +109,33 @@ function injectRealmPermissionsInTags(document: OpenAPIObject): void {
   }
 }
 
+function documentPathIdsAsUuid(document: OpenAPIObject): void {
+  for (const pathItem of Object.values(document.paths)) {
+    for (const [method, operation] of Object.entries(
+      pathItem as Record<string, OperationExtensions>,
+    )) {
+      if (!HTTP_METHODS.includes(method)) continue;
+      for (const param of operation.parameters ?? []) {
+        if (param.in !== 'path') continue;
+        param.schema = {
+          ...param.schema,
+          type: 'string',
+          format: 'uuid',
+          example: UUID_V7_EXAMPLE,
+        };
+        param.description ??= 'UUID v7';
+      }
+    }
+  }
+}
+
 function buildDocument(
   app: INestApplication,
   document: OpenAPIObject,
 ): OpenAPIObject {
   injectPermissionsInDescriptions(document);
   injectRealmPermissionsInTags(document);
+  documentPathIdsAsUuid(document);
   return document;
 }
 

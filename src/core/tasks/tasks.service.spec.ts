@@ -9,6 +9,7 @@ import {
   createPrismaServiceMock,
   PrismaServiceMock,
 } from '../prisma/prisma.service.mock.js';
+import { testId } from '../../../test/setup/test-id.js';
 
 describe('TasksService', () => {
   let service: TasksService;
@@ -98,11 +99,11 @@ describe('TasksService', () => {
       configService.getOrThrow.mockReturnValue('24' as any);
       profilesService.deleteUnverified.mockResolvedValue(2);
 
-      await service.cleanupUnverifiedUsers(42);
+      await service.cleanupUnverifiedUsers(testId(42));
 
       expect(auditService.log).toHaveBeenCalledWith(
         'task.cleanup.unverified-users',
-        42,
+        testId(42),
         null,
         'task',
         expect.any(Object),
@@ -140,11 +141,11 @@ describe('TasksService', () => {
       prisma.refreshToken.deleteMany.mockResolvedValue({ count: 3 });
       prisma.passwordReset.deleteMany.mockResolvedValue({ count: 1 });
 
-      await service.cleanupExpiredTokens(7);
+      await service.cleanupExpiredTokens(testId(7));
 
       expect(auditService.log).toHaveBeenCalledWith(
         'task.cleanup.expired-tokens',
-        7,
+        testId(7),
         null,
         'task',
         { count: 4, refreshTokens: 3, passwordResets: 1 },
@@ -191,11 +192,11 @@ describe('TasksService', () => {
     it('should log audit with count and olderThanDays', async () => {
       prisma.auditLog.deleteMany.mockResolvedValue({ count: 10 });
 
-      await service.cleanupAuditLogs(7, 99);
+      await service.cleanupAuditLogs(7, testId(99));
 
       expect(auditService.log).toHaveBeenCalledWith(
         'task.cleanup.audit-logs',
-        99,
+        testId(99),
         null,
         'task',
         { count: 10, olderThanDays: 7 },
@@ -223,11 +224,11 @@ describe('TasksService', () => {
     it('should log audit with count 0 when no orphaned permissions', async () => {
       prisma.permission.findMany.mockResolvedValue([]);
 
-      await service.cleanupOrphanedPermissions(5);
+      await service.cleanupOrphanedPermissions(testId(5));
 
       expect(auditService.log).toHaveBeenCalledWith(
         'task.cleanup.orphaned-permissions',
-        5,
+        testId(5),
         null,
         'task',
         { count: 0, deleted: [] },
@@ -236,8 +237,8 @@ describe('TasksService', () => {
 
     it('should delete orphaned permissions and their role links', async () => {
       const orphaned = [
-        { id: 10, name: 'obsolete:permission', createdAt: new Date() },
-        { id: 11, name: 'old:feature:access', createdAt: new Date() },
+        { id: testId(10), name: 'obsolete:permission', createdAt: new Date() },
+        { id: testId(11), name: 'old:feature:access', createdAt: new Date() },
       ];
       prisma.permission.findMany.mockResolvedValue(orphaned as any);
       prisma.rolePermission.deleteMany.mockResolvedValue({ count: 2 });
@@ -246,10 +247,10 @@ describe('TasksService', () => {
       const result = await service.cleanupOrphanedPermissions();
 
       expect(prisma.rolePermission.deleteMany).toHaveBeenCalledWith({
-        where: { permissionId: { in: [10, 11] } },
+        where: { permissionId: { in: [testId(10), testId(11)] } },
       });
       expect(prisma.permission.deleteMany).toHaveBeenCalledWith({
-        where: { id: { in: [10, 11] } },
+        where: { id: { in: [testId(10), testId(11)] } },
       });
       expect(result).toMatchObject({
         params: {
@@ -261,17 +262,17 @@ describe('TasksService', () => {
 
     it('should log audit with deleted permission names', async () => {
       const orphaned = [
-        { id: 10, name: 'obsolete:permission', createdAt: new Date() },
+        { id: testId(10), name: 'obsolete:permission', createdAt: new Date() },
       ];
       prisma.permission.findMany.mockResolvedValue(orphaned as any);
       prisma.rolePermission.deleteMany.mockResolvedValue({ count: 1 });
       prisma.permission.deleteMany.mockResolvedValue({ count: 1 });
 
-      await service.cleanupOrphanedPermissions(3);
+      await service.cleanupOrphanedPermissions(testId(3));
 
       expect(auditService.log).toHaveBeenCalledWith(
         'task.cleanup.orphaned-permissions',
-        3,
+        testId(3),
         null,
         'task',
         { count: 1, deleted: ['obsolete:permission'] },
@@ -352,7 +353,7 @@ describe('TasksService', () => {
 
     it('should build lastRun from the latest audit log of each task (cron or manual)', async () => {
       const cronRun = {
-        id: 1,
+        id: testId(1),
         action: 'task.cleanup.unverified-users',
         actorId: null,
         targetId: null,
@@ -362,9 +363,9 @@ describe('TasksService', () => {
       };
       const manualRun = {
         ...cronRun,
-        id: 2,
+        id: testId(2),
         action: 'task.cleanup.expired-tokens',
-        actorId: 7,
+        actorId: testId(7),
         metadata: { count: 0, refreshTokens: 0, passwordResets: 0 },
       };
       prisma.auditLog.findFirst
@@ -384,7 +385,7 @@ describe('TasksService', () => {
       });
       expect(data[1].lastRun).toEqual({
         at: manualRun.createdAt,
-        actorId: 7,
+        actorId: testId(7),
         result: { count: 0, refreshTokens: 0, passwordResets: 0 },
       });
     });

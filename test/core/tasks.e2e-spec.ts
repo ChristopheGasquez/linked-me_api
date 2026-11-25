@@ -50,7 +50,7 @@ describe('Tasks (e2e)', () => {
       orderBy: { id: 'desc' },
     });
 
-  const exists = async (userId: number) =>
+  const exists = async (userId: string) =>
     (await t.prisma.user.count({ where: { id: userId } })) === 1;
 
   // ─────────────────────────────────────────────────────────────
@@ -162,7 +162,7 @@ describe('Tasks (e2e)', () => {
           name: 'Unverified',
         })
         .expect(201);
-      const id = res.body.id as number;
+      const id = res.body.id as string;
       await t.prisma.user.update({ where: { id }, data: { createdAt } });
       return id;
     }

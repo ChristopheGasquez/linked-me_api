@@ -3,6 +3,7 @@ import { Permissions } from '../../src/core/auth/permissions.constants.js';
 import { createTestApp, type TestApp } from '../setup/app.factory.js';
 import { bearer, loginAsAdmin, type AuthTokens } from '../setup/auth.helper.js';
 import { cleanDatabase } from '../setup/db.js';
+import { UNKNOWN_ID } from '../setup/test-id.js';
 import { createUserWithPermissions } from '../setup/permissions.helper.js';
 
 let roleCounter = 0;
@@ -21,7 +22,7 @@ describe('Admin roles (e2e)', () => {
 
   afterAll(() => t.app.close());
 
-  const auditLogs = (roleId: number, action: string) =>
+  const auditLogs = (roleId: string, action: string) =>
     t.prisma.auditLog.findMany({
       where: { targetType: 'role', targetId: roleId, action },
     });
@@ -44,11 +45,11 @@ describe('Admin roles (e2e)', () => {
         .send({ permissions })
         .expect(200);
     }
-    return { id: res.body.id as number, name };
+    return { id: res.body.id as string, name };
   }
 
   /** The only role of a user created by createUserWithPermissions. */
-  const onlyRoleId = async (userId: number) =>
+  const onlyRoleId = async (userId: string) =>
     (await t.prisma.userRole.findFirstOrThrow({ where: { userId } })).roleId;
 
   // ─────────────────────────────────────────────────────────────
@@ -69,7 +70,7 @@ describe('Admin roles (e2e)', () => {
           id: role.id,
           name: role.name,
           permissions: [
-            { id: expect.any(Number), name: Permissions.PROFILE_READ },
+            { id: expect.any(String), name: Permissions.PROFILE_READ },
           ],
         }),
       ]);
@@ -132,7 +133,7 @@ describe('Admin roles (e2e)', () => {
 
     it('404 admin.role.not_found for an unknown id', async () => {
       const res = await request(t.http)
-        .get('/admin/roles/999999')
+        .get(`/admin/roles/${UNKNOWN_ID}`)
         .set(bearer(admin.accessToken))
         .expect(404);
       expect(res.body.code).toBe('admin.role.not_found');
@@ -152,7 +153,7 @@ describe('Admin roles (e2e)', () => {
         .send({ name: `  ${name.toLowerCase()}  ` })
         .expect(201);
 
-      expect(res.body).toMatchObject({ id: expect.any(Number), name });
+      expect(res.body).toMatchObject({ id: expect.any(String), name });
 
       const [log] = await auditLogs(res.body.id, 'role.create');
       expect(log).toMatchObject({ actorId: admin.userId, metadata: { name } });
@@ -230,7 +231,7 @@ describe('Admin roles (e2e)', () => {
 
     it('404 admin.role.not_found for an unknown id', async () => {
       const res = await request(t.http)
-        .delete('/admin/roles/999999')
+        .delete(`/admin/roles/${UNKNOWN_ID}`)
         .set(bearer(admin.accessToken))
         .expect(404);
       expect(res.body.code).toBe('admin.role.not_found');
@@ -310,7 +311,7 @@ describe('Admin roles (e2e)', () => {
 
     it('404 admin.role.not_found for an unknown role', async () => {
       const res = await request(t.http)
-        .post('/admin/roles/999999/permissions')
+        .post(`/admin/roles/${UNKNOWN_ID}/permissions`)
         .set(bearer(admin.accessToken))
         .send({ permissions: [Permissions.PROFILE_READ] })
         .expect(404);

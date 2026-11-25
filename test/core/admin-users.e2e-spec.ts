@@ -10,11 +10,12 @@ import {
   type AuthTokens,
 } from '../setup/auth.helper.js';
 import { cleanDatabase } from '../setup/db.js';
+import { UNKNOWN_ID } from '../setup/test-id.js';
 
 describe('Admin users (e2e)', () => {
   let t: TestApp;
   let admin: AuthTokens;
-  let userRoleId: number;
+  let userRoleId: string;
 
   beforeAll(async () => {
     t = await createTestApp();
@@ -27,7 +28,7 @@ describe('Admin users (e2e)', () => {
 
   afterAll(() => t.app.close());
 
-  const auditLogs = (userId: number, action: string) =>
+  const auditLogs = (userId: string, action: string) =>
     t.prisma.auditLog.findMany({
       where: { targetType: 'user', targetId: userId, action },
     });
@@ -38,10 +39,10 @@ describe('Admin users (e2e)', () => {
       .post('/auth/register')
       .send({ email, password: DEFAULT_PASSWORD, name: 'Unverified' })
       .expect(201);
-    return { email, userId: res.body.id as number };
+    return { email, userId: res.body.id as string };
   }
 
-  const removeRole = (userId: number, roleId: number) =>
+  const removeRole = (userId: string, roleId: string) =>
     request(t.http)
       .delete(`/admin/users/${userId}/roles/${roleId}`)
       .set(bearer(admin.accessToken));
@@ -113,7 +114,7 @@ describe('Admin users (e2e)', () => {
         .set(bearer(admin.accessToken))
         .query({ isEmailChecked: 'false', limit: 100 })
         .expect(200);
-      const uncheckedIds = unchecked.body.data.map((u: { id: number }) => u.id);
+      const uncheckedIds = unchecked.body.data.map((u: { id: string }) => u.id);
       expect(uncheckedIds).toContain(unverified.userId);
       expect(uncheckedIds).not.toContain(verified.userId);
       expect(unchecked.body.meta.filters).toEqual({ isEmailChecked: false });
@@ -123,7 +124,7 @@ describe('Admin users (e2e)', () => {
         .set(bearer(admin.accessToken))
         .query({ isEmailChecked: 'true', limit: 100 })
         .expect(200);
-      const checkedIds = checked.body.data.map((u: { id: number }) => u.id);
+      const checkedIds = checked.body.data.map((u: { id: string }) => u.id);
       expect(checkedIds).toContain(verified.userId);
       expect(checkedIds).not.toContain(unverified.userId);
     });
@@ -138,7 +139,7 @@ describe('Admin users (e2e)', () => {
         .query({ search: name.toUpperCase() })
         .expect(200);
 
-      expect(res.body.data.map((u: { id: number }) => u.id)).toEqual([
+      expect(res.body.data.map((u: { id: string }) => u.id)).toEqual([
         user.userId,
       ]);
     });
@@ -175,7 +176,7 @@ describe('Admin users (e2e)', () => {
 
     it('404 admin.user.not_found for an unknown id', async () => {
       const res = await request(t.http)
-        .get('/admin/users/999999')
+        .get(`/admin/users/${UNKNOWN_ID}`)
         .set(bearer(admin.accessToken))
         .expect(404);
       expect(res.body.code).toBe('admin.user.not_found');
@@ -227,7 +228,7 @@ describe('Admin users (e2e)', () => {
 
     it('404 admin.user.not_found for an unknown user', async () => {
       const res = await request(t.http)
-        .post('/admin/users/999999/roles')
+        .post(`/admin/users/${UNKNOWN_ID}/roles`)
         .set(bearer(admin.accessToken))
         .send({ role: 'USER' })
         .expect(404);
@@ -372,7 +373,7 @@ describe('Admin users (e2e)', () => {
 
     it('404 admin.user.not_found for an unknown id', async () => {
       const res = await request(t.http)
-        .delete('/admin/users/999999')
+        .delete(`/admin/users/${UNKNOWN_ID}`)
         .set(bearer(admin.accessToken))
         .expect(404);
       expect(res.body.code).toBe('admin.user.not_found');
@@ -424,7 +425,7 @@ describe('Admin users (e2e)', () => {
 
     it('404 admin.user.not_found for an unknown user', async () => {
       const res = await request(t.http)
-        .get('/admin/users/999999/sessions')
+        .get(`/admin/users/${UNKNOWN_ID}/sessions`)
         .set(bearer(admin.accessToken))
         .expect(404);
       expect(res.body.code).toBe('admin.user.not_found');
@@ -508,7 +509,7 @@ describe('Admin users (e2e)', () => {
 
     it('404 admin.user.not_found for an unknown user', async () => {
       const res = await request(t.http)
-        .delete('/admin/users/999999/sessions')
+        .delete(`/admin/users/${UNKNOWN_ID}/sessions`)
         .set(bearer(admin.accessToken))
         .expect(404);
       expect(res.body.code).toBe('admin.user.not_found');

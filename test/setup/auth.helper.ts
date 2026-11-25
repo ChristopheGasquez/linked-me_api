@@ -4,7 +4,7 @@ import type { TestApp } from './app.factory.js';
 export type AuthTokens = {
   accessToken: string;
   refreshToken: string;
-  userId: number;
+  userId: string;
 };
 
 export const DEFAULT_PASSWORD = 'Password-123!';

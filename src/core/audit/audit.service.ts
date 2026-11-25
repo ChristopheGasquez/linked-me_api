@@ -11,8 +11,8 @@ export class AuditService {
 
   async log(
     action: AuditAction,
-    actorId: number | null,
-    targetId: number | null,
+    actorId: string | null,
+    targetId: string | null,
     targetType: string | null,
     metadata?: Record<string, unknown>,
   ): Promise<void> {

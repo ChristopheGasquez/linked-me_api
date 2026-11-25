@@ -10,6 +10,7 @@ import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { JwtService } from '@nestjs/jwt';
+import { isUUID } from 'class-validator';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { MailService } from '../mail/mail.service.js';
 import { AuditService } from '../audit/audit.service.js';
@@ -169,7 +170,7 @@ export class AuthService {
     return { ...tokens, user };
   }
 
-  private async generateTokens(userId: number, email: string) {
+  private async generateTokens(userId: string, email: string) {
     const payload = { sub: userId, email };
 
     const access_token = await this.jwtService.signAsync(payload);
@@ -216,11 +217,12 @@ export class AuthService {
   }
 
   async refresh(refreshToken: string) {
-    let payload: { sub: number; email: string };
+    let payload: { sub: string; email: string };
     try {
       payload = await this.jwtService.verifyAsync(refreshToken, {
         secret: this.config.getOrThrow('JWT_REFRESH_SECRET'),
       });
+      if (!isUUID(payload.sub, '7')) throw new Error('Invalid subject');
     } catch {
       throw new UnauthorizedException({
         message: 'Invalid or expired refresh token',
@@ -254,7 +256,7 @@ export class AuthService {
     };
   }
 
-  async getSessions(userId: number, query: FindSessionsQueryDto) {
+  async getSessions(userId: string, query: FindSessionsQueryDto) {
     const result = await paginate(this.prisma.refreshToken, query, {
       where: { userId, expiresAt: { gt: new Date() } },
     });
@@ -264,7 +266,7 @@ export class AuthService {
     };
   }
 
-  async revokeSession(userId: number, sessionId: number) {
+  async revokeSession(userId: string, sessionId: string) {
     const session = await this.prisma.refreshToken.findFirst({
       where: { id: sessionId, userId },
     });
@@ -281,7 +283,7 @@ export class AuthService {
     };
   }
 
-  async logoutAll(userId: number) {
+  async logoutAll(userId: string) {
     await this.prisma.refreshToken.deleteMany({ where: { userId } });
     return {
       message: 'All sessions revoked',
@@ -310,7 +312,7 @@ export class AuthService {
     }
   }
 
-  private async createVerificationToken(userId: number): Promise<string> {
+  private async createVerificationToken(userId: string): Promise<string> {
     await this.prisma.emailVerification.deleteMany({ where: { userId } });
 
     const rawToken = crypto.randomBytes(32).toString('hex');

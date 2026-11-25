@@ -1,11 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { MessageResponseDto } from '../../../../common/dto/message-response.dto.js';
+import { ApiIdProperty } from '../../../../common/swagger/api-id-property.decorator.js';
 
 // ─── Role assigned to user ─────────────────────────────────────────────────────
 
 class UserRoleAssignedParamsDto {
   @ApiProperty({ example: 'MODERATOR' }) roleName: string;
-  @ApiProperty({ example: 42 }) userId: number;
+  @ApiIdProperty() userId: string;
 }
 
 export class UserRoleAssignedResponseDto extends MessageResponseDto {
@@ -32,7 +33,7 @@ export class UserRoleRemovedResponseDto extends MessageResponseDto {
 // ─── User deleted ──────────────────────────────────────────────────────────────
 
 class UserDeletedParamsDto {
-  @ApiProperty({ example: 42 }) userId: number;
+  @ApiIdProperty() userId: string;
 }
 
 export class UserDeletedResponseDto extends MessageResponseDto {
@@ -49,8 +50,8 @@ export class UserDeletedResponseDto extends MessageResponseDto {
 // ─── Session revoked ───────────────────────────────────────────────────────────
 
 class UserSessionRevokedParamsDto {
-  @ApiProperty({ example: 42 }) userId: number;
-  @ApiProperty({ example: 7 }) sessionId: number;
+  @ApiIdProperty() userId: string;
+  @ApiIdProperty() sessionId: string;
 }
 
 export class UserSessionRevokedResponseDto extends MessageResponseDto {
@@ -67,7 +68,7 @@ export class UserSessionRevokedResponseDto extends MessageResponseDto {
 // ─── All sessions revoked ──────────────────────────────────────────────────────
 
 class UserSessionsRevokedParamsDto {
-  @ApiProperty({ example: 42 }) userId: number;
+  @ApiIdProperty() userId: string;
   @ApiProperty({
     example: 3,
     description: 'Number of active (non-expired) sessions revoked',

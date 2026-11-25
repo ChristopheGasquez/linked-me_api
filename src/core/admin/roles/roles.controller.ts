@@ -7,7 +7,7 @@ import {
   Body,
   Query,
   UseGuards,
-  ParseIntPipe,
+  ParseUUIDPipe,
   HttpCode,
 } from '@nestjs/common';
 import {
@@ -87,7 +87,7 @@ export class AdminRolesController {
   @ApiInvalidIdError()
   @RequirePermissions(Permissions.ADMIN_ROLE_READ)
   @Get('roles/:id')
-  findRoleById(@Param('id', ParseIntPipe) id: number) {
+  findRoleById(@Param('id', new ParseUUIDPipe({ version: '7' })) id: string) {
     return this.rolesService.findRoleById(id);
   }
 
@@ -130,7 +130,7 @@ export class AdminRolesController {
   @Delete('roles/:id')
   deleteRole(
     @CurrentUser() user: CachedUser,
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', new ParseUUIDPipe({ version: '7' })) id: string,
   ) {
     return this.rolesService.deleteRole(user.id, id);
   }
@@ -159,7 +159,7 @@ export class AdminRolesController {
   @Post('roles/:id/permissions')
   addPermissions(
     @CurrentUser() user: CachedUser,
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', new ParseUUIDPipe({ version: '7' })) id: string,
     @Body() dto: AssignPermissionsDto,
   ) {
     return this.rolesService.addPermissionsToRole(user.id, id, dto.permissions);
@@ -181,8 +181,8 @@ export class AdminRolesController {
   @Delete('roles/:id/permissions/:permId')
   removePermission(
     @CurrentUser() user: CachedUser,
-    @Param('id', ParseIntPipe) id: number,
-    @Param('permId', ParseIntPipe) permId: number,
+    @Param('id', new ParseUUIDPipe({ version: '7' })) id: string,
+    @Param('permId', new ParseUUIDPipe({ version: '7' })) permId: string,
   ) {
     return this.rolesService.removePermissionFromRole(user.id, id, permId);
   }

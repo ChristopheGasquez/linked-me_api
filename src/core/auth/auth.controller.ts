@@ -6,7 +6,7 @@ import {
   Delete,
   Query,
   Param,
-  ParseIntPipe,
+  ParseUUIDPipe,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -344,7 +344,7 @@ export class AuthController {
   @Delete('sessions/:id')
   revokeSession(
     @CurrentUser() user: CachedUser,
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', new ParseUUIDPipe({ version: '7' })) id: string,
   ) {
     return this.authService.revokeSession(user.id, id);
   }
