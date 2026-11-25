@@ -5,12 +5,13 @@ import {
   createPrismaServiceMock,
   PrismaServiceMock,
 } from '../prisma/prisma.service.mock.js';
+import { testId } from '../../../test/setup/test-id.js';
 
 const mockAuditLog = {
-  id: 1,
+  id: testId(1),
   action: 'user.create',
-  actorId: 1,
-  targetId: 1,
+  actorId: testId(1),
+  targetId: testId(1),
   targetType: 'user',
   metadata: { email: 'test@example.com' },
   createdAt: new Date('2024-01-01'),
@@ -48,15 +49,15 @@ describe('AuditService', () => {
     it('should create an audit log entry with the correct fields', async () => {
       prisma.auditLog.create.mockResolvedValue(mockAuditLog as any);
 
-      await service.log('user.create', 1, 1, 'user', {
+      await service.log('user.create', testId(1), testId(1), 'user', {
         email: 'test@example.com',
       });
 
       expect(prisma.auditLog.create).toHaveBeenCalledWith({
         data: {
           action: 'user.create',
-          actorId: 1,
-          targetId: 1,
+          actorId: testId(1),
+          targetId: testId(1),
           targetType: 'user',
           metadata: { email: 'test@example.com' },
         },
@@ -66,7 +67,7 @@ describe('AuditService', () => {
     it('should accept null actorId and targetId', async () => {
       prisma.auditLog.create.mockResolvedValue({} as any);
 
-      await service.log('login.failed', null, 1, 'user');
+      await service.log('login.failed', null, testId(1), 'user');
 
       expect(prisma.auditLog.create).toHaveBeenCalledWith({
         data: expect.objectContaining({ actorId: null }),
@@ -76,7 +77,7 @@ describe('AuditService', () => {
     it('should accept undefined metadata (not passed)', async () => {
       prisma.auditLog.create.mockResolvedValue({} as any);
 
-      await service.log('email.verified', 1, 1, 'user');
+      await service.log('email.verified', testId(1), testId(1), 'user');
 
       expect(prisma.auditLog.create).toHaveBeenCalledWith({
         data: expect.objectContaining({ metadata: undefined }),
@@ -116,10 +117,10 @@ describe('AuditService', () => {
       prisma.auditLog.findMany.mockResolvedValue([] as any);
       prisma.auditLog.count.mockResolvedValue(0);
 
-      await service.findAll({ ...defaultQuery, actorId: 5 } as any);
+      await service.findAll({ ...defaultQuery, actorId: testId(5) } as any);
 
       expect(prisma.auditLog.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { actorId: 5 } }),
+        expect.objectContaining({ where: { actorId: testId(5) } }),
       );
     });
 
@@ -127,10 +128,10 @@ describe('AuditService', () => {
       prisma.auditLog.findMany.mockResolvedValue([] as any);
       prisma.auditLog.count.mockResolvedValue(0);
 
-      await service.findAll({ ...defaultQuery, targetId: 7 } as any);
+      await service.findAll({ ...defaultQuery, targetId: testId(7) } as any);
 
       expect(prisma.auditLog.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { targetId: 7 } }),
+        expect.objectContaining({ where: { targetId: testId(7) } }),
       );
     });
 

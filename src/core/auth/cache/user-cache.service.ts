@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { USER_CACHE_TTL_MS } from '../../../common/constants.js';
 
 export interface CachedUser {
-  id: number;
+  id: string;
   email: string;
   name: string;
   isEmailChecked: boolean;
@@ -17,11 +17,11 @@ export interface CachedUser {
 @Injectable()
 export class UserCacheService {
   private readonly cache = new Map<
-    number,
+    string,
     { data: CachedUser; expiresAt: number }
   >();
 
-  get(userId: number): CachedUser | null {
+  get(userId: string): CachedUser | null {
     const entry = this.cache.get(userId);
     if (!entry) return null;
     if (Date.now() > entry.expiresAt) {
@@ -31,11 +31,11 @@ export class UserCacheService {
     return entry.data;
   }
 
-  set(userId: number, data: CachedUser): void {
+  set(userId: string, data: CachedUser): void {
     this.cache.set(userId, { data, expiresAt: Date.now() + USER_CACHE_TTL_MS });
   }
 
-  invalidate(userId: number): void {
+  invalidate(userId: string): void {
     this.cache.delete(userId);
   }
 

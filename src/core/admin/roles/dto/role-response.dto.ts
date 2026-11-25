@@ -1,12 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { ApiIdProperty } from '../../../../common/swagger/api-id-property.decorator.js';
 
 export class PermissionResponseDto {
-  @ApiProperty() id: number;
+  @ApiIdProperty() id: string;
   @ApiProperty({ example: 'realm:profile' }) name: string;
 }
 
 export class RoleBasicResponseDto {
-  @ApiProperty() id: number;
+  @ApiIdProperty() id: string;
   @ApiProperty({ example: 'USER' }) name: string;
   @ApiProperty() createdAt: Date;
   @ApiProperty() updatedAt: Date;

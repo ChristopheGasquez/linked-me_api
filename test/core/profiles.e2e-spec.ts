@@ -7,6 +7,7 @@ import {
   uniqueEmail,
 } from '../setup/auth.helper.js';
 import { cleanDatabase } from '../setup/db.js';
+import { UNKNOWN_ID } from '../setup/test-id.js';
 
 const NEW_PASSWORD = 'New-Password-456!';
 
@@ -20,7 +21,7 @@ describe('Profiles (e2e)', () => {
 
   afterAll(() => t.app.close());
 
-  const auditLogs = (userId: number, action: string) =>
+  const auditLogs = (userId: string, action: string) =>
     t.prisma.auditLog.findMany({
       where: { targetType: 'user', targetId: userId, action },
     });
@@ -50,19 +51,24 @@ describe('Profiles (e2e)', () => {
       const viewer = await createVerifiedUser(t);
 
       const res = await request(t.http)
-        .get('/profiles/999999')
+        .get(`/profiles/${UNKNOWN_ID}`)
         .set(bearer(viewer.accessToken))
         .expect(404);
       expect(res.body.code).toBe('profile.user.not_found');
     });
 
-    it('400 for a non-numeric id', async () => {
+    it.each([
+      ['not a UUID', 'abc'],
+      ['a former integer id', '1'],
+      ['a UUID v4', '0b5f3c1e-8a2d-4f6b-9c7e-1d2a3b4c5d6e'],
+    ])('400 for an id that is %s', async (_label, id) => {
       const viewer = await createVerifiedUser(t);
 
-      await request(t.http)
-        .get('/profiles/abc')
+      const res = await request(t.http)
+        .get(`/profiles/${id}`)
         .set(bearer(viewer.accessToken))
         .expect(400);
+      expect(res.body.message).toBe('Validation failed (uuid v 7 is expected)');
     });
   });
 

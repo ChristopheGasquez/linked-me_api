@@ -1,8 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { RoleBasicResponseDto } from '../../roles/dto/role-response.dto.js';
+import { ApiIdProperty } from '../../../../common/swagger/api-id-property.decorator.js';
 
 export class UserAdminResponseDto {
-  @ApiProperty() id: number;
+  @ApiIdProperty() id: string;
   @ApiProperty() email: string;
   @ApiProperty() name: string;
   @ApiProperty() isEmailChecked: boolean;

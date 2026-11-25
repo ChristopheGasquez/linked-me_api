@@ -7,9 +7,10 @@ import {
   createPrismaServiceMock,
   PrismaServiceMock,
 } from '../../prisma/prisma.service.mock.js';
+import { testId } from '../../../../test/setup/test-id.js';
 
 const dbUser = {
-  id: 1,
+  id: testId(1),
   email: 'test@example.com',
   password: 'hashed_password',
   name: 'Test User',
@@ -57,11 +58,11 @@ describe('JwtStrategy', () => {
   });
 
   it('should return the cached user without querying the database', async () => {
-    const cached = { id: 1, roles: ['USER'] } as CachedUser;
+    const cached = { id: testId(1), roles: ['USER'] } as CachedUser;
     userCache.get.mockReturnValue(cached);
 
     const result = await strategy.validate({
-      sub: 1,
+      sub: testId(1),
       email: 'test@example.com',
     });
 
@@ -69,11 +70,19 @@ describe('JwtStrategy', () => {
     expect(prisma.user.findUnique).not.toHaveBeenCalled();
   });
 
+  it('should throw UnauthorizedException for a non UUID v7 subject (token issued before v2)', async () => {
+    await expect(
+      strategy.validate({ sub: 1, email: 'test@example.com' } as any),
+    ).rejects.toThrow(UnauthorizedException);
+    expect(userCache.get).not.toHaveBeenCalled();
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+  });
+
   it('should throw UnauthorizedException if the user no longer exists', async () => {
     prisma.user.findUnique.mockResolvedValue(null);
 
     await expect(
-      strategy.validate({ sub: 1, email: 'test@example.com' }),
+      strategy.validate({ sub: testId(1), email: 'test@example.com' }),
     ).rejects.toThrow(UnauthorizedException);
     expect(userCache.set).not.toHaveBeenCalled();
   });
@@ -82,20 +91,20 @@ describe('JwtStrategy', () => {
     prisma.user.findUnique.mockResolvedValue(dbUser as any);
 
     const result = await strategy.validate({
-      sub: 1,
+      sub: testId(1),
       email: 'test@example.com',
     });
 
     expect(prisma.user.findUnique).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 1 } }),
+      expect.objectContaining({ where: { id: testId(1) } }),
     );
     expect(result).not.toHaveProperty('password');
     expect(result).toMatchObject({
-      id: 1,
+      id: testId(1),
       email: 'test@example.com',
       roles: ['USER', 'ADMIN'],
       permissions: ['profile:read', 'user:read', 'user:delete'],
     });
-    expect(userCache.set).toHaveBeenCalledWith(1, result);
+    expect(userCache.set).toHaveBeenCalledWith(testId(1), result);
   });
 });

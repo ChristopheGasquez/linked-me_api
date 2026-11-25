@@ -1,7 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { ApiIdProperty } from '../../../common/swagger/api-id-property.decorator.js';
 
 export class LoginUserDto {
-  @ApiProperty() id: number;
+  @ApiIdProperty() id: string;
   @ApiProperty() email: string;
   @ApiProperty() name: string;
   @ApiProperty() isEmailChecked: boolean;

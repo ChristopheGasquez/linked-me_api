@@ -22,7 +22,7 @@ export class TasksService {
   ) {}
 
   @Cron(TaskCron.UNVERIFIED_USERS)
-  async cleanupUnverifiedUsers(actorId: number | null = null) {
+  async cleanupUnverifiedUsers(actorId: string | null = null) {
     const ttl = this.unverifiedUserTtlHours();
     const count = await this.profilesService.deleteUnverified(ttl);
     if (count > 0) {
@@ -43,7 +43,7 @@ export class TasksService {
   }
 
   @Cron(TaskCron.EXPIRED_TOKENS)
-  async cleanupExpiredTokens(actorId: number | null = null) {
+  async cleanupExpiredTokens(actorId: string | null = null) {
     const now = new Date();
     const [refreshResult, resetResult] = await Promise.all([
       this.prisma.refreshToken.deleteMany({
@@ -84,7 +84,7 @@ export class TasksService {
   @Cron(TaskCron.AUDIT_LOGS)
   async cleanupAuditLogs(
     olderThanDays?: number,
-    actorId: number | null = null,
+    actorId: string | null = null,
   ) {
     const days = olderThanDays ?? this.auditLogTtlDays();
     const cutoff = new Date(Date.now() - days * MS_PER_DAY);
@@ -110,7 +110,7 @@ export class TasksService {
     };
   }
 
-  async cleanupOrphanedPermissions(actorId: number | null = null) {
+  async cleanupOrphanedPermissions(actorId: string | null = null) {
     const valid = Object.values(Permissions) as string[];
     const orphaned = await this.prisma.permission.findMany({
       where: { name: { notIn: valid } },

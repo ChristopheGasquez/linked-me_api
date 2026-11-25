@@ -39,6 +39,6 @@ export const ApiInvalidIdError = () =>
   ApiResponse({
     status: 400,
     description:
-      'Invalid ID, must be an integer (no code — message: "Validation failed (numeric string is expected)")',
+      'Invalid ID, must be a UUID v7 (no code — message: "Validation failed (uuid v 7 is expected)")',
     type: ErrorResponseDto,
   });

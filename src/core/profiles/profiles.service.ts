@@ -19,7 +19,7 @@ export class ProfilesService {
     private userCache: UserCacheService,
   ) {}
 
-  async findOne(id: number) {
+  async findOne(id: string) {
     const user = await this.prisma.user.findUnique({ where: { id } });
 
     if (!user) {
@@ -37,7 +37,7 @@ export class ProfilesService {
     };
   }
 
-  async update(id: number, dto: UpdateProfileDto) {
+  async update(id: string, dto: UpdateProfileDto) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user)
       throw new NotFoundException({
@@ -63,7 +63,7 @@ export class ProfilesService {
     };
   }
 
-  async remove(id: number) {
+  async remove(id: string) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user)
       throw new NotFoundException({
@@ -79,7 +79,7 @@ export class ProfilesService {
   }
 
   async changePassword(
-    userId: number,
+    userId: string,
     currentPassword: string,
     newPassword: string,
   ) {

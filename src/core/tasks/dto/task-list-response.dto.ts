@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { TASK_NAMES, type TaskName } from '../tasks.constants.js';
+import { ApiIdProperty } from '../../../common/swagger/api-id-property.decorator.js';
 
 class TaskScheduleDto {
   @ApiProperty({
@@ -32,13 +33,11 @@ class TaskLastRunDto {
   @ApiProperty()
   at: Date;
 
-  @ApiProperty({
-    type: Number,
+  @ApiIdProperty({
     nullable: true,
-    example: 1,
     description: 'Admin who ran the task, null when run by the cron',
   })
-  actorId: number | null;
+  actorId: string | null;
 
   @ApiProperty({
     type: 'object',

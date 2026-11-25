@@ -9,11 +9,12 @@ import {
   createPrismaServiceMock,
   PrismaServiceMock,
 } from '../../prisma/prisma.service.mock.js';
+import { testId } from '../../../../test/setup/test-id.js';
 
-const mockRole = { id: 1, name: 'USER', createdAt: new Date() };
+const mockRole = { id: testId(1), name: 'USER', createdAt: new Date() };
 
 const mockUser = {
-  id: 1,
+  id: testId(1),
   email: 'test@example.com',
   password: 'hashed_password',
   name: 'Test User',
@@ -122,13 +123,15 @@ describe('AdminUsersService', () => {
     it('should throw NotFoundException if user does not exist', async () => {
       prisma.user.findUnique.mockResolvedValue(null);
 
-      await expect(service.findUserById(99)).rejects.toThrow(NotFoundException);
+      await expect(service.findUserById(testId(99))).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should return user with flattened roles and no password', async () => {
       prisma.user.findUnique.mockResolvedValue(mockUser as any);
 
-      const result = await service.findUserById(1);
+      const result = await service.findUserById(testId(1));
 
       expect(result).not.toHaveProperty('password');
       expect(result.roles).toEqual([mockRole]);
@@ -142,31 +145,31 @@ describe('AdminUsersService', () => {
     it('should throw NotFoundException if user does not exist', async () => {
       prisma.user.findUnique.mockResolvedValue(null);
 
-      await expect(service.addRoleToUser(1, 99, 'ADMIN')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.addRoleToUser(testId(1), testId(99), 'ADMIN'),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw NotFoundException if role does not exist', async () => {
       prisma.user.findUnique.mockResolvedValue(mockUser as any);
       prisma.role.findUnique.mockResolvedValue(null);
 
-      await expect(service.addRoleToUser(1, 1, 'NONEXISTENT')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.addRoleToUser(testId(1), testId(1), 'NONEXISTENT'),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw BadRequestException if user already has the role', async () => {
       prisma.user.findUnique.mockResolvedValue(mockUser as any);
       prisma.role.findUnique.mockResolvedValue(mockRole as any);
       prisma.userRole.findUnique.mockResolvedValue({
-        userId: 1,
-        roleId: 1,
+        userId: testId(1),
+        roleId: testId(1),
       } as any);
 
-      await expect(service.addRoleToUser(1, 1, 'USER')).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.addRoleToUser(testId(1), testId(1), 'USER'),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should assign role to user and log audit on success', async () => {
@@ -175,21 +178,21 @@ describe('AdminUsersService', () => {
       prisma.userRole.findUnique.mockResolvedValue(null);
       prisma.userRole.create.mockResolvedValue({} as any);
 
-      const result = await service.addRoleToUser(2, 1, 'USER');
+      const result = await service.addRoleToUser(testId(2), testId(1), 'USER');
 
       expect(prisma.userRole.create).toHaveBeenCalledWith({
-        data: { userId: 1, roleId: 1 },
+        data: { userId: testId(1), roleId: testId(1) },
       });
       expect(auditService.log).toHaveBeenCalledWith(
         'user.role.assign',
-        2,
-        1,
+        testId(2),
+        testId(1),
         'user',
         { roleName: 'USER' },
       );
       expect(result).toMatchObject({
         code: 'admin.user.role.assigned',
-        params: { roleName: 'USER', userId: 1 },
+        params: { roleName: 'USER', userId: testId(1) },
       });
     });
   });
@@ -201,25 +204,29 @@ describe('AdminUsersService', () => {
     it('should throw NotFoundException if UserRole link does not exist', async () => {
       prisma.userRole.findUnique.mockResolvedValue(null);
 
-      await expect(service.removeRoleFromUser(1, 1, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.removeRoleFromUser(testId(1), testId(1), testId(1)),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should remove role from user and log audit', async () => {
-      const link = { userId: 1, roleId: 1, role: mockRole };
+      const link = { userId: testId(1), roleId: testId(1), role: mockRole };
       prisma.userRole.findUnique.mockResolvedValue(link as any);
       prisma.userRole.delete.mockResolvedValue(link as any);
 
-      const result = await service.removeRoleFromUser(2, 1, 1);
+      const result = await service.removeRoleFromUser(
+        testId(2),
+        testId(1),
+        testId(1),
+      );
 
       expect(prisma.userRole.delete).toHaveBeenCalledWith({
-        where: { userId_roleId: { userId: 1, roleId: 1 } },
+        where: { userId_roleId: { userId: testId(1), roleId: testId(1) } },
       });
       expect(auditService.log).toHaveBeenCalledWith(
         'user.role.revoke',
-        2,
-        1,
+        testId(2),
+        testId(1),
         'user',
         { roleName: 'USER' },
       );
@@ -234,16 +241,16 @@ describe('AdminUsersService', () => {
     it('should throw NotFoundException if user does not exist', async () => {
       prisma.user.findUnique.mockResolvedValue(null);
 
-      await expect(service.deleteUser(1, 99)).rejects.toThrow(
+      await expect(service.deleteUser(testId(1), testId(99))).rejects.toThrow(
         NotFoundException,
       );
     });
 
     it('should throw BadRequestException if user still has roles', async () => {
-      const userWithRoles = { ...mockUser, roles: [{ roleId: 1 }] };
+      const userWithRoles = { ...mockUser, roles: [{ roleId: testId(1) }] };
       prisma.user.findUnique.mockResolvedValue(userWithRoles as any);
 
-      await expect(service.deleteUser(1, 1)).rejects.toThrow(
+      await expect(service.deleteUser(testId(1), testId(1))).rejects.toThrow(
         BadRequestException,
       );
     });
@@ -253,19 +260,21 @@ describe('AdminUsersService', () => {
       prisma.user.findUnique.mockResolvedValue(userNoRoles as any);
       prisma.user.delete.mockResolvedValue(userNoRoles as any);
 
-      const result = await service.deleteUser(2, 1);
+      const result = await service.deleteUser(testId(2), testId(1));
 
-      expect(prisma.user.delete).toHaveBeenCalledWith({ where: { id: 1 } });
+      expect(prisma.user.delete).toHaveBeenCalledWith({
+        where: { id: testId(1) },
+      });
       expect(auditService.log).toHaveBeenCalledWith(
         'user.delete',
-        2,
-        1,
+        testId(2),
+        testId(1),
         'user',
         expect.any(Object),
       );
       expect(result).toMatchObject({
         code: 'admin.user.deleted',
-        params: { userId: 1 },
+        params: { userId: testId(1) },
       });
     });
   });
@@ -277,18 +286,18 @@ describe('AdminUsersService', () => {
     it('should throw NotFoundException if user does not exist', async () => {
       prisma.user.findUnique.mockResolvedValue(null);
 
-      await expect(service.findUserSessions(99, defaultQuery)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.findUserSessions(testId(99), defaultQuery),
+      ).rejects.toThrow(NotFoundException);
       expect(prisma.refreshToken.findMany).not.toHaveBeenCalled();
     });
 
     it('should return the active sessions of the user without the token hash', async () => {
-      prisma.user.findUnique.mockResolvedValue({ id: 1 } as any);
+      prisma.user.findUnique.mockResolvedValue({ id: testId(1) } as any);
       prisma.refreshToken.findMany.mockResolvedValue([
         {
-          id: 7,
-          userId: 1,
+          id: testId(7),
+          userId: testId(1),
           token: 'hash',
           expiresAt: new Date(),
           createdAt: new Date(),
@@ -296,11 +305,11 @@ describe('AdminUsersService', () => {
       ] as any);
       prisma.refreshToken.count.mockResolvedValue(1);
 
-      const result = await service.findUserSessions(1, defaultQuery);
+      const result = await service.findUserSessions(testId(1), defaultQuery);
 
       expect(prisma.refreshToken.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { userId: 1, expiresAt: { gt: expect.any(Date) } },
+          where: { userId: testId(1), expiresAt: { gt: expect.any(Date) } },
         }),
       );
       expect(result.data).toHaveLength(1);
@@ -316,35 +325,39 @@ describe('AdminUsersService', () => {
     it('should throw NotFoundException if the session does not belong to the user', async () => {
       prisma.refreshToken.findFirst.mockResolvedValue(null);
 
-      await expect(service.revokeUserSession(2, 1, 99)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.revokeUserSession(testId(2), testId(1), testId(99)),
+      ).rejects.toThrow(NotFoundException);
       expect(prisma.refreshToken.findFirst).toHaveBeenCalledWith({
-        where: { id: 99, userId: 1 },
+        where: { id: testId(99), userId: testId(1) },
       });
       expect(prisma.refreshToken.delete).not.toHaveBeenCalled();
       expect(auditService.log).not.toHaveBeenCalled();
     });
 
     it('should delete the session and log audit', async () => {
-      prisma.refreshToken.findFirst.mockResolvedValue({ id: 7 } as any);
-      prisma.refreshToken.delete.mockResolvedValue({ id: 7 } as any);
+      prisma.refreshToken.findFirst.mockResolvedValue({ id: testId(7) } as any);
+      prisma.refreshToken.delete.mockResolvedValue({ id: testId(7) } as any);
 
-      const result = await service.revokeUserSession(2, 1, 7);
+      const result = await service.revokeUserSession(
+        testId(2),
+        testId(1),
+        testId(7),
+      );
 
       expect(prisma.refreshToken.delete).toHaveBeenCalledWith({
-        where: { id: 7 },
+        where: { id: testId(7) },
       });
       expect(auditService.log).toHaveBeenCalledWith(
         'user.session.revoke',
-        2,
-        1,
+        testId(2),
+        testId(1),
         'user',
-        { sessionId: 7 },
+        { sessionId: testId(7) },
       );
       expect(result).toMatchObject({
         code: 'admin.user.session.revoked',
-        params: { userId: 1, sessionId: 7 },
+        params: { userId: testId(1), sessionId: testId(7) },
       });
     });
   });
@@ -356,38 +369,38 @@ describe('AdminUsersService', () => {
     it('should throw NotFoundException if user does not exist', async () => {
       prisma.user.findUnique.mockResolvedValue(null);
 
-      await expect(service.revokeAllUserSessions(2, 99)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.revokeAllUserSessions(testId(2), testId(99)),
+      ).rejects.toThrow(NotFoundException);
       expect(prisma.$transaction).not.toHaveBeenCalled();
     });
 
     it('should delete all tokens, count only active ones and log audit', async () => {
-      prisma.user.findUnique.mockResolvedValue({ id: 1 } as any);
+      prisma.user.findUnique.mockResolvedValue({ id: testId(1) } as any);
       prisma.$transaction.mockImplementation((ops: any) =>
         Array.isArray(ops) ? Promise.all(ops) : ops(prisma),
       );
       prisma.refreshToken.count.mockResolvedValue(2);
       prisma.refreshToken.deleteMany.mockResolvedValue({ count: 3 });
 
-      const result = await service.revokeAllUserSessions(2, 1);
+      const result = await service.revokeAllUserSessions(testId(2), testId(1));
 
       expect(prisma.refreshToken.count).toHaveBeenCalledWith({
-        where: { userId: 1, expiresAt: { gt: expect.any(Date) } },
+        where: { userId: testId(1), expiresAt: { gt: expect.any(Date) } },
       });
       expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
-        where: { userId: 1 },
+        where: { userId: testId(1) },
       });
       expect(auditService.log).toHaveBeenCalledWith(
         'user.session.revoke_all',
-        2,
-        1,
+        testId(2),
+        testId(1),
         'user',
         { count: 2 },
       );
       expect(result).toMatchObject({
         code: 'admin.user.sessions.revoked',
-        params: { userId: 1, count: 2 },
+        params: { userId: testId(1), count: 2 },
       });
     });
   });

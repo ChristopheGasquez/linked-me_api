@@ -8,6 +8,7 @@ import {
   type AuthTokens,
 } from '../setup/auth.helper.js';
 import { cleanDatabase } from '../setup/db.js';
+import { testId } from '../setup/test-id.js';
 
 let actionCounter = 0;
 /** Unique action name, so each test only sees its own logs. */
@@ -33,8 +34,8 @@ describe('Audit logs (e2e)', () => {
 
   const createLog = (data: {
     action: string;
-    actorId?: number | null;
-    targetId?: number | null;
+    actorId?: string | null;
+    targetId?: string | null;
     targetType?: string | null;
     metadata?: Prisma.InputJsonValue;
   }) => t.prisma.auditLog.create({ data });
@@ -44,7 +45,7 @@ describe('Audit logs (e2e)', () => {
     const log = await createLog({
       action,
       actorId: admin.userId,
-      targetId: 42,
+      targetId: testId(42),
       targetType: 'user',
       metadata: { foo: 'bar' },
     });
@@ -56,7 +57,7 @@ describe('Audit logs (e2e)', () => {
         id: log.id,
         action,
         actorId: admin.userId,
-        targetId: 42,
+        targetId: testId(42),
         targetType: 'user',
         metadata: { foo: 'bar' },
         createdAt: log.createdAt.toISOString(),
@@ -124,54 +125,54 @@ describe('Audit logs (e2e)', () => {
     await createLog({
       action,
       actorId: admin.userId,
-      targetId: 7,
+      targetId: testId(7),
       targetType: 'user',
     });
     await createLog({
       action,
       actorId: admin.userId,
-      targetId: 7,
+      targetId: testId(7),
       targetType: 'role',
     });
     await createLog({
       action,
       actorId: other.userId,
-      targetId: 7,
+      targetId: testId(7),
       targetType: 'user',
     });
     await createLog({
       action,
       actorId: admin.userId,
-      targetId: 8,
+      targetId: testId(8),
       targetType: 'user',
     });
 
-    const byTarget = await list({ action, targetId: 7 }).expect(200);
+    const byTarget = await list({ action, targetId: testId(7) }).expect(200);
     expect(byTarget.body.data).toHaveLength(3);
 
     const withType = await list({
       action,
-      targetId: 7,
+      targetId: testId(7),
       targetType: 'user',
     }).expect(200);
     expect(withType.body.data).toHaveLength(2);
 
     const withActor = await list({
       action,
-      targetId: 7,
+      targetId: testId(7),
       targetType: 'user',
       actorId: other.userId,
     }).expect(200);
     expect(withActor.body.data).toHaveLength(1);
     expect(withActor.body.data[0]).toMatchObject({
       actorId: other.userId,
-      targetId: 7,
+      targetId: testId(7),
     });
   });
 
   it('paginates and sorts by id', async () => {
     const action = uniqueAction();
-    const ids: number[] = [];
+    const ids: string[] = [];
     for (let i = 0; i < 3; i++) {
       ids.push((await createLog({ action })).id);
     }
@@ -182,7 +183,7 @@ describe('Audit logs (e2e)', () => {
       sortBy: 'id',
       sortOrder: 'asc',
     }).expect(200);
-    expect(page1.body.data.map((l: { id: number }) => l.id)).toEqual(
+    expect(page1.body.data.map((l: { id: string }) => l.id)).toEqual(
       ids.slice(0, 2),
     );
     expect(page1.body.meta).toMatchObject({
@@ -201,16 +202,16 @@ describe('Audit logs (e2e)', () => {
       sortBy: 'id',
       sortOrder: 'asc',
     }).expect(200);
-    expect(page2.body.data.map((l: { id: number }) => l.id)).toEqual([ids[2]]);
+    expect(page2.body.data.map((l: { id: string }) => l.id)).toEqual([ids[2]]);
   });
 
   it.each([
     ['sortBy=action (not allowed)', { sortBy: 'action' }],
     ['sortOrder=up', { sortOrder: 'up' }],
     ['actorId=abc', { actorId: 'abc' }],
-    ['actorId=0', { actorId: 0 }],
+    ['actorId=UUID v4', { actorId: '0b5f3c1e-8a2d-4f6b-9c7e-1d2a3b4c5d6e' }],
     ['targetId=abc', { targetId: 'abc' }],
-    ['targetId=0', { targetId: 0 }],
+    ['targetId=UUID v4', { targetId: '0b5f3c1e-8a2d-4f6b-9c7e-1d2a3b4c5d6e' }],
     ['limit=101', { limit: 101 }],
     ['page=0', { page: 0 }],
   ])('400 validation.failed for %s', async (_label, query) => {

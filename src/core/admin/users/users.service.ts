@@ -55,7 +55,7 @@ export class AdminUsersService {
     };
   }
 
-  async findUserById(userId: number) {
+  async findUserById(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: { roles: { include: { role: true } } },
@@ -69,7 +69,7 @@ export class AdminUsersService {
     return { ...rest, roles: rest.roles.map((ur) => ur.role) };
   }
 
-  async addRoleToUser(actorId: number, userId: number, roleName: string) {
+  async addRoleToUser(actorId: string, userId: string, roleName: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user)
       throw new NotFoundException({
@@ -110,7 +110,7 @@ export class AdminUsersService {
     };
   }
 
-  async removeRoleFromUser(actorId: number, userId: number, roleId: number) {
+  async removeRoleFromUser(actorId: string, userId: string, roleId: string) {
     const link = await this.prisma.userRole.findUnique({
       where: { userId_roleId: { userId, roleId } },
       include: { role: true },
@@ -135,7 +135,7 @@ export class AdminUsersService {
     };
   }
 
-  async deleteUser(actorId: number, userId: number) {
+  async deleteUser(actorId: string, userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: { roles: true },
@@ -166,7 +166,7 @@ export class AdminUsersService {
     };
   }
 
-  async findUserSessions(userId: number, query: FindSessionsQueryDto) {
+  async findUserSessions(userId: string, query: FindSessionsQueryDto) {
     await this.assertUserExists(userId);
     const result = await paginate(this.prisma.refreshToken, query, {
       where: { userId, expiresAt: { gt: new Date() } },
@@ -177,7 +177,7 @@ export class AdminUsersService {
     };
   }
 
-  async revokeUserSession(actorId: number, userId: number, sessionId: number) {
+  async revokeUserSession(actorId: string, userId: string, sessionId: string) {
     const session = await this.prisma.refreshToken.findFirst({
       where: { id: sessionId, userId },
     });
@@ -202,7 +202,7 @@ export class AdminUsersService {
     };
   }
 
-  async revokeAllUserSessions(actorId: number, userId: number) {
+  async revokeAllUserSessions(actorId: string, userId: string) {
     await this.assertUserExists(userId);
     // Expired tokens are deleted too, but only active sessions are counted:
     // expired ones are already considered gone (the cleanup cron removes them).
@@ -226,7 +226,7 @@ export class AdminUsersService {
     };
   }
 
-  private async assertUserExists(userId: number) {
+  private async assertUserExists(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { id: true },
