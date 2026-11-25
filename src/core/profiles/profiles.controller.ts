@@ -6,7 +6,7 @@ import {
   Param,
   Body,
   UseGuards,
-  ParseIntPipe,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -61,7 +61,7 @@ export class ProfilesController {
   @ApiInvalidIdError()
   @RequirePermissions(Permissions.PROFILE_READ)
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
+  findOne(@Param('id', new ParseUUIDPipe({ version: '7' })) id: string) {
     return this.profilesService.findOne(id);
   }
 

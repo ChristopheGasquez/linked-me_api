@@ -2,11 +2,12 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { isUUID } from 'class-validator';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { CachedUser, UserCacheService } from '../cache/user-cache.service.js';
 
 interface JwtPayload {
-  sub: number; // JWT standard claim: user id
+  sub: string; // JWT standard claim: user id
   email: string;
 }
 
@@ -25,6 +26,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload): Promise<CachedUser> {
+    if (!isUUID(payload.sub, '7')) throw new UnauthorizedException();
+
     const cached = this.userCache.get(payload.sub);
     if (cached) return cached;
 

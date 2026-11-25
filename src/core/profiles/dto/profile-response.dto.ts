@@ -1,7 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { ApiIdProperty } from '../../../common/swagger/api-id-property.decorator.js';
 
 export class ProfileResponseDto {
-  @ApiProperty() id: number;
+  @ApiIdProperty() id: string;
   @ApiProperty() name: string;
   @ApiProperty() email: string;
   @ApiProperty() createdAt: Date;

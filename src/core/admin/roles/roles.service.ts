@@ -41,7 +41,7 @@ export class AdminRolesService {
     };
   }
 
-  async findRoleById(roleId: number) {
+  async findRoleById(roleId: string) {
     const role = await this.prisma.role.findUnique({
       where: { id: roleId },
       include: { permissions: { include: { permission: true } } },
@@ -57,7 +57,7 @@ export class AdminRolesService {
     };
   }
 
-  async createRole(actorId: number, name: string) {
+  async createRole(actorId: string, name: string) {
     const existing = await this.prisma.role.findUnique({ where: { name } });
     if (existing) {
       throw new BadRequestException({
@@ -73,7 +73,7 @@ export class AdminRolesService {
     return role;
   }
 
-  async deleteRole(actorId: number, roleId: number) {
+  async deleteRole(actorId: string, roleId: string) {
     const role = await this.prisma.role.findUnique({ where: { id: roleId } });
     if (!role)
       throw new NotFoundException({
@@ -103,8 +103,8 @@ export class AdminRolesService {
   }
 
   async addPermissionsToRole(
-    actorId: number,
-    roleId: number,
+    actorId: string,
+    roleId: string,
     permissionNames: string[],
   ) {
     const role = await this.prisma.role.findUnique({ where: { id: roleId } });
@@ -156,9 +156,9 @@ export class AdminRolesService {
   }
 
   async removePermissionFromRole(
-    actorId: number,
-    roleId: number,
-    permissionId: number,
+    actorId: string,
+    roleId: string,
+    permissionId: string,
   ) {
     const link = await this.prisma.rolePermission.findUnique({
       where: { roleId_permissionId: { roleId, permissionId } },

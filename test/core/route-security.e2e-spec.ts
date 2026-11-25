@@ -6,6 +6,7 @@ import {
 import { createTestApp, type TestApp } from '../setup/app.factory.js';
 import { bearer, createVerifiedUser } from '../setup/auth.helper.js';
 import { cleanDatabase } from '../setup/db.js';
+import { UNKNOWN_ID } from '../setup/test-id.js';
 import { createUserWithPermissions } from '../setup/permissions.helper.js';
 
 /**
@@ -13,7 +14,7 @@ import { createUserWithPermissions } from '../setup/permissions.helper.js';
  * of the three tables below. Adding a route without listing it fails the
  * "route inventory" test.
  *
- * Path params use 999999 (never an existing id): guards run before pipes and
+ * Path params use UNKNOWN_ID (never an existing id): guards run before pipes and
  * handlers, so 400/404 still prove that access was granted.
  */
 
@@ -25,7 +26,7 @@ type ProtectedRoute = Route & {
   destructive?: boolean;
 };
 
-const NO_ID = 999999;
+const NO_ID = UNKNOWN_ID;
 
 const PROTECTED_ROUTES: ProtectedRoute[] = [
   // Admin — roles
@@ -178,8 +179,9 @@ const PUBLIC_ROUTES: Route[] = [
   { method: 'post', path: '/auth/logout' },
 ];
 
-/** "/admin/roles/999999" → "/admin/roles/:param" */
-const pattern = (path: string) => path.replace(/\/(\d+|:[^/]+)/g, '/:param');
+/** "/admin/roles/<uuid>" → "/admin/roles/:param" */
+const pattern = (path: string) =>
+  path.replace(/\/([0-9a-f]{8}-[0-9a-f-]{27}|:[^/]+)/g, '/:param');
 
 describe('Route security (e2e)', () => {
   let t: TestApp;

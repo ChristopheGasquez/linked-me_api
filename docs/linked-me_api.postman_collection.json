@@ -382,14 +382,14 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/auth/sessions/1",
+							"raw": "{{baseUrl}}/auth/sessions/{{sessionId}}",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"auth",
 								"sessions",
-								"1"
+								"{{sessionId}}"
 							]
 						}
 					},
@@ -483,13 +483,13 @@
 							"raw": "{\n    \"email\": \"test1@example.com\",\n    \"password\": \"monMotDePasse123\",\n    \"name\": \"Test Premier\"\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/profiles/2",
+							"raw": "{{baseUrl}}/profiles/{{userId}}",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"profiles",
-								"2"
+								"{{userId}}"
 							]
 						}
 					},
@@ -687,14 +687,14 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/admin/roles/1",
+									"raw": "{{baseUrl}}/admin/roles/{{roleId}}",
 									"host": [
 										"{{baseUrl}}"
 									],
 									"path": [
 										"admin",
 										"roles",
-										"1"
+										"{{roleId}}"
 									]
 								}
 							},
@@ -753,14 +753,14 @@
 								"method": "DELETE",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/admin/roles/3",
+									"raw": "{{baseUrl}}/admin/roles/{{roleId}}",
 									"host": [
 										"{{baseUrl}}"
 									],
 									"path": [
 										"admin",
 										"roles",
-										"3"
+										"{{roleId}}"
 									]
 								}
 							},
@@ -791,14 +791,14 @@
 									}
 								},
 								"url": {
-									"raw": "{{baseUrl}}/admin/roles/3/permissions",
+									"raw": "{{baseUrl}}/admin/roles/{{roleId}}/permissions",
 									"host": [
 										"{{baseUrl}}"
 									],
 									"path": [
 										"admin",
 										"roles",
-										"3",
+										"{{roleId}}",
 										"permissions"
 									]
 								}
@@ -821,16 +821,16 @@
 								"method": "DELETE",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/admin/roles/3/permissions/1",
+									"raw": "{{baseUrl}}/admin/roles/{{roleId}}/permissions/{{permissionId}}",
 									"host": [
 										"{{baseUrl}}"
 									],
 									"path": [
 										"admin",
 										"roles",
-										"3",
+										"{{roleId}}",
 										"permissions",
-										"1"
+										"{{permissionId}}"
 									]
 								}
 							},
@@ -986,14 +986,14 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/admin/users/1",
+									"raw": "{{baseUrl}}/admin/users/{{userId}}",
 									"host": [
 										"{{baseUrl}}"
 									],
 									"path": [
 										"admin",
 										"users",
-										"1"
+										"{{userId}}"
 									]
 								}
 							},
@@ -1024,14 +1024,14 @@
 									}
 								},
 								"url": {
-									"raw": "{{baseUrl}}/admin/users/2/roles",
+									"raw": "{{baseUrl}}/admin/users/{{userId}}/roles",
 									"host": [
 										"{{baseUrl}}"
 									],
 									"path": [
 										"admin",
 										"users",
-										"2",
+										"{{userId}}",
 										"roles"
 									]
 								}
@@ -1054,14 +1054,14 @@
 								"method": "DELETE",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/admin/users/1",
+									"raw": "{{baseUrl}}/admin/users/{{userId}}",
 									"host": [
 										"{{baseUrl}}"
 									],
 									"path": [
 										"admin",
 										"users",
-										"1"
+										"{{userId}}"
 									]
 								}
 							},
@@ -1083,16 +1083,16 @@
 								"method": "DELETE",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/admin/users/5/roles/2",
+									"raw": "{{baseUrl}}/admin/users/{{userId}}/roles/{{roleId}}",
 									"host": [
 										"{{baseUrl}}"
 									],
 									"path": [
 										"admin",
 										"users",
-										"5",
+										"{{userId}}",
 										"roles",
-										"2"
+										"{{roleId}}"
 									]
 								}
 							},
@@ -1114,14 +1114,14 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/admin/users/1/sessions?page=1&limit=20&sortBy=createdAt&sortOrder=desc",
+									"raw": "{{baseUrl}}/admin/users/{{userId}}/sessions?page=1&limit=20&sortBy=createdAt&sortOrder=desc",
 									"host": [
 										"{{baseUrl}}"
 									],
 									"path": [
 										"admin",
 										"users",
-										"1",
+										"{{userId}}",
 										"sessions"
 									],
 									"query": [
@@ -1162,16 +1162,16 @@
 								"method": "DELETE",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/admin/users/1/sessions/1",
+									"raw": "{{baseUrl}}/admin/users/{{userId}}/sessions/{{sessionId}}",
 									"host": [
 										"{{baseUrl}}"
 									],
 									"path": [
 										"admin",
 										"users",
-										"1",
+										"{{userId}}",
 										"sessions",
-										"1"
+										"{{sessionId}}"
 									]
 								}
 							},
@@ -1193,14 +1193,14 @@
 								"method": "DELETE",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/admin/users/1/sessions",
+									"raw": "{{baseUrl}}/admin/users/{{userId}}/sessions",
 									"host": [
 										"{{baseUrl}}"
 									],
 									"path": [
 										"admin",
 										"users",
-										"1",
+										"{{userId}}",
 										"sessions"
 									]
 								}
@@ -1592,6 +1592,26 @@
 		{
 			"key": "turnstileToken",
 			"value": "XXXX.DUMMY.TOKEN.XXXX",
+			"type": "string"
+		},
+		{
+			"key": "userId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "roleId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "permissionId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "sessionId",
+			"value": "",
 			"type": "string"
 		}
 	]

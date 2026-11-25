@@ -7,7 +7,7 @@ import {
   Body,
   Query,
   UseGuards,
-  ParseIntPipe,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -83,7 +83,7 @@ export class AdminUsersController {
   })
   @RequirePermissions(Permissions.ADMIN_USER_READ)
   @Get('users/:id')
-  findUserById(@Param('id', ParseIntPipe) id: number) {
+  findUserById(@Param('id', new ParseUUIDPipe({ version: '7' })) id: string) {
     return this.usersService.findUserById(id);
   }
 
@@ -109,7 +109,7 @@ export class AdminUsersController {
   @Post('users/:id/roles')
   addRoleToUser(
     @CurrentUser() user: CachedUser,
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', new ParseUUIDPipe({ version: '7' })) id: string,
     @Body() dto: AssignRoleDto,
   ) {
     return this.usersService.addRoleToUser(user.id, id, dto.role);
@@ -131,8 +131,8 @@ export class AdminUsersController {
   @Delete('users/:id/roles/:roleId')
   removeRoleFromUser(
     @CurrentUser() user: CachedUser,
-    @Param('id', ParseIntPipe) userId: number,
-    @Param('roleId', ParseIntPipe) roleId: number,
+    @Param('id', new ParseUUIDPipe({ version: '7' })) userId: string,
+    @Param('roleId', new ParseUUIDPipe({ version: '7' })) roleId: string,
   ) {
     return this.usersService.removeRoleFromUser(user.id, userId, roleId);
   }
@@ -158,7 +158,7 @@ export class AdminUsersController {
   @Delete('users/:id')
   deleteUser(
     @CurrentUser() user: CachedUser,
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', new ParseUUIDPipe({ version: '7' })) id: string,
   ) {
     return this.usersService.deleteUser(user.id, id);
   }
@@ -182,7 +182,7 @@ export class AdminUsersController {
   @RequirePermissions(Permissions.ADMIN_USER_SESSION_READ)
   @Get('users/:id/sessions')
   findUserSessions(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', new ParseUUIDPipe({ version: '7' })) id: string,
     @Query() query: FindSessionsQueryDto,
   ) {
     return this.usersService.findUserSessions(id, query);
@@ -205,8 +205,8 @@ export class AdminUsersController {
   @Delete('users/:id/sessions/:sessionId')
   revokeUserSession(
     @CurrentUser() user: CachedUser,
-    @Param('id', ParseIntPipe) userId: number,
-    @Param('sessionId', ParseIntPipe) sessionId: number,
+    @Param('id', new ParseUUIDPipe({ version: '7' })) userId: string,
+    @Param('sessionId', new ParseUUIDPipe({ version: '7' })) sessionId: string,
   ) {
     return this.usersService.revokeUserSession(user.id, userId, sessionId);
   }
@@ -228,7 +228,7 @@ export class AdminUsersController {
   @Delete('users/:id/sessions')
   revokeAllUserSessions(
     @CurrentUser() user: CachedUser,
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', new ParseUUIDPipe({ version: '7' })) id: string,
   ) {
     return this.usersService.revokeAllUserSessions(user.id, id);
   }

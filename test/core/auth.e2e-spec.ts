@@ -12,6 +12,8 @@ import { cleanDatabase } from '../setup/db.js';
 
 const ALLOWED_CALLBACK = 'http://localhost:4200/verify'; // ALLOWED_REDIRECT_ORIGINS in .env.test
 const NEW_PASSWORD = 'New-Password-456!';
+const UUID_V7 =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 describe('Auth (e2e)', () => {
   let t: TestApp;
@@ -29,7 +31,7 @@ describe('Auth (e2e)', () => {
     request(t.http).post('/auth/login').send({ email, password });
   const refreshReq = (refresh_token: string) =>
     request(t.http).post('/auth/refresh').send({ refresh_token });
-  const auditActions = async (userId: number) =>
+  const auditActions = async (userId: string) =>
     (
       await t.prisma.auditLog.findMany({
         where: { targetType: 'user', targetId: userId },
@@ -55,6 +57,7 @@ describe('Auth (e2e)', () => {
         name: 'Alice',
         isEmailChecked: false,
       });
+      expect(res.body.id).toMatch(UUID_V7);
       expect(res.body).not.toHaveProperty('password');
       expect(t.mail.lastToken(email, 'verification')).toEqual(
         expect.any(String),
@@ -320,7 +323,7 @@ describe('Auth (e2e)', () => {
 
       expect(res.body.meta).toMatchObject({ page: 1, total: 1 });
       expect(res.body.data[0]).toMatchObject({
-        id: expect.any(Number),
+        id: expect.any(String),
         expiresAt: expect.any(String),
       });
       expect(res.body.data[0]).not.toHaveProperty('token');
@@ -431,7 +434,7 @@ describe('Auth (e2e)', () => {
     const now = () => Math.floor(Date.now() / 1000);
 
     /** Same payload and secret as a real access token, already expired. */
-    const expiredToken = (userId: number, email: string) =>
+    const expiredToken = (userId: string, email: string) =>
       jwt.sign(
         { sub: userId, email, iat: now() - 120, exp: now() - 60 },
         { secret: process.env.JWT_SECRET },
@@ -482,6 +485,33 @@ describe('Auth (e2e)', () => {
         .set(bearer(forged))
         .expect(401);
       expect(res.body).toEqual(UNAUTHORIZED_WITHOUT_CODE);
+    });
+  });
+
+  describe('Tokens issued before v2 (integer user id)', () => {
+    const jwt = new JwtService();
+
+    it('access token with a numeric sub → 401 without code, not a 500', async () => {
+      const legacy = jwt.sign(
+        { sub: 1, email: 'legacy@example.com' },
+        { secret: process.env.JWT_SECRET, expiresIn: '15m' },
+      );
+
+      const res = await request(t.http)
+        .get('/auth/me')
+        .set(bearer(legacy))
+        .expect(401);
+      expect(res.body).not.toHaveProperty('code');
+    });
+
+    it('refresh token with a numeric sub → 401 auth.refresh.invalid_token, not a 500', async () => {
+      const legacy = jwt.sign(
+        { sub: 1, email: 'legacy@example.com' },
+        { secret: process.env.JWT_REFRESH_SECRET, expiresIn: '7d' },
+      );
+
+      const res = await refreshReq(legacy).expect(401);
+      expect(res.body.code).toBe('auth.refresh.invalid_token');
     });
   });
 });

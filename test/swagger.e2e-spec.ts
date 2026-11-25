@@ -116,6 +116,47 @@ describe('Swagger docs (e2e)', () => {
   });
 
   // ─────────────────────────────────────────────────────────────
+  // Path ids documented as UUID v7
+  // ─────────────────────────────────────────────────────────────
+  describe('path ids', () => {
+    const pathParams = (doc: OpenApiDoc) =>
+      Object.values(doc.paths).flatMap((item) =>
+        Object.entries(item)
+          .filter(([m]) => HTTP_METHODS.includes(m))
+          .flatMap(([, op]) =>
+            ((op as { parameters?: any[] }).parameters ?? []).filter(
+              (p) => p.in === 'path',
+            ),
+          ),
+      );
+
+    it('documents every path parameter as a UUID v7 string', () => {
+      const params = pathParams(global);
+
+      expect(params.length).toBeGreaterThan(0);
+      for (const param of params) {
+        expect(param.schema).toMatchObject({ type: 'string', format: 'uuid' });
+        expect(param.schema.example).toMatch(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+        );
+        expect(param.description).toBe('UUID v7');
+      }
+    });
+
+    it('covers multi-id routes (DELETE /admin/users/{id}/sessions/{sessionId})', () => {
+      const op = global.paths['/admin/users/{id}/sessions/{sessionId}']
+        .delete as {
+        parameters: { name: string; schema: { format: string } }[];
+      };
+
+      expect(op.parameters.map((p) => [p.name, p.schema.format])).toEqual([
+        ['id', 'uuid'],
+        ['sessionId', 'uuid'],
+      ]);
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────
   // Permissions injected into the docs
   // ─────────────────────────────────────────────────────────────
   describe('permissions', () => {
