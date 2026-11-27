@@ -6,4 +6,5 @@ export class SessionResponseDto {
   @ApiIdProperty() userId: string;
   @ApiProperty() expiresAt: Date;
   @ApiProperty() createdAt: Date;
+  @ApiProperty({ nullable: true, type: Date }) rotatedAt: Date | null;
 }

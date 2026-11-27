@@ -213,10 +213,14 @@ describe('Tasks (e2e)', () => {
       const [expiredRefresh, validRefresh, expiredReset, validReset] =
         await Promise.all([
           t.prisma.refreshToken.create({
-            data: { userId, token: 'expired', expiresAt: ago(HOUR) },
+            data: { userId, tokenHash: 'a'.repeat(64), expiresAt: ago(HOUR) },
           }),
           t.prisma.refreshToken.create({
-            data: { userId, token: 'valid', expiresAt: inFuture(DAY) },
+            data: {
+              userId,
+              tokenHash: 'b'.repeat(64),
+              expiresAt: inFuture(DAY),
+            },
           }),
           t.prisma.passwordReset.create({
             data: { userId, token: 'expired', expiresAt: ago(HOUR) },

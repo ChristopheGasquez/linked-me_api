@@ -173,7 +173,9 @@ export class AdminUsersService {
     });
     return {
       ...result,
-      data: result.data.map(({ token: _token, ...session }) => session),
+      data: result.data.map(
+        ({ tokenHash: _t, previousTokenHash: _p, ...session }) => session,
+      ),
     };
   }
 

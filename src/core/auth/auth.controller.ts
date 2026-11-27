@@ -268,7 +268,8 @@ export class AuthController {
   })
   @ApiResponse({
     status: 401,
-    description: 'Refresh token invalid or revoked',
+    description:
+      'auth.refresh.invalid_token (malformed or expired), auth.refresh.token_revoked (session gone), auth.refresh.token_reused (old token replayed: session revoked)',
     type: ErrorResponseDto,
   })
   @ApiValidationError()
