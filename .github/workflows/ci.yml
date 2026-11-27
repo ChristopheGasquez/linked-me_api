@@ -56,6 +56,8 @@ jobs:
           JWT_REFRESH_EXPIRY: 7d
           APP_URL: http://localhost:3000
           ALLOWED_REDIRECT_ORIGINS: http://localhost:4200
+          ADMIN_ORIGINS: http://localhost:4200
+          APP_ORIGINS: http://localhost:4300
           RESEND_API_KEY: re_test_fake
           MAIL_FROM: test@linked-me.test
           ADMIN_EMAIL: admin@linked-me.test

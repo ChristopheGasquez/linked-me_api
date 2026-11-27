@@ -10,13 +10,17 @@ import { Permissions } from '../auth/permissions.constants.js';
 import { ApiPaginatedResponse } from '../../common/pagination/index.js';
 import {
   ApiAuthErrors,
+  ApiOriginError,
   ApiThrottleError,
   ApiValidationError,
 } from '../../common/swagger/api-common-responses.decorator.js';
+import { AdminOriginOnly } from '../../common/origins/admin-origin-only.decorator.js';
 
 @ApiTags('Admin — Audit')
 @ApiAuthErrors()
 @ApiThrottleError()
+@ApiOriginError()
+@AdminOriginOnly()
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @RequirePermissions(Permissions.REALM_AUDIT, Permissions.AUDIT_LOG_READ)
