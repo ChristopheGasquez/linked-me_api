@@ -14,7 +14,7 @@ import {
   ApiTags,
   ApiOperation,
   ApiResponse,
-  ApiBearerAuth,
+  ApiCookieAuth,
 } from '@nestjs/swagger';
 import { AdminRolesService } from './roles.service.js';
 import { CreateRoleDto } from './dto/create-role.dto.js';
@@ -57,7 +57,7 @@ import type { CachedUser } from '../../auth/cache/user-cache.service.js';
 @ApiThrottleError()
 @ApiOriginError()
 @AdminOriginOnly()
-@ApiBearerAuth()
+@ApiCookieAuth()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @RequirePermissions(Permissions.REALM_ADMIN)
 @Controller('admin')

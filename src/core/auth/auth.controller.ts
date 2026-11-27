@@ -8,30 +8,31 @@ import {
   Param,
   ParseUUIDPipe,
   UseGuards,
+  Req,
+  Res,
 } from '@nestjs/common';
+import type { Request, Response } from 'express';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
-  ApiBearerAuth,
+  ApiCookieAuth,
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service.js';
 import { RegisterDto } from './dto/register.dto.js';
 import { LoginDto } from './dto/login.dto.js';
-import { RefreshTokenDto } from './dto/refresh-token.dto.js';
 import { ResendVerificationDto } from './dto/resend-verification.dto.js';
 import { ForgotPasswordDto } from './dto/forgot-password.dto.js';
 import { ResetPasswordDto } from './dto/reset-password.dto.js';
 import { FindSessionsQueryDto } from './dto/find-sessions-query.dto.js';
 import { VerifyEmailQueryDto } from './dto/verify-email-query.dto.js';
 import { RegisterResponseDto } from './dto/register-response.dto.js';
-import {
-  LoginResponseDto,
-  TokensResponseDto,
-} from './dto/login-response.dto.js';
+import { LoginResponseDto } from './dto/login-response.dto.js';
+import { AuthCookies } from './auth-cookies.js';
+import { ResponseCodes } from '../../common/constants/response-codes.js';
 import { MeResponseDto } from './dto/me-response.dto.js';
-import { SessionResponseDto } from './dto/session-response.dto.js';
+import { OwnSessionResponseDto } from './dto/session-response.dto.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
 import { THROTTLE } from '../../common/constants.js';
 import {
@@ -41,6 +42,7 @@ import {
   PasswordResetResponseDto,
   LogoutResponseDto,
   LogoutAllResponseDto,
+  RefreshResponseDto,
   SessionRevokedResponseDto,
 } from './dto/auth-success.dto.js';
 import { ErrorResponseDto } from '../../common/dto/error-response.dto.js';
@@ -61,7 +63,10 @@ import type { CachedUser } from './cache/user-cache.service.js';
 @ApiOriginError()
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private authCookies: AuthCookies,
+  ) {}
 
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({
@@ -99,11 +104,12 @@ export class AuthController {
     return this.authService.register(dto);
   }
 
-  @ApiOperation({ summary: 'Sign in (returns a JWT)' })
+  @ApiOperation({ summary: 'Sign in (sets the session cookies)' })
   @ApiResponse({
-    status: 200,
+    status: 201,
     type: LoginResponseDto,
-    description: 'JWT token returned',
+    description:
+      'Signed-in user; sets the HttpOnly __Host-access_token and __Host-refresh_token cookies',
   })
   @ApiResponse({
     status: 401,
@@ -129,8 +135,17 @@ export class AuthController {
   @Throttle({ global: THROTTLE.AUTH })
   @RequireCaptcha()
   @Post('login')
-  login(@Body() dto: LoginDto) {
-    return this.authService.login(dto.email, dto.password);
+  async login(
+    @Body() dto: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { access_token, refresh_token, user } = await this.authService.login(
+      dto.email,
+      dto.password,
+    );
+    this.authCookies.setAccess(res, access_token);
+    this.authCookies.setRefresh(res, refresh_token);
+    return { user };
   }
 
   @ApiOperation({
@@ -238,12 +253,21 @@ export class AuthController {
   })
   @Throttle({ global: THROTTLE.PASSWORD_RESET })
   @Post('reset-password')
-  resetPassword(@Body() dto: ResetPasswordDto) {
-    return this.authService.resetPassword(dto.token, dto.password);
+  async resetPassword(
+    @Body() dto: ResetPasswordDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.authService.resetPassword(
+      dto.token,
+      dto.password,
+    );
+    // Every session is revoked: this browser's too
+    this.authCookies.clear(res);
+    return result;
   }
 
   @ApiOperation({ summary: 'Get the currently authenticated user profile' })
-  @ApiBearerAuth()
+  @ApiCookieAuth()
   @ApiResponse({
     status: 200,
     type: MeResponseDto,
@@ -260,38 +284,58 @@ export class AuthController {
     return user;
   }
 
-  @ApiOperation({ summary: 'Refresh tokens (rotation)' })
+  @ApiOperation({
+    summary: 'Refresh the session (reads the refresh cookie, rotates it)',
+  })
   @ApiResponse({
-    status: 200,
-    type: TokensResponseDto,
-    description: 'New access_token + refresh_token pair',
+    status: 201,
+    type: RefreshResponseDto,
+    description:
+      'New access cookie; new refresh cookie too, except within 30 s of a concurrent rotation',
   })
   @ApiResponse({
     status: 401,
     description:
-      'auth.refresh.invalid_token (malformed or expired), auth.refresh.token_revoked (session gone), auth.refresh.token_reused (old token replayed: session revoked)',
+      'auth.refresh.invalid_token (missing, malformed or expired), auth.refresh.token_revoked (session gone), auth.refresh.token_reused (old token replayed: session revoked)',
     type: ErrorResponseDto,
   })
-  @ApiValidationError()
   @Post('refresh')
-  refresh(@Body() dto: RefreshTokenDto) {
-    return this.authService.refresh(dto.refresh_token);
+  async refresh(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const tokens = await this.authService.refresh(
+      this.authCookies.readRefresh(req),
+    );
+    this.authCookies.setAccess(res, tokens.access_token);
+    if (tokens.refresh_token) {
+      this.authCookies.setRefresh(res, tokens.refresh_token);
+    }
+    return {
+      message: 'Session refreshed',
+      code: ResponseCodes.AUTH_REFRESH_SUCCESS,
+    };
   }
 
-  @ApiOperation({ summary: 'Sign out (revoke the refresh token)' })
-  @ApiResponse({
-    status: 200,
-    type: LogoutResponseDto,
-    description: 'Refresh token revoked',
+  @ApiOperation({
+    summary: 'Sign out (revokes the session, clears the cookies)',
   })
-  @ApiValidationError()
+  @ApiResponse({
+    status: 201,
+    type: LogoutResponseDto,
+    description: 'Session revoked, cookies cleared',
+  })
   @Post('logout')
-  logout(@Body() dto: RefreshTokenDto) {
-    return this.authService.logout(dto.refresh_token);
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const result = await this.authService.logout(
+      this.authCookies.readRefresh(req),
+    );
+    this.authCookies.clear(res);
+    return result;
   }
 
   @ApiOperation({ summary: 'Revoke all sessions' })
-  @ApiBearerAuth()
+  @ApiCookieAuth()
   @ApiResponse({
     status: 200,
     type: LogoutAllResponseDto,
@@ -304,13 +348,21 @@ export class AuthController {
   })
   @UseGuards(JwtAuthGuard)
   @Post('logout-all')
-  logoutAll(@CurrentUser() user: CachedUser) {
-    return this.authService.logoutAll(user.id);
+  async logoutAll(
+    @CurrentUser() user: CachedUser,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.authService.logoutAll(user.id);
+    this.authCookies.clear(res);
+    return result;
   }
 
   @ApiOperation({ summary: 'List active sessions' })
-  @ApiBearerAuth()
-  @ApiPaginatedResponse(SessionResponseDto, 'Paginated list of active sessions')
+  @ApiCookieAuth()
+  @ApiPaginatedResponse(
+    OwnSessionResponseDto,
+    'Paginated list of active sessions',
+  )
   @ApiResponse({
     status: 401,
     description: 'Not authenticated',
@@ -324,12 +376,17 @@ export class AuthController {
   getSessions(
     @CurrentUser() user: CachedUser,
     @Query() query: FindSessionsQueryDto,
+    @Req() req: Request,
   ) {
-    return this.authService.getSessions(user.id, query);
+    return this.authService.getSessions(
+      user.id,
+      query,
+      this.authCookies.readRefresh(req),
+    );
   }
 
   @ApiOperation({ summary: 'Revoke a specific session' })
-  @ApiBearerAuth()
+  @ApiCookieAuth()
   @ApiResponse({
     status: 200,
     type: SessionRevokedResponseDto,
@@ -348,10 +405,18 @@ export class AuthController {
   @ApiInvalidIdError()
   @UseGuards(JwtAuthGuard)
   @Delete('sessions/:id')
-  revokeSession(
+  async revokeSession(
     @CurrentUser() user: CachedUser,
     @Param('id', new ParseUUIDPipe({ version: '7' })) id: string,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
   ) {
-    return this.authService.revokeSession(user.id, id);
+    const result = await this.authService.revokeSession(user.id, id);
+    if (
+      this.authService.sessionIdOf(this.authCookies.readRefresh(req)) === id
+    ) {
+      this.authCookies.clear(res);
+    }
+    return result;
   }
 }

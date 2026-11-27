@@ -2,7 +2,7 @@ import request from 'supertest';
 import type { Prisma } from '../../generated/prisma/client.js';
 import { createTestApp, type TestApp } from '../setup/app.factory.js';
 import {
-  bearer,
+  authCookie,
   createVerifiedUser,
   loginAsAdmin,
   type AuthTokens,
@@ -29,7 +29,7 @@ describe('Audit logs (e2e)', () => {
   const list = (query: Record<string, unknown>) =>
     request(t.http)
       .get('/admin/audit-logs')
-      .set(bearer(admin.accessToken))
+      .set(authCookie(admin.accessToken))
       .query(query);
 
   const createLog = (data: {
@@ -77,7 +77,7 @@ describe('Audit logs (e2e)', () => {
     const user = await createVerifiedUser(t);
     await request(t.http)
       .patch('/profiles/me')
-      .set(bearer(user.accessToken))
+      .set(authCookie(user.accessToken))
       .send({ name: 'Audited' })
       .expect(200);
 

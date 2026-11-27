@@ -470,6 +470,7 @@ describe('AuthService', () => {
       expect(promise).rejects.toMatchObject({ response: { code } });
 
     it.each([
+      ['a missing cookie', undefined],
       ['a JWT (issued before v3)', 'aaa.bbb.ccc'],
       ['no secret', `${testId(10)}.`],
       ['no separator', 'not-a-token'],
@@ -619,12 +620,15 @@ describe('AuthService', () => {
       expect(result).toMatchObject({ code: 'auth.logout.success' });
     });
 
-    it('should answer success without touching the DB for a malformed token', async () => {
-      const result = await service.logout('not-a-token');
+    it.each(['not-a-token', undefined])(
+      'should answer success without touching the DB for %s',
+      async (value) => {
+        const result = await service.logout(value);
 
-      expect(prisma.refreshToken.deleteMany).not.toHaveBeenCalled();
-      expect(result).toMatchObject({ code: 'auth.logout.success' });
-    });
+        expect(prisma.refreshToken.deleteMany).not.toHaveBeenCalled();
+        expect(result).toMatchObject({ code: 'auth.logout.success' });
+      },
+    );
   });
 
   // ─────────────────────────────────────────────────────────────
@@ -674,8 +678,38 @@ describe('AuthService', () => {
       expect(result.data[0]).not.toHaveProperty('tokenHash');
       expect(result.data[0]).not.toHaveProperty('previousTokenHash');
       expect(result.data[0]).toHaveProperty('rotatedAt', null);
+      expect(result.data[0]).toHaveProperty('current', false);
       expect(result.meta.total).toBe(1);
     });
+
+    it('should flag the session of the refresh cookie as current', async () => {
+      prisma.refreshToken.findMany.mockResolvedValue([
+        { id: testId(1), userId: testId(1) },
+        { id: testId(2), userId: testId(1) },
+      ] as any);
+      prisma.refreshToken.count.mockResolvedValue(2);
+
+      const result = await service.getSessions(
+        testId(1),
+        { page: 1, limit: 20, sortBy: 'createdAt', sortOrder: 'desc' },
+        `${testId(2)}.secret`,
+      );
+
+      expect(result.data.map((s) => s.current)).toEqual([false, true]);
+    });
+  });
+
+  describe('sessionIdOf()', () => {
+    it('should return the session id of a well-formed refresh token', () => {
+      expect(service.sessionIdOf(`${testId(3)}.secret`)).toBe(testId(3));
+    });
+
+    it.each([undefined, '', 'not-a-token'])(
+      'should return undefined for %s',
+      (value) => {
+        expect(service.sessionIdOf(value)).toBeUndefined();
+      },
+    );
   });
 
   // ─────────────────────────────────────────────────────────────

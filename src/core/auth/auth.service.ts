@@ -206,7 +206,7 @@ export class AuthService {
   }
 
   async refresh(
-    refreshToken: string,
+    refreshToken: string | undefined,
   ): Promise<{ access_token: string; refresh_token?: string }> {
     const parsed = this.parseRefreshToken(refreshToken);
     if (!parsed) throw this.invalidRefreshToken();
@@ -275,7 +275,7 @@ export class AuthService {
     });
   }
 
-  async logout(refreshToken: string) {
+  async logout(refreshToken: string | undefined) {
     const parsed = this.parseRefreshToken(refreshToken);
     if (parsed) {
       await this.prisma.refreshToken.deleteMany({
@@ -294,16 +294,28 @@ export class AuthService {
     };
   }
 
-  async getSessions(userId: string, query: FindSessionsQueryDto) {
+  async getSessions(
+    userId: string,
+    query: FindSessionsQueryDto,
+    refreshToken?: string,
+  ) {
+    const currentId = this.sessionIdOf(refreshToken);
     const result = await paginate(this.prisma.refreshToken, query, {
       where: { userId, expiresAt: { gt: new Date() } },
     });
     return {
       ...result,
       data: result.data.map(
-        ({ tokenHash: _t, previousTokenHash: _p, ...session }) => session,
+        ({ tokenHash: _t, previousTokenHash: _p, ...session }) => ({
+          ...session,
+          current: session.id === currentId,
+        }),
       ),
     };
+  }
+
+  sessionIdOf(refreshToken: string | undefined) {
+    return this.splitRefreshToken(refreshToken)?.sessionId;
   }
 
   async revokeSession(userId: string, sessionId: string) {
@@ -331,10 +343,20 @@ export class AuthService {
     };
   }
 
-  private parseRefreshToken(token: string) {
+  private splitRefreshToken(token: string | undefined) {
+    if (!token) return null;
     const [sessionId, secret, ...rest] = token.split('.');
     if (rest.length > 0 || !secret || !isUUID(sessionId, '7')) return null;
-    return { sessionId, secretHash: this.hashToken(secret) };
+    return { sessionId, secret };
+  }
+
+  private parseRefreshToken(token: string | undefined) {
+    const parts = this.splitRefreshToken(token);
+    if (!parts) return null;
+    return {
+      sessionId: parts.sessionId,
+      secretHash: this.hashToken(parts.secret),
+    };
   }
 
   private hashesEqual(hash: string, stored: string | null) {

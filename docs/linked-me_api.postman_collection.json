@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "9c3140ab-f4c7-4e33-a173-01a1f3ff4187",
 		"name": "linked-me_api",
-		"description": "linked-me REST API\n\n## Response format\n\nAll success responses include a machine-readable `code` field for client-side i18n:\n```json\n{ \"message\": \"Logged out successfully\", \"code\": \"auth.logout.success\" }\n```\n\nAll error responses are normalized to:\n```json\n{\n  \"statusCode\": 401,\n  \"error\": \"Unauthorized\",\n  \"message\": \"Invalid credentials\",\n  \"code\": \"auth.login.invalid_credentials\"\n}\n```\n\nThe `code` field follows the format `module.action.result`. It is always present on business errors and success messages. It may be absent on framework-level errors (e.g. validation 400).\n\nAll available codes are defined in `src/common/constants/response-codes.ts`.",
+		"description": "linked-me REST API\n\n## Response format\n\nAll success responses include a machine-readable `code` field for client-side i18n:\n```json\n{ \"message\": \"Logged out successfully\", \"code\": \"auth.logout.success\" }\n```\n\nAll error responses are normalized to:\n```json\n{\n  \"statusCode\": 401,\n  \"error\": \"Unauthorized\",\n  \"message\": \"Invalid credentials\",\n  \"code\": \"auth.login.invalid_credentials\"\n}\n```\n\nThe `code` field follows the format `module.action.result`. It is always present on business errors and success messages. It may be absent on framework-level errors (e.g. validation 400).\n\nAll available codes are defined in `src/common/constants/response-codes.ts`.\n\nAuthentication uses HttpOnly cookies: call auth/login once, Postman's cookie jar sends the cookies on every following request. Over http://localhost, set COOKIE_SECURE=false in the API .env.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "2920763"
 	},
@@ -13,16 +13,6 @@
 				{
 					"name": "auth/me",
 					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{subTocken}}",
-									"type": "string"
-								}
-							]
-						},
 						"method": "GET",
 						"header": [],
 						"url": {
@@ -41,29 +31,6 @@
 				{
 					"name": "auth/login",
 					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"// Récupère le body de la réponse",
-									"const response = pm.response.json();",
-									"",
-									"// Stocke le token dans la variable de collection \"subTocken\"",
-									"if (response.access_token) {",
-									"    pm.collectionVariables.set(\"subTocken\", response.access_token);",
-									"    console.log(\"Token stocké :\", response.access_token);",
-									"}",
-									"",
-									"// Stocke le token dans la variable de collection \"subTocken\"",
-									"if (response.refresh_token) {",
-									"    pm.collectionVariables.set(\"subRefreshTocken\", response.refresh_token);",
-									"    console.log(\"Refresh Token stocké :\", response.refresh_token);",
-									"}"
-								],
-								"type": "text/javascript",
-								"packages": {}
-							}
-						},
 						{
 							"listen": "prerequest",
 							"script": {
@@ -198,43 +165,9 @@
 				},
 				{
 					"name": "auth/refresh",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"// Récupère le body de la réponse",
-									"const response = pm.response.json();",
-									"",
-									"// Stocke le token dans la variable de collection \"subTocken\"",
-									"if (response.access_token) {",
-									"    pm.collectionVariables.set(\"subTocken\", response.access_token);",
-									"    console.log(\"Token stocké :\", response.access_token);",
-									"}",
-									"",
-									"// Stocke le token dans la variable de collection \"subTocken\"",
-									"if (response.refresh_token) {",
-									"    pm.collectionVariables.set(\"subRefreshTocken\", response.refresh_token);",
-									"    console.log(\"Refresh Token stocké :\", response.refresh_token);",
-									"}"
-								],
-								"type": "text/javascript",
-								"packages": {}
-							}
-						}
-					],
 					"request": {
 						"method": "POST",
 						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"refresh_token\": \"{{subRefreshTocken}}\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
 						"url": {
 							"raw": "{{baseUrl}}/auth/refresh",
 							"host": [
@@ -250,32 +183,9 @@
 				},
 				{
 					"name": "auth/logout",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.collectionVariables.set(\"subTocken\", \"\");",
-									"pm.collectionVariables.set(\"subRefreshTocken\", \"\");",
-									""
-								],
-								"type": "text/javascript",
-								"packages": {}
-							}
-						}
-					],
 					"request": {
 						"method": "POST",
 						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"refresh_token\": \"{{subRefreshTocken}}\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
 						"url": {
 							"raw": "{{baseUrl}}/auth/logout",
 							"host": [
@@ -291,32 +201,9 @@
 				},
 				{
 					"name": "auth/logout-all",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.collectionVariables.set(\"subTocken\", \"\");",
-									"pm.collectionVariables.set(\"subRefreshTocken\", \"\");",
-									""
-								],
-								"type": "text/javascript",
-								"packages": {}
-							}
-						}
-					],
 					"request": {
 						"method": "POST",
 						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"refresh_token\": \"{{subRefreshTocken}}\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
 						"url": {
 							"raw": "{{baseUrl}}/auth/logout-all",
 							"host": [
@@ -334,12 +221,7 @@
 					"name": "auth/sessions",
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{subTocken}}"
-							}
-						],
+						"header": [],
 						"url": {
 							"raw": "{{baseUrl}}/auth/sessions?page=1&limit=20&sortBy=createdAt&sortOrder=desc",
 							"host": [
@@ -375,12 +257,7 @@
 					"name": "auth/sessions/:id (revoke)",
 					"request": {
 						"method": "DELETE",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{subTocken}}"
-							}
-						],
+						"header": [],
 						"url": {
 							"raw": "{{baseUrl}}/auth/sessions/{{sessionId}}",
 							"host": [
@@ -466,16 +343,6 @@
 						"disableBodyPruning": true
 					},
 					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{subTocken}}",
-									"type": "string"
-								}
-							]
-						},
 						"method": "GET",
 						"header": [],
 						"body": {
@@ -498,16 +365,6 @@
 				{
 					"name": "profiles/me",
 					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{subTocken}}",
-									"type": "string"
-								}
-							]
-						},
 						"method": "PATCH",
 						"header": [],
 						"body": {
@@ -535,16 +392,6 @@
 				{
 					"name": "profiles/me/password",
 					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{subTocken}}",
-									"type": "string"
-								}
-							]
-						},
 						"method": "PATCH",
 						"header": [
 							{
@@ -578,16 +425,6 @@
 				{
 					"name": "profiles/me",
 					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{subTocken}}",
-									"type": "string"
-								}
-							]
-						},
 						"method": "DELETE",
 						"header": [],
 						"body": {
@@ -618,16 +455,6 @@
 						{
 							"name": "admin/roles",
 							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{subTocken}}",
-											"type": "string"
-										}
-									]
-								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -674,16 +501,6 @@
 						{
 							"name": "admin/roles/:id GET",
 							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{subTocken}}",
-											"type": "string"
-										}
-									]
-								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -703,16 +520,6 @@
 						{
 							"name": "admin/roles",
 							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{subTocken}}",
-											"type": "string"
-										}
-									]
-								},
 								"method": "POST",
 								"header": [],
 								"body": {
@@ -740,16 +547,6 @@
 						{
 							"name": "admin/roles",
 							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{subTocken}}",
-											"type": "string"
-										}
-									]
-								},
 								"method": "DELETE",
 								"header": [],
 								"url": {
@@ -769,16 +566,6 @@
 						{
 							"name": "admin/roles/:id/permissions",
 							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{subTocken}}",
-											"type": "string"
-										}
-									]
-								},
 								"method": "POST",
 								"header": [],
 								"body": {
@@ -808,16 +595,6 @@
 						{
 							"name": "admin/roles/:id/permissions/:id",
 							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{subTocken}}",
-											"type": "string"
-										}
-									]
-								},
 								"method": "DELETE",
 								"header": [],
 								"url": {
@@ -844,16 +621,6 @@
 						{
 							"name": "admin/permissions",
 							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{subTocken}}",
-											"type": "string"
-										}
-									]
-								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -905,16 +672,6 @@
 						{
 							"name": "admin/users",
 							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{subTocken}}",
-											"type": "string"
-										}
-									]
-								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -973,16 +730,6 @@
 						{
 							"name": "admin/users/:id GET",
 							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{subTocken}}",
-											"type": "string"
-										}
-									]
-								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -1002,16 +749,6 @@
 						{
 							"name": "admin/users/:id/roles",
 							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{subTocken}}",
-											"type": "string"
-										}
-									]
-								},
 								"method": "POST",
 								"header": [],
 								"body": {
@@ -1041,16 +778,6 @@
 						{
 							"name": "admin/users/:id",
 							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{subTocken}}",
-											"type": "string"
-										}
-									]
-								},
 								"method": "DELETE",
 								"header": [],
 								"url": {
@@ -1070,16 +797,6 @@
 						{
 							"name": "admin/users/roles/:id",
 							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{subTocken}}",
-											"type": "string"
-										}
-									]
-								},
 								"method": "DELETE",
 								"header": [],
 								"url": {
@@ -1101,16 +818,6 @@
 						{
 							"name": "admin/users/:id/sessions GET",
 							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{subTocken}}",
-											"type": "string"
-										}
-									]
-								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -1149,16 +856,6 @@
 						{
 							"name": "admin/users/:id/sessions/:sessionId DELETE",
 							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{subTocken}}",
-											"type": "string"
-										}
-									]
-								},
 								"method": "DELETE",
 								"header": [],
 								"url": {
@@ -1180,16 +877,6 @@
 						{
 							"name": "admin/users/:id/sessions DELETE",
 							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{subTocken}}",
-											"type": "string"
-										}
-									]
-								},
 								"method": "DELETE",
 								"header": [],
 								"url": {
@@ -1215,16 +902,6 @@
 						{
 							"name": "tasks",
 							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{subTocken}}",
-											"type": "string"
-										}
-									]
-								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -1242,16 +919,6 @@
 						{
 							"name": "tasks/cleanup-unverified-users",
 							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{subTocken}}",
-											"type": "string"
-										}
-									]
-								},
 								"method": "POST",
 								"header": [],
 								"url": {
@@ -1270,16 +937,6 @@
 						{
 							"name": "tasks/cleanup-expired-tokens",
 							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{subTocken}}",
-											"type": "string"
-										}
-									]
-								},
 								"method": "POST",
 								"header": [],
 								"url": {
@@ -1298,16 +955,6 @@
 						{
 							"name": "tasks/cleanup-orphaned-permissions",
 							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{subTocken}}",
-											"type": "string"
-										}
-									]
-								},
 								"method": "POST",
 								"header": [],
 								"url": {
@@ -1326,16 +973,6 @@
 						{
 							"name": "tasks/cleanup-audit-logs",
 							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{subTocken}}",
-											"type": "string"
-										}
-									]
-								},
 								"method": "POST",
 								"header": [
 									{
@@ -1373,16 +1010,6 @@
 						{
 							"name": "admin/audit-logs",
 							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{subTocken}}",
-											"type": "string"
-										}
-									]
-								},
 								"method": "GET",
 								"header": [],
 								"url": {
@@ -1581,14 +1208,6 @@
 		}
 	],
 	"variable": [
-		{
-			"key": "subTocken",
-			"value": ""
-		},
-		{
-			"key": "subRefreshTocken",
-			"value": ""
-		},
 		{
 			"key": "turnstileToken",
 			"value": "XXXX.DUMMY.TOKEN.XXXX",

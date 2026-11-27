@@ -1,13 +1,14 @@
 import request from 'supertest';
 import { createTestApp, type TestApp } from '../setup/app.factory.js';
 import {
-  bearer,
+  authCookie,
   createVerifiedUser,
   DEFAULT_PASSWORD,
   login,
   loginAsAdmin,
   uniqueEmail,
   type AuthTokens,
+  refreshCookie,
 } from '../setup/auth.helper.js';
 import { cleanDatabase } from '../setup/db.js';
 import { UNKNOWN_ID } from '../setup/test-id.js';
@@ -45,7 +46,7 @@ describe('Admin users (e2e)', () => {
   const removeRole = (userId: string, roleId: string) =>
     request(t.http)
       .delete(`/admin/users/${userId}/roles/${roleId}`)
-      .set(bearer(admin.accessToken));
+      .set(authCookie(admin.accessToken));
 
   // ─────────────────────────────────────────────────────────────
   // GET /admin/users
@@ -56,7 +57,7 @@ describe('Admin users (e2e)', () => {
 
       const res = await request(t.http)
         .get('/admin/users')
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .query({ search: user.email })
         .expect(200);
 
@@ -82,7 +83,7 @@ describe('Admin users (e2e)', () => {
 
       const res = await request(t.http)
         .get('/admin/users')
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .query({ limit: 100 })
         .expect(200);
 
@@ -95,7 +96,7 @@ describe('Admin users (e2e)', () => {
     it('filters by role (trimmed, upper-cased) and returns the filter in meta', async () => {
       const res = await request(t.http)
         .get('/admin/users')
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .query({ role: ' admin ' })
         .expect(200);
 
@@ -111,7 +112,7 @@ describe('Admin users (e2e)', () => {
 
       const unchecked = await request(t.http)
         .get('/admin/users')
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .query({ isEmailChecked: 'false', limit: 100 })
         .expect(200);
       const uncheckedIds = unchecked.body.data.map((u: { id: string }) => u.id);
@@ -121,7 +122,7 @@ describe('Admin users (e2e)', () => {
 
       const checked = await request(t.http)
         .get('/admin/users')
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .query({ isEmailChecked: 'true', limit: 100 })
         .expect(200);
       const checkedIds = checked.body.data.map((u: { id: string }) => u.id);
@@ -135,7 +136,7 @@ describe('Admin users (e2e)', () => {
 
       const res = await request(t.http)
         .get('/admin/users')
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .query({ search: name.toUpperCase() })
         .expect(200);
 
@@ -147,7 +148,7 @@ describe('Admin users (e2e)', () => {
     it('400 validation.failed for a non-boolean isEmailChecked', async () => {
       const res = await request(t.http)
         .get('/admin/users')
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .query({ isEmailChecked: 'abc' })
         .expect(400);
       expect(res.body.code).toBe('validation.failed');
@@ -163,7 +164,7 @@ describe('Admin users (e2e)', () => {
 
       const res = await request(t.http)
         .get(`/admin/users/${user.userId}`)
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .expect(200);
 
       expect(res.body).toMatchObject({
@@ -177,7 +178,7 @@ describe('Admin users (e2e)', () => {
     it('404 admin.user.not_found for an unknown id', async () => {
       const res = await request(t.http)
         .get(`/admin/users/${UNKNOWN_ID}`)
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .expect(404);
       expect(res.body.code).toBe('admin.user.not_found');
     });
@@ -193,7 +194,7 @@ describe('Admin users (e2e)', () => {
 
       const res = await request(t.http)
         .post(`/admin/users/${user.userId}/roles`)
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .send({ role: ' user ' })
         .expect(201);
       expect(res.body).toMatchObject({
@@ -219,7 +220,7 @@ describe('Admin users (e2e)', () => {
 
       const res = await request(t.http)
         .post(`/admin/users/${user.userId}/roles`)
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .send({ role: 'USER' })
         .expect(400);
       expect(res.body.code).toBe('admin.user.role.already_assigned');
@@ -229,7 +230,7 @@ describe('Admin users (e2e)', () => {
     it('404 admin.user.not_found for an unknown user', async () => {
       const res = await request(t.http)
         .post(`/admin/users/${UNKNOWN_ID}/roles`)
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .send({ role: 'USER' })
         .expect(404);
       expect(res.body.code).toBe('admin.user.not_found');
@@ -240,7 +241,7 @@ describe('Admin users (e2e)', () => {
 
       const res = await request(t.http)
         .post(`/admin/users/${user.userId}/roles`)
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .send({ role: 'NOPE' })
         .expect(404);
       expect(res.body.code).toBe('admin.role.not_found');
@@ -252,7 +253,7 @@ describe('Admin users (e2e)', () => {
 
       const res = await request(t.http)
         .post(`/admin/users/${user.userId}/roles`)
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .send({ role: '' })
         .expect(400);
       expect(res.body.code).toBe('validation.failed');
@@ -297,23 +298,23 @@ describe('Admin users (e2e)', () => {
     // warm the user cache: the USER role grants realm:profile + profile:read
     await request(t.http)
       .get(`/profiles/${user.userId}`)
-      .set(bearer(user.accessToken))
+      .set(authCookie(user.accessToken))
       .expect(200);
 
     await removeRole(user.userId, userRoleId).expect(200);
     await request(t.http)
       .get(`/profiles/${user.userId}`)
-      .set(bearer(user.accessToken))
+      .set(authCookie(user.accessToken))
       .expect(403);
 
     await request(t.http)
       .post(`/admin/users/${user.userId}/roles`)
-      .set(bearer(admin.accessToken))
+      .set(authCookie(admin.accessToken))
       .send({ role: 'USER' })
       .expect(201);
     await request(t.http)
       .get(`/profiles/${user.userId}`)
-      .set(bearer(user.accessToken))
+      .set(authCookie(user.accessToken))
       .expect(200);
   });
 
@@ -326,7 +327,7 @@ describe('Admin users (e2e)', () => {
 
       const res = await request(t.http)
         .delete(`/admin/users/${user.userId}`)
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .expect(400);
       expect(res.body.code).toBe('admin.user.has_roles');
       expect(await t.prisma.user.count({ where: { id: user.userId } })).toBe(1);
@@ -337,13 +338,13 @@ describe('Admin users (e2e)', () => {
       // warm the user cache used by the JWT strategy
       await request(t.http)
         .get('/auth/me')
-        .set(bearer(user.accessToken))
+        .set(authCookie(user.accessToken))
         .expect(200);
       await removeRole(user.userId, userRoleId).expect(200);
 
       const res = await request(t.http)
         .delete(`/admin/users/${user.userId}`)
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .expect(200);
       expect(res.body).toMatchObject({
         code: 'admin.user.deleted',
@@ -363,18 +364,18 @@ describe('Admin users (e2e)', () => {
 
       await request(t.http)
         .get('/auth/me')
-        .set(bearer(user.accessToken))
+        .set(authCookie(user.accessToken))
         .expect(401);
       await request(t.http)
         .post('/auth/refresh')
-        .send({ refresh_token: user.refreshToken })
+        .set(refreshCookie(user.refreshToken))
         .expect(401);
     });
 
     it('404 admin.user.not_found for an unknown id', async () => {
       const res = await request(t.http)
         .delete(`/admin/users/${UNKNOWN_ID}`)
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .expect(404);
       expect(res.body.code).toBe('admin.user.not_found');
     });
@@ -401,7 +402,7 @@ describe('Admin users (e2e)', () => {
   }
 
   const refresh = (refreshToken: string) =>
-    request(t.http).post('/auth/refresh').send({ refresh_token: refreshToken });
+    request(t.http).post('/auth/refresh').set(refreshCookie(refreshToken));
 
   describe('GET /admin/users/:id/sessions', () => {
     it("200 lists the user's active sessions only, without the token hash", async () => {
@@ -411,7 +412,7 @@ describe('Admin users (e2e)', () => {
 
       const res = await request(t.http)
         .get(`/admin/users/${user.userId}/sessions`)
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .expect(200);
 
       expect(res.body.data).toHaveLength(1);
@@ -426,7 +427,7 @@ describe('Admin users (e2e)', () => {
     it('404 admin.user.not_found for an unknown user', async () => {
       const res = await request(t.http)
         .get(`/admin/users/${UNKNOWN_ID}/sessions`)
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .expect(404);
       expect(res.body.code).toBe('admin.user.not_found');
     });
@@ -434,7 +435,7 @@ describe('Admin users (e2e)', () => {
     it('400 validation.failed for an unknown sortBy', async () => {
       const res = await request(t.http)
         .get(`/admin/users/${admin.userId}/sessions`)
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .query({ sortBy: 'token' })
         .expect(400);
       expect(res.body.code).toBe('validation.failed');
@@ -447,7 +448,7 @@ describe('Admin users (e2e)', () => {
 
       const res = await request(t.http)
         .delete(`/admin/users/${user.userId}/sessions/${sessionIds[0]}`)
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .expect(200);
       expect(res.body).toMatchObject({
         code: 'admin.user.session.revoked',
@@ -473,7 +474,7 @@ describe('Admin users (e2e)', () => {
 
       const res = await request(t.http)
         .delete(`/admin/users/${other.userId}/sessions/${session.id}`)
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .expect(404);
       expect(res.body.code).toBe('admin.user.session.not_found');
       await refresh(owner.refreshToken).expect(201);
@@ -488,7 +489,7 @@ describe('Admin users (e2e)', () => {
 
       const res = await request(t.http)
         .delete(`/admin/users/${user.userId}/sessions`)
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .expect(200);
       expect(res.body).toMatchObject({
         code: 'admin.user.sessions.revoked',
@@ -510,7 +511,7 @@ describe('Admin users (e2e)', () => {
     it('404 admin.user.not_found for an unknown user', async () => {
       const res = await request(t.http)
         .delete(`/admin/users/${UNKNOWN_ID}/sessions`)
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .expect(404);
       expect(res.body.code).toBe('admin.user.not_found');
     });

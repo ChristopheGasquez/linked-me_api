@@ -8,3 +8,10 @@ export class SessionResponseDto {
   @ApiProperty() createdAt: Date;
   @ApiProperty({ nullable: true, type: Date }) rotatedAt: Date | null;
 }
+
+export class OwnSessionResponseDto extends SessionResponseDto {
+  @ApiProperty({
+    description: 'True for the session of the current browser (refresh cookie)',
+  })
+  current: boolean;
+}
