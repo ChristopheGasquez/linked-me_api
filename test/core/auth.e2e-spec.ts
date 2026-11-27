@@ -265,7 +265,27 @@ describe('Auth (e2e)', () => {
   // Refresh, sessions, logout
   // ─────────────────────────────────────────────────────────────
   describe('Refresh tokens & sessions', () => {
-    it('refresh rotates tokens: the previous refresh token is rejected', async () => {
+    const sessionIdOf = (refreshToken: string) => refreshToken.split('.')[0];
+    const ageLastRotation = (sessionId: string, ms: number) =>
+      t.prisma.refreshToken.update({
+        where: { id: sessionId },
+        data: { rotatedAt: new Date(Date.now() - ms) },
+      });
+
+    it('the refresh token is opaque: <sessionId>.<secret>, only its hash is stored', async () => {
+      const user = await createVerifiedUser(t);
+
+      const [sessionId, secret] = user.refreshToken.split('.');
+      expect(sessionId).toMatch(UUID_V7);
+      const stored = await t.prisma.refreshToken.findUniqueOrThrow({
+        where: { id: sessionId },
+      });
+      expect(stored.tokenHash).toHaveLength(64);
+      expect(stored.tokenHash).not.toContain(secret);
+      expect(stored.rotatedAt).toBeNull();
+    });
+
+    it('refresh rotates the secret and keeps the same session id', async () => {
       const user = await createVerifiedUser(t);
 
       const res = await refreshReq(user.refreshToken).expect(201);
@@ -274,15 +294,84 @@ describe('Auth (e2e)', () => {
         refresh_token: expect.any(String),
       });
       expect(res.body.refresh_token).not.toBe(user.refreshToken);
-
-      const reused = await refreshReq(user.refreshToken).expect(401);
-      expect(reused.body.code).toBe('auth.refresh.token_revoked');
+      expect(sessionIdOf(res.body.refresh_token)).toBe(
+        sessionIdOf(user.refreshToken),
+      );
 
       await refreshReq(res.body.refresh_token).expect(201);
     });
 
+    it('the previous refresh token within 30 s returns only an access token (concurrent tabs)', async () => {
+      const user = await createVerifiedUser(t);
+      const rotated = await refreshReq(user.refreshToken).expect(201);
+
+      const late = await refreshReq(user.refreshToken).expect(201);
+      expect(late.body).toEqual({ access_token: expect.any(String) });
+      await request(t.http)
+        .get('/auth/me')
+        .set(bearer(late.body.access_token))
+        .expect(200);
+
+      // the session is untouched: the rotated token still works
+      await refreshReq(rotated.body.refresh_token).expect(201);
+    });
+
+    it('concurrent refreshes with the same token all succeed, a single new refresh token is issued', async () => {
+      const user = await createVerifiedUser(t);
+
+      const responses = await Promise.all(
+        Array.from({ length: 3 }, () => refreshReq(user.refreshToken)),
+      );
+
+      expect(responses.map((r) => r.status)).toEqual([201, 201, 201]);
+      const issued = responses.map((r) => r.body.refresh_token).filter(Boolean);
+      expect(issued).toHaveLength(1);
+      await refreshReq(issued[0]).expect(201);
+    });
+
+    it('the previous refresh token after 30 s is a reuse: session revoked, audited', async () => {
+      const user = await createVerifiedUser(t);
+      const rotated = await refreshReq(user.refreshToken).expect(201);
+      const sessionId = sessionIdOf(user.refreshToken);
+      await ageLastRotation(sessionId, 31_000);
+
+      const reused = await refreshReq(user.refreshToken).expect(401);
+      expect(reused.body.code).toBe('auth.refresh.token_reused');
+
+      const revoked = await refreshReq(rotated.body.refresh_token).expect(401);
+      expect(revoked.body.code).toBe('auth.refresh.token_revoked');
+      expect(await auditActions(user.userId)).toContain(
+        'session.reuse_detected',
+      );
+    });
+
+    it('an older refresh token (two rotations back) is also detected as a reuse', async () => {
+      const user = await createVerifiedUser(t);
+      const first = await refreshReq(user.refreshToken).expect(201);
+      await refreshReq(first.body.refresh_token).expect(201);
+
+      const reused = await refreshReq(user.refreshToken).expect(401);
+      expect(reused.body.code).toBe('auth.refresh.token_reused');
+      expect(
+        await t.prisma.refreshToken.count({
+          where: { id: sessionIdOf(user.refreshToken) },
+        }),
+      ).toBe(0);
+    });
+
+    it('401 auth.refresh.invalid_token for an expired session', async () => {
+      const user = await createVerifiedUser(t);
+      await t.prisma.refreshToken.update({
+        where: { id: sessionIdOf(user.refreshToken) },
+        data: { expiresAt: new Date(Date.now() - 1000) },
+      });
+
+      const res = await refreshReq(user.refreshToken).expect(401);
+      expect(res.body.code).toBe('auth.refresh.invalid_token');
+    });
+
     it('401 auth.refresh.invalid_token for a malformed refresh token', async () => {
-      const res = await refreshReq('not-a-jwt').expect(401);
+      const res = await refreshReq('not-a-token').expect(401);
       expect(res.body.code).toBe('auth.refresh.invalid_token');
     });
 
@@ -323,10 +412,12 @@ describe('Auth (e2e)', () => {
 
       expect(res.body.meta).toMatchObject({ page: 1, total: 1 });
       expect(res.body.data[0]).toMatchObject({
-        id: expect.any(String),
+        id: sessionIdOf(user.refreshToken),
         expiresAt: expect.any(String),
+        rotatedAt: null,
       });
-      expect(res.body.data[0]).not.toHaveProperty('token');
+      expect(res.body.data[0]).not.toHaveProperty('tokenHash');
+      expect(res.body.data[0]).not.toHaveProperty('previousTokenHash');
     });
 
     it('DELETE /auth/sessions/:id revokes own session, 404 for another user session', async () => {
@@ -488,7 +579,7 @@ describe('Auth (e2e)', () => {
     });
   });
 
-  describe('Tokens issued before v2 (integer user id)', () => {
+  describe('Tokens issued before v2 / v3', () => {
     const jwt = new JwtService();
 
     it('access token with a numeric sub → 401 without code, not a 500', async () => {
@@ -504,10 +595,10 @@ describe('Auth (e2e)', () => {
       expect(res.body).not.toHaveProperty('code');
     });
 
-    it('refresh token with a numeric sub → 401 auth.refresh.invalid_token, not a 500', async () => {
+    it('JWT refresh token (before v3) → 401 auth.refresh.invalid_token, not a 500', async () => {
       const legacy = jwt.sign(
         { sub: 1, email: 'legacy@example.com' },
-        { secret: process.env.JWT_REFRESH_SECRET, expiresIn: '7d' },
+        { secret: process.env.JWT_SECRET, expiresIn: '7d' },
       );
 
       const res = await refreshReq(legacy).expect(401);

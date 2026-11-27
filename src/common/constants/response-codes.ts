@@ -20,6 +20,7 @@ export const ResponseCodes = {
   AUTH_LOGIN_EMAIL_NOT_VERIFIED: 'auth.login.email_not_verified',
   AUTH_REFRESH_INVALID_TOKEN: 'auth.refresh.invalid_token',
   AUTH_REFRESH_TOKEN_REVOKED: 'auth.refresh.token_revoked',
+  AUTH_REFRESH_TOKEN_REUSED: 'auth.refresh.token_reused',
   AUTH_SESSION_NOT_FOUND: 'auth.session.not_found',
   AUTH_EMAIL_INVALID_TOKEN: 'auth.email.invalid_token',
   AUTH_PASSWORD_RESET_INVALID: 'auth.password_reset.invalid_token',

@@ -29,6 +29,7 @@ export class AuthService {
   private readonly MAX_FAILED_ATTEMPTS = 5;
   private readonly LOCKOUT_DURATION_MS = 15 * 60 * 1000;
   private readonly MAX_SESSIONS_PER_USER = 10;
+  private readonly REFRESH_GRACE_MS = 30 * 1000;
 
   constructor(
     private prisma: PrismaService,
@@ -166,38 +167,28 @@ export class AuthService {
       });
     }
 
-    const tokens = await this.generateTokens(user.id, user.email);
+    const tokens = await this.createSession(user.id, user.email);
     return { ...tokens, user };
   }
 
-  private async generateTokens(userId: string, email: string) {
-    const payload = { sub: userId, email };
-
-    const access_token = await this.jwtService.signAsync(payload);
-
-    // jti makes every refresh token unique, even when issued in the same second
-    const refresh_token = await this.jwtService.signAsync(
-      { ...payload, jti: crypto.randomUUID() },
-      {
-        secret: this.config.getOrThrow('JWT_REFRESH_SECRET'),
-        expiresIn: this.config.get('JWT_REFRESH_EXPIRY', '7d'),
-      },
-    );
-
-    const hash = crypto
-      .createHash('sha256')
-      .update(refresh_token)
-      .digest('hex');
-    const decoded = this.jwtService.decode<{ exp: number }>(refresh_token);
-
-    await this.prisma.refreshToken.create({
+  private async createSession(userId: string, email: string) {
+    const secret = this.newRefreshSecret();
+    const session = await this.prisma.refreshToken.create({
       data: {
-        token: hash,
+        tokenHash: this.hashToken(secret),
         userId,
-        expiresAt: new Date(decoded.exp * 1000),
+        expiresAt: this.refreshExpiry(new Date()),
       },
+      select: { id: true },
     });
+    await this.evictOldestSessions(userId);
+    return {
+      access_token: await this.signAccessToken(userId, email),
+      refresh_token: `${session.id}.${secret}`,
+    };
+  }
 
+  private async evictOldestSessions(userId: string) {
     const userTokens = await this.prisma.refreshToken.findMany({
       where: { userId },
       orderBy: { createdAt: 'asc' },
@@ -212,44 +203,91 @@ export class AuthService {
         where: { id: { in: toDelete.map((t) => t.id) } },
       });
     }
-
-    return { access_token, refresh_token };
   }
 
-  async refresh(refreshToken: string) {
-    let payload: { sub: string; email: string };
-    try {
-      payload = await this.jwtService.verifyAsync(refreshToken, {
-        secret: this.config.getOrThrow('JWT_REFRESH_SECRET'),
-      });
-      if (!isUUID(payload.sub, '7')) throw new Error('Invalid subject');
-    } catch {
-      throw new UnauthorizedException({
-        message: 'Invalid or expired refresh token',
-        code: ResponseCodes.AUTH_REFRESH_INVALID_TOKEN,
-      });
-    }
+  async refresh(
+    refreshToken: string,
+  ): Promise<{ access_token: string; refresh_token?: string }> {
+    const parsed = this.parseRefreshToken(refreshToken);
+    if (!parsed) throw this.invalidRefreshToken();
 
-    const hash = crypto.createHash('sha256').update(refreshToken).digest('hex');
-    const stored = await this.prisma.refreshToken.findFirst({
-      where: { token: hash, userId: payload.sub },
+    const session = await this.prisma.refreshToken.findUnique({
+      where: { id: parsed.sessionId },
+      include: { user: { select: { email: true } } },
     });
-
-    if (!stored) {
+    if (!session) {
       throw new UnauthorizedException({
         message: 'Refresh token revoked',
         code: ResponseCodes.AUTH_REFRESH_TOKEN_REVOKED,
       });
     }
 
-    await this.prisma.refreshToken.delete({ where: { id: stored.id } });
+    const now = new Date();
+    if (session.expiresAt <= now) throw this.invalidRefreshToken();
 
-    return this.generateTokens(payload.sub, payload.email);
+    if (this.hashesEqual(parsed.secretHash, session.tokenHash)) {
+      const secret = this.newRefreshSecret();
+      const { count } = await this.prisma.refreshToken.updateMany({
+        where: { id: session.id, tokenHash: session.tokenHash },
+        data: {
+          tokenHash: this.hashToken(secret),
+          previousTokenHash: session.tokenHash,
+          rotatedAt: now,
+          expiresAt: this.refreshExpiry(now),
+        },
+      });
+      // Lost a concurrent rotation (or logout): re-evaluate against the new state
+      if (count === 0) return this.refresh(refreshToken);
+      return {
+        access_token: await this.signAccessToken(
+          session.userId,
+          session.user.email,
+        ),
+        refresh_token: `${session.id}.${secret}`,
+      };
+    }
+
+    const withinGrace =
+      this.hashesEqual(parsed.secretHash, session.previousTokenHash) &&
+      session.rotatedAt !== null &&
+      now.getTime() - session.rotatedAt.getTime() < this.REFRESH_GRACE_MS;
+    if (withinGrace) {
+      // Concurrent refresh: the other request already got the new refresh token
+      return {
+        access_token: await this.signAccessToken(
+          session.userId,
+          session.user.email,
+        ),
+      };
+    }
+
+    await this.prisma.refreshToken.deleteMany({ where: { id: session.id } });
+    await this.auditService.log(
+      'session.reuse_detected',
+      null,
+      session.userId,
+      'user',
+      { sessionId: session.id },
+    );
+    throw new UnauthorizedException({
+      message: 'Refresh token reuse detected, session revoked',
+      code: ResponseCodes.AUTH_REFRESH_TOKEN_REUSED,
+    });
   }
 
   async logout(refreshToken: string) {
-    const hash = crypto.createHash('sha256').update(refreshToken).digest('hex');
-    await this.prisma.refreshToken.deleteMany({ where: { token: hash } });
+    const parsed = this.parseRefreshToken(refreshToken);
+    if (parsed) {
+      await this.prisma.refreshToken.deleteMany({
+        where: {
+          id: parsed.sessionId,
+          OR: [
+            { tokenHash: parsed.secretHash },
+            { previousTokenHash: parsed.secretHash },
+          ],
+        },
+      });
+    }
     return {
       message: 'Logged out successfully',
       code: ResponseCodes.AUTH_LOGOUT_SUCCESS,
@@ -262,7 +300,9 @@ export class AuthService {
     });
     return {
       ...result,
-      data: result.data.map(({ token: _token, ...session }) => session),
+      data: result.data.map(
+        ({ tokenHash: _t, previousTokenHash: _p, ...session }) => session,
+      ),
     };
   }
 
@@ -289,6 +329,46 @@ export class AuthService {
       message: 'All sessions revoked',
       code: ResponseCodes.AUTH_LOGOUT_ALL_SUCCESS,
     };
+  }
+
+  private parseRefreshToken(token: string) {
+    const [sessionId, secret, ...rest] = token.split('.');
+    if (rest.length > 0 || !secret || !isUUID(sessionId, '7')) return null;
+    return { sessionId, secretHash: this.hashToken(secret) };
+  }
+
+  private hashesEqual(hash: string, stored: string | null) {
+    return (
+      stored !== null &&
+      crypto.timingSafeEqual(
+        Buffer.from(hash, 'hex'),
+        Buffer.from(stored, 'hex'),
+      )
+    );
+  }
+
+  private hashToken(value: string) {
+    return crypto.createHash('sha256').update(value).digest('hex');
+  }
+
+  private newRefreshSecret() {
+    return crypto.randomBytes(32).toString('base64url');
+  }
+
+  private refreshExpiry(from: Date) {
+    const days = Number(this.config.get('REFRESH_TOKEN_TTL_DAYS', 7));
+    return new Date(from.getTime() + days * MS_PER_DAY);
+  }
+
+  private signAccessToken(userId: string, email: string) {
+    return this.jwtService.signAsync({ sub: userId, email });
+  }
+
+  private invalidRefreshToken() {
+    return new UnauthorizedException({
+      message: 'Invalid or expired refresh token',
+      code: ResponseCodes.AUTH_REFRESH_INVALID_TOKEN,
+    });
   }
 
   private validateCallbackUrl(callbackUrl: string | undefined): void {

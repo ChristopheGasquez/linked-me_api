@@ -35,12 +35,14 @@ model User {
 
 // Table des refresh tokens (un par session/appareil)
 model RefreshToken {
-  id        String   @id @default(uuid(7)) @db.Uuid
-  token     String   @db.VarChar(500)
-  userId    String   @db.Uuid
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expiresAt DateTime
-  createdAt DateTime @default(now())
+  id                String    @id @default(uuid(7)) @db.Uuid // Id de session, stable d'une rotation à l'autre
+  tokenHash         String    @db.Char(64) // SHA-256 du secret courant
+  previousTokenHash String?   @db.Char(64) // SHA-256 du secret précédent (tolérance 30 s + détection de réutilisation)
+  rotatedAt         DateTime? // Dernière rotation (null = jamais rafraîchie)
+  userId            String    @db.Uuid
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt         DateTime
+  createdAt         DateTime  @default(now())
 
   @@map("refresh_tokens")
 }

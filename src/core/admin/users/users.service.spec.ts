@@ -298,7 +298,9 @@ describe('AdminUsersService', () => {
         {
           id: testId(7),
           userId: testId(1),
-          token: 'hash',
+          tokenHash: 'hash',
+          previousTokenHash: 'previous',
+          rotatedAt: null,
           expiresAt: new Date(),
           createdAt: new Date(),
         },
@@ -313,7 +315,8 @@ describe('AdminUsersService', () => {
         }),
       );
       expect(result.data).toHaveLength(1);
-      expect(result.data[0]).not.toHaveProperty('token');
+      expect(result.data[0]).not.toHaveProperty('tokenHash');
+      expect(result.data[0]).not.toHaveProperty('previousTokenHash');
       expect(result.meta.total).toBe(1);
     });
   });

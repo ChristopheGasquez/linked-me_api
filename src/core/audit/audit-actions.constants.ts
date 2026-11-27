@@ -5,6 +5,7 @@ export const AuditAction = {
   USER_ROLE_REVOKE: 'user.role.revoke',
   USER_SESSION_REVOKE: 'user.session.revoke',
   USER_SESSION_REVOKE_ALL: 'user.session.revoke_all',
+  SESSION_REUSE_DETECTED: 'session.reuse_detected',
   LOGIN_FAILED: 'login.failed',
   LOGIN_LOCKED: 'login.locked',
   EMAIL_VERIFIED: 'email.verified',

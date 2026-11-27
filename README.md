@@ -52,8 +52,7 @@ cp .env.example .env
 | `DATABASE_URL` | PostgreSQL connection URL |
 | `JWT_SECRET` | Secret key for JWT tokens |
 | `JWT_ACCESS_EXPIRY` | Access token lifetime (default: `15m`) |
-| `JWT_REFRESH_SECRET` | Secret key for refresh tokens |
-| `JWT_REFRESH_EXPIRY` | Refresh token lifetime (default: `7d`) |
+| `REFRESH_TOKEN_TTL_DAYS` | Refresh session lifetime in days, extended on every refresh (default: `7`) |
 | `PORT` | Server port (default: `3000`) |
 | `NODE_ENV` | Environment (`development` / `production`) |
 | `APP_URL` | API base URL (used in email links) |
@@ -152,7 +151,11 @@ A Postman collection is available in [`docs/`](docs/) for testing all endpoints.
 
 ## Authentication
 
-The API uses **JWT Bearer tokens** with refresh token rotation (max 10 active sessions per user).
+The API uses **JWT Bearer access tokens** and **opaque refresh tokens** (`<sessionId>.<secret>`, only a SHA-256 hash is stored) with rotation (max 10 active sessions per user):
+
+- The session id stays the same across rotations; each refresh issues a new secret and extends the session.
+- A refresh with the previous secret within 30 s of a rotation (concurrent requests) returns only a new `access_token`: keep the current refresh token.
+- Any other old or unknown secret for a session is treated as a reuse: the session is revoked (`auth.refresh.token_reused`, audit `session.reuse_detected`).
 
 ```mermaid
 flowchart TD
