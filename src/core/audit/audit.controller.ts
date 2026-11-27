@@ -1,5 +1,5 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuditService } from './audit.service.js';
 import { FindAuditLogsQueryDto } from './dto/find-audit-logs-query.dto.js';
 import { AuditLogResponseDto } from './dto/audit-log-response.dto.js';
@@ -21,7 +21,7 @@ import { AdminOriginOnly } from '../../common/origins/admin-origin-only.decorato
 @ApiThrottleError()
 @ApiOriginError()
 @AdminOriginOnly()
-@ApiBearerAuth()
+@ApiCookieAuth()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @RequirePermissions(Permissions.REALM_AUDIT, Permissions.AUDIT_LOG_READ)
 @Controller('admin/audit-logs')

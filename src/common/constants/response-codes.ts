@@ -27,6 +27,7 @@ export const ResponseCodes = {
   AUTH_CALLBACK_URL_NOT_ALLOWED: 'auth.callback_url.not_allowed',
 
   // ─── Auth — success ──────────────────────────────────────
+  AUTH_REFRESH_SUCCESS: 'auth.refresh.success',
   AUTH_LOGOUT_SUCCESS: 'auth.logout.success',
   AUTH_SESSION_REVOKED: 'auth.session.revoked',
   AUTH_LOGOUT_ALL_SUCCESS: 'auth.logout_all.success',

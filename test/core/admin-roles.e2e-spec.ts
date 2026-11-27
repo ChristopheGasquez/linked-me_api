@@ -1,7 +1,11 @@
 import request from 'supertest';
 import { Permissions } from '../../src/core/auth/permissions.constants.js';
 import { createTestApp, type TestApp } from '../setup/app.factory.js';
-import { bearer, loginAsAdmin, type AuthTokens } from '../setup/auth.helper.js';
+import {
+  authCookie,
+  loginAsAdmin,
+  type AuthTokens,
+} from '../setup/auth.helper.js';
 import { cleanDatabase } from '../setup/db.js';
 import { UNKNOWN_ID } from '../setup/test-id.js';
 import { createUserWithPermissions } from '../setup/permissions.helper.js';
@@ -35,13 +39,13 @@ describe('Admin roles (e2e)', () => {
     const name = uniqueRoleName();
     const res = await request(t.http)
       .post('/admin/roles')
-      .set(bearer(admin.accessToken))
+      .set(authCookie(admin.accessToken))
       .send({ name })
       .expect(201);
     if (permissions.length > 0) {
       await request(t.http)
         .post(`/admin/roles/${res.body.id}/permissions`)
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .send({ permissions })
         .expect(200);
     }
@@ -61,7 +65,7 @@ describe('Admin roles (e2e)', () => {
 
       const res = await request(t.http)
         .get('/admin/roles')
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .query({ search: role.name })
         .expect(200);
 
@@ -88,7 +92,7 @@ describe('Admin roles (e2e)', () => {
     it('lists the seeded roles', async () => {
       const res = await request(t.http)
         .get('/admin/roles')
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .query({ limit: 100 })
         .expect(200);
 
@@ -99,7 +103,7 @@ describe('Admin roles (e2e)', () => {
     it('400 validation.failed for an unknown sortBy', async () => {
       const res = await request(t.http)
         .get('/admin/roles')
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .query({ sortBy: 'password' })
         .expect(400);
       expect(res.body.code).toBe('validation.failed');
@@ -118,7 +122,7 @@ describe('Admin roles (e2e)', () => {
 
       const res = await request(t.http)
         .get(`/admin/roles/${role.id}`)
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .expect(200);
 
       expect(res.body).toMatchObject({ id: role.id, name: role.name });
@@ -134,7 +138,7 @@ describe('Admin roles (e2e)', () => {
     it('404 admin.role.not_found for an unknown id', async () => {
       const res = await request(t.http)
         .get(`/admin/roles/${UNKNOWN_ID}`)
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .expect(404);
       expect(res.body.code).toBe('admin.role.not_found');
     });
@@ -149,7 +153,7 @@ describe('Admin roles (e2e)', () => {
 
       const res = await request(t.http)
         .post('/admin/roles')
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .send({ name: `  ${name.toLowerCase()}  ` })
         .expect(201);
 
@@ -164,7 +168,7 @@ describe('Admin roles (e2e)', () => {
 
       const res = await request(t.http)
         .post('/admin/roles')
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .send({ name: role.name })
         .expect(400);
       expect(res.body.code).toBe('admin.role.already_exists');
@@ -179,7 +183,7 @@ describe('Admin roles (e2e)', () => {
     ])('400 validation.failed for a name %s', async (_label, name) => {
       const res = await request(t.http)
         .post('/admin/roles')
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .send({ name })
         .expect(400);
       expect(res.body.code).toBe('validation.failed');
@@ -195,7 +199,7 @@ describe('Admin roles (e2e)', () => {
 
       const res = await request(t.http)
         .delete(`/admin/roles/${role.id}`)
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .expect(200);
       expect(res.body).toMatchObject({
         code: 'admin.role.deleted',
@@ -222,7 +226,7 @@ describe('Admin roles (e2e)', () => {
 
       const res = await request(t.http)
         .delete(`/admin/roles/${roleId}`)
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .expect(400);
       expect(res.body.code).toBe('admin.role.has_users');
       expect(res.body.params).toEqual({ count: 1 });
@@ -232,7 +236,7 @@ describe('Admin roles (e2e)', () => {
     it('404 admin.role.not_found for an unknown id', async () => {
       const res = await request(t.http)
         .delete(`/admin/roles/${UNKNOWN_ID}`)
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .expect(404);
       expect(res.body.code).toBe('admin.role.not_found');
     });
@@ -247,7 +251,7 @@ describe('Admin roles (e2e)', () => {
 
       const res = await request(t.http)
         .post(`/admin/roles/${role.id}/permissions`)
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .send({
           permissions: [Permissions.REALM_PROFILE, Permissions.PROFILE_READ],
         })
@@ -271,7 +275,7 @@ describe('Admin roles (e2e)', () => {
 
       const res = await request(t.http)
         .post(`/admin/roles/${role.id}/permissions`)
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .send({ permissions: [Permissions.PROFILE_READ] })
         .expect(200);
 
@@ -283,7 +287,7 @@ describe('Admin roles (e2e)', () => {
 
       const res = await request(t.http)
         .post(`/admin/roles/${role.id}/permissions`)
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .send({ permissions: [Permissions.PROFILE_READ, 'nope:nope'] })
         .expect(400);
 
@@ -303,7 +307,7 @@ describe('Admin roles (e2e)', () => {
 
       const res = await request(t.http)
         .post(`/admin/roles/${role.id}/permissions`)
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .send(body)
         .expect(400);
       expect(res.body.code).toBe('validation.failed');
@@ -312,7 +316,7 @@ describe('Admin roles (e2e)', () => {
     it('404 admin.role.not_found for an unknown role', async () => {
       const res = await request(t.http)
         .post(`/admin/roles/${UNKNOWN_ID}/permissions`)
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .send({ permissions: [Permissions.PROFILE_READ] })
         .expect(404);
       expect(res.body.code).toBe('admin.role.not_found');
@@ -332,7 +336,7 @@ describe('Admin roles (e2e)', () => {
 
       const res = await request(t.http)
         .delete(`/admin/roles/${role.id}/permissions/${permId}`)
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .expect(200);
       expect(res.body.code).toBe('admin.role.permission.removed');
 
@@ -360,7 +364,7 @@ describe('Admin roles (e2e)', () => {
 
       const res = await request(t.http)
         .delete(`/admin/roles/${role.id}/permissions/${permId}`)
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .expect(404);
       expect(res.body.code).toBe('admin.role.permission.not_assigned');
     });
@@ -380,18 +384,18 @@ describe('Admin roles (e2e)', () => {
       // warm the user cache with the current permissions
       await request(t.http)
         .get(`/profiles/${user.userId}`)
-        .set(bearer(user.accessToken))
+        .set(authCookie(user.accessToken))
         .expect(200);
 
       const permId = await permissionId(Permissions.PROFILE_READ);
       await request(t.http)
         .delete(`/admin/roles/${roleId}/permissions/${permId}`)
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .expect(200);
 
       await request(t.http)
         .get(`/profiles/${user.userId}`)
-        .set(bearer(user.accessToken))
+        .set(authCookie(user.accessToken))
         .expect(403);
     });
 
@@ -403,18 +407,18 @@ describe('Admin roles (e2e)', () => {
       // warm the user cache: the permission is missing
       await request(t.http)
         .get(`/profiles/${user.userId}`)
-        .set(bearer(user.accessToken))
+        .set(authCookie(user.accessToken))
         .expect(403);
 
       await request(t.http)
         .post(`/admin/roles/${roleId}/permissions`)
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .send({ permissions: [Permissions.PROFILE_READ] })
         .expect(200);
 
       await request(t.http)
         .get(`/profiles/${user.userId}`)
-        .set(bearer(user.accessToken))
+        .set(authCookie(user.accessToken))
         .expect(200);
     });
   });
@@ -426,7 +430,7 @@ describe('Admin roles (e2e)', () => {
     it('200 returns a paginated list of the seeded permissions', async () => {
       const res = await request(t.http)
         .get('/admin/permissions')
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .query({ limit: 100 })
         .expect(200);
 
@@ -438,7 +442,7 @@ describe('Admin roles (e2e)', () => {
     it('search filters by name (case-insensitive)', async () => {
       const res = await request(t.http)
         .get('/admin/permissions')
-        .set(bearer(admin.accessToken))
+        .set(authCookie(admin.accessToken))
         .query({ search: 'ADMIN:USER', limit: 100 })
         .expect(200);
 

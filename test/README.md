@@ -35,7 +35,7 @@ test/
     app.factory.ts        # createTestApp(): full app, production config, mail faked, throttling off ({ swagger: true } mounts the docs)
     fake-mail.service.ts  # replaces MailService, records mails and their tokens
     db.ts                 # cleanDatabase(): removes test data, keeps seed data
-    auth.helper.ts        # createVerifiedUser, login, loginAsAdmin, bearer, uniqueEmail
+    auth.helper.ts        # createVerifiedUser, login, loginAsAdmin, authCookie, uniqueEmail
     permissions.helper.ts # createUserWithPermissions: user whose only role holds exactly the given permissions
   core/
     route-security.e2e-spec.ts  # route security net (see below)
@@ -97,7 +97,7 @@ Some tests guard a behaviour the front depends on. They are prefixed with `[CONT
 ```ts
 import request from 'supertest';
 import { createTestApp, type TestApp } from './setup/app.factory.js';
-import { bearer, createVerifiedUser } from './setup/auth.helper.js';
+import { authCookie, createVerifiedUser } from './setup/auth.helper.js';
 import { cleanDatabase } from './setup/db.js';
 
 describe('Profiles (e2e)', () => {
@@ -115,7 +115,7 @@ describe('Profiles (e2e)', () => {
 
     await request(t.http)
       .get('/profiles/me')
-      .set(bearer(user.accessToken))
+      .set(authCookie(user.accessToken))
       .expect(200);
   });
 });

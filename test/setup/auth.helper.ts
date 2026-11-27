@@ -14,10 +14,44 @@ let counter = 0;
 export const uniqueEmail = (prefix = 'user'): string =>
   `${prefix}.${Date.now()}.${++counter}@test.local`;
 
-/** Authorization header: request(t.http).get('/x').set(bearer(token)) */
-export const bearer = (accessToken: string) => ({
-  Authorization: `Bearer ${accessToken}`,
+export const ACCESS_COOKIE = '__Host-access_token';
+export const REFRESH_COOKIE = '__Host-refresh_token';
+
+/** Access cookie: request(t.http).get('/x').set(authCookie(token)) */
+export const authCookie = (accessToken: string) => ({
+  Cookie: `${ACCESS_COOKIE}=${accessToken}`,
 });
+
+/** Refresh cookie: request(t.http).post('/auth/refresh').set(refreshCookie(token)) */
+export const refreshCookie = (refreshToken: string) => ({
+  Cookie: `${REFRESH_COOKIE}=${refreshToken}`,
+});
+
+/** Both cookies, as a browser sends them */
+export const sessionCookies = (tokens: {
+  accessToken: string;
+  refreshToken: string;
+}) => ({
+  Cookie: `${ACCESS_COOKIE}=${tokens.accessToken}; ${REFRESH_COOKIE}=${tokens.refreshToken}`,
+});
+
+/** Set-Cookie lines of a response, by cookie name */
+export function setCookies(res: request.Response): Record<string, string> {
+  const raw = res.headers['set-cookie'] as unknown as string[] | undefined;
+  return Object.fromEntries(
+    (raw ?? []).map((line) => [line.slice(0, line.indexOf('=')), line]),
+  );
+}
+
+/** Value of a cookie set by a response (undefined if not set) */
+export function cookieValue(
+  res: request.Response,
+  name: string,
+): string | undefined {
+  const line = setCookies(res)[name];
+  if (!line) return undefined;
+  return decodeURIComponent(line.slice(name.length + 1).split(';')[0]);
+}
 
 export async function login(
   t: TestApp,
@@ -29,8 +63,8 @@ export async function login(
     .send({ email, password })
     .expect(201);
   return {
-    accessToken: res.body.access_token,
-    refreshToken: res.body.refresh_token,
+    accessToken: cookieValue(res, ACCESS_COOKIE)!,
+    refreshToken: cookieValue(res, REFRESH_COOKIE)!,
     userId: res.body.user.id,
   };
 }

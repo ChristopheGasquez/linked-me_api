@@ -47,7 +47,8 @@ describe('JwtStrategy', () => {
     prisma = createPrismaServiceMock();
     userCache = { get: vi.fn().mockReturnValue(null), set: vi.fn() };
     const config = {
-      getOrThrow: vi.fn().mockReturnValue('jwt_secret'),
+      getOrThrow: vi.fn().mockReturnValue('x'.repeat(32)),
+      get: vi.fn((_key: string, fallback?: unknown) => fallback),
     } as unknown as ConfigService;
 
     strategy = new JwtStrategy(

@@ -1,15 +1,26 @@
 import request from 'supertest';
 import { createTestApp, type TestApp } from '../setup/app.factory.js';
 import {
-  bearer,
+  ACCESS_COOKIE,
+  authCookie,
   createVerifiedUser,
   login,
+  REFRESH_COOKIE,
+  refreshCookie,
+  setCookies,
   uniqueEmail,
 } from '../setup/auth.helper.js';
 import { cleanDatabase } from '../setup/db.js';
 import { UNKNOWN_ID } from '../setup/test-id.js';
 
 const NEW_PASSWORD = 'New-Password-456!';
+
+const expectCookiesCleared = (res: request.Response) => {
+  const cookies = setCookies(res);
+  for (const name of [ACCESS_COOKIE, REFRESH_COOKIE]) {
+    expect(cookies[name]).toMatch(/^[^=]+=; .*Expires=Thu, 01 Jan 1970/);
+  }
+};
 
 describe('Profiles (e2e)', () => {
   let t: TestApp;
@@ -36,7 +47,7 @@ describe('Profiles (e2e)', () => {
 
       const res = await request(t.http)
         .get(`/profiles/${target.userId}`)
-        .set(bearer(viewer.accessToken))
+        .set(authCookie(viewer.accessToken))
         .expect(200);
 
       expect(res.body).toEqual({
@@ -52,7 +63,7 @@ describe('Profiles (e2e)', () => {
 
       const res = await request(t.http)
         .get(`/profiles/${UNKNOWN_ID}`)
-        .set(bearer(viewer.accessToken))
+        .set(authCookie(viewer.accessToken))
         .expect(404);
       expect(res.body.code).toBe('profile.user.not_found');
     });
@@ -66,7 +77,7 @@ describe('Profiles (e2e)', () => {
 
       const res = await request(t.http)
         .get(`/profiles/${id}`)
-        .set(bearer(viewer.accessToken))
+        .set(authCookie(viewer.accessToken))
         .expect(400);
       expect(res.body.message).toBe('Validation failed (uuid v 7 is expected)');
     });
@@ -81,19 +92,19 @@ describe('Profiles (e2e)', () => {
       // warm the user cache used by the JWT strategy
       await request(t.http)
         .get('/auth/me')
-        .set(bearer(user.accessToken))
+        .set(authCookie(user.accessToken))
         .expect(200);
 
       const res = await request(t.http)
         .patch('/profiles/me')
-        .set(bearer(user.accessToken))
+        .set(authCookie(user.accessToken))
         .send({ name: '  After  ' })
         .expect(200);
       expect(res.body.name).toBe('After');
 
       const me = await request(t.http)
         .get('/auth/me')
-        .set(bearer(user.accessToken))
+        .set(authCookie(user.accessToken))
         .expect(200);
       expect(me.body.name).toBe('After');
 
@@ -106,7 +117,7 @@ describe('Profiles (e2e)', () => {
 
       await request(t.http)
         .patch('/profiles/me')
-        .set(bearer(user.accessToken))
+        .set(authCookie(user.accessToken))
         .send({ email: uniqueEmail('hijack'), isEmailChecked: false })
         .expect(200);
 
@@ -122,7 +133,7 @@ describe('Profiles (e2e)', () => {
 
       const res = await request(t.http)
         .patch('/profiles/me')
-        .set(bearer(user.accessToken))
+        .set(authCookie(user.accessToken))
         .send({ name: 'A' })
         .expect(400);
       expect(res.body.code).toBe('validation.failed');
@@ -139,7 +150,7 @@ describe('Profiles (e2e)', () => {
     ) =>
       request(t.http)
         .patch('/profiles/me/password')
-        .set(bearer(accessToken))
+        .set(authCookie(accessToken))
         .send(body);
 
     it('401 profile.password.incorrect when the current password is wrong', async () => {
@@ -170,10 +181,11 @@ describe('Profiles (e2e)', () => {
         newPassword: NEW_PASSWORD,
       }).expect(200);
       expect(res.body.code).toBe('profile.password.changed');
+      expectCookiesCleared(res);
 
       await request(t.http)
         .post('/auth/refresh')
-        .send({ refresh_token: user.refreshToken })
+        .set(refreshCookie(user.refreshToken))
         .expect(401);
       await request(t.http)
         .post('/auth/login')
@@ -196,9 +208,10 @@ describe('Profiles (e2e)', () => {
 
       const res = await request(t.http)
         .delete('/profiles/me')
-        .set(bearer(user.accessToken))
+        .set(authCookie(user.accessToken))
         .expect(200);
       expect(res.body.code).toBe('profile.deleted');
+      expectCookiesCleared(res);
 
       expect(
         await t.prisma.user.findUnique({ where: { id: user.userId } }),
@@ -221,12 +234,12 @@ describe('Profiles (e2e)', () => {
 
       await request(t.http)
         .delete('/profiles/me')
-        .set(bearer(user.accessToken))
+        .set(authCookie(user.accessToken))
         .expect(200);
 
       await request(t.http)
         .get('/auth/me')
-        .set(bearer(user.accessToken))
+        .set(authCookie(user.accessToken))
         .expect(401);
     });
   });

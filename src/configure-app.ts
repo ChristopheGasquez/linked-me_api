@@ -1,5 +1,6 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter.js';
 import { validationExceptionFactory } from './common/validators/validation-exception.factory.js';
 import { getAllowedOrigins } from './common/origins/allowed-origins.js';
@@ -10,6 +11,7 @@ import { getAllowedOrigins } from './common/origins/allowed-origins.js';
  */
 export function configureApp(app: INestApplication): void {
   app.use(helmet());
+  app.use(cookieParser());
 
   app.enableCors({
     origin: getAllowedOrigins().all,
