@@ -60,7 +60,8 @@ cp .env.example .env
 | `FRONTEND_URL` | Frontend URL for password reset links (optional, falls back to `APP_URL`) |
 | `MAIL_FROM` | Sender email address (must be verified in Resend) |
 | `RESEND_API_KEY` | API key for transactional emails (Resend) |
-| `CORS_ORIGIN` | Allowed CORS origin (optional, all origins if unset) |
+| `ADMIN_ORIGINS` | Comma-separated admin front origins (exact `scheme://host[:port]`), allowed by CORS and the Origin guard on every route (required) |
+| `APP_ORIGINS` | Comma-separated origins of the other apps, allowed on every route except `/admin/*` and `/tasks/*` (optional) |
 | `ALLOWED_REDIRECT_ORIGINS` | Comma-separated origins allowed for `callbackUrl` in emails (optional, `callbackUrl` rejected if unset) |
 | `ADMIN_EMAIL` | Initial admin account email |
 | `ADMIN_PASSWORD` | Initial admin account password |

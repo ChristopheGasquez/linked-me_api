@@ -49,6 +49,7 @@ import { ApiPaginatedResponse } from '../../common/pagination/index.js';
 import { RequireCaptcha } from '../turnstile/require-captcha.decorator.js';
 import {
   ApiInvalidIdError,
+  ApiOriginError,
   ApiThrottleError,
   ApiValidationError,
 } from '../../common/swagger/api-common-responses.decorator.js';
@@ -57,6 +58,7 @@ import type { CachedUser } from './cache/user-cache.service.js';
 
 @ApiTags('Auth')
 @ApiThrottleError()
+@ApiOriginError()
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
@@ -75,7 +77,8 @@ export class AuthController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Captcha verification failed — code: captcha.invalid',
+    description:
+      'Captcha verification failed (captcha.invalid) or origin not allowed (origin.not_allowed)',
     type: ErrorResponseDto,
   })
   @ApiResponse({
@@ -111,7 +114,7 @@ export class AuthController {
   @ApiResponse({
     status: 403,
     description:
-      'Account temporarily locked (auth.login.account_locked) or captcha verification failed (captcha.invalid)',
+      'Account temporarily locked (auth.login.account_locked), captcha verification failed (captcha.invalid) or origin not allowed (origin.not_allowed)',
     type: ErrorResponseDto,
   })
   @ApiResponse({
@@ -163,7 +166,8 @@ export class AuthController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Captcha verification failed — code: captcha.invalid',
+    description:
+      'Captcha verification failed (captcha.invalid) or origin not allowed (origin.not_allowed)',
     type: ErrorResponseDto,
   })
   @ApiResponse({
@@ -193,7 +197,8 @@ export class AuthController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Captcha verification failed — code: captcha.invalid',
+    description:
+      'Captcha verification failed (captcha.invalid) or origin not allowed (origin.not_allowed)',
     type: ErrorResponseDto,
   })
   @ApiResponse({

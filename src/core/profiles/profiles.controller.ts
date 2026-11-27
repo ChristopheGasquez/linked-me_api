@@ -31,6 +31,7 @@ import { ValidationErrorResponseDto } from '../../common/dto/validation-error-re
 import {
   ApiAuthErrors,
   ApiInvalidIdError,
+  ApiOriginError,
   ApiThrottleError,
   ApiValidationError,
 } from '../../common/swagger/api-common-responses.decorator.js';
@@ -40,6 +41,7 @@ import type { CachedUser } from '../auth/cache/user-cache.service.js';
 @ApiTags('Profiles')
 @ApiAuthErrors()
 @ApiThrottleError()
+@ApiOriginError()
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @RequirePermissions(Permissions.REALM_PROFILE)

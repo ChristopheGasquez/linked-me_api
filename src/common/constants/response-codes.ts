@@ -2,6 +2,9 @@ export const ResponseCodes = {
   // ─── Throttle ─────────────────────────────────────────────
   THROTTLE_TOO_MANY_REQUESTS: 'throttle.too_many_requests',
 
+  // ─── Origin ──────────────────────────────────────────────
+  ORIGIN_NOT_ALLOWED: 'origin.not_allowed',
+
   // ─── Captcha ─────────────────────────────────────────────
   CAPTCHA_MISSING: 'captcha.missing',
   CAPTCHA_INVALID: 'captcha.invalid',

@@ -44,15 +44,19 @@ import { ApiPaginatedResponse } from '../../../common/pagination/index.js';
 import {
   ApiAuthErrors,
   ApiInvalidIdError,
+  ApiOriginError,
   ApiThrottleError,
   ApiValidationError,
 } from '../../../common/swagger/api-common-responses.decorator.js';
+import { AdminOriginOnly } from '../../../common/origins/admin-origin-only.decorator.js';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator.js';
 import type { CachedUser } from '../../auth/cache/user-cache.service.js';
 
 @ApiTags('Admin / Roles')
 @ApiAuthErrors()
 @ApiThrottleError()
+@ApiOriginError()
+@AdminOriginOnly()
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @RequirePermissions(Permissions.REALM_ADMIN)

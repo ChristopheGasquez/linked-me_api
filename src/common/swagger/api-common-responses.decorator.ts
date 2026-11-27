@@ -14,10 +14,19 @@ export const ApiAuthErrors = () =>
     }),
     ApiResponse({
       status: 403,
-      description: 'Missing required permission(s)',
+      description:
+        'Missing required permission(s), or origin not allowed (origin.not_allowed)',
       type: ErrorResponseDto,
     }),
   );
+
+/** 403 from the global OriginGuard (Origin header not in ADMIN_ORIGINS / APP_ORIGINS) */
+export const ApiOriginError = () =>
+  ApiResponse({
+    status: 403,
+    description: 'Origin not allowed — code: origin.not_allowed',
+    type: ErrorResponseDto,
+  });
 
 /** 429 from the global throttler (60 req/min) */
 export const ApiThrottleError = () =>
