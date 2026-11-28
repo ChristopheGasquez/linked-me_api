@@ -5,7 +5,7 @@ export const PlanningConstants = {
   MAX_EVENTS_PER_PLANNING: 500,
   // Category color = hue index of the front theme palette, not a color code
   COLOR_MIN: 1,
-  COLOR_MAX: 5,
+  COLOR_MAX: 10,
   // ISO days: 1 = Monday ... 7 = Sunday
   DAY_MIN: 1,
   DAY_MAX: 7,
