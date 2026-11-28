@@ -71,6 +71,17 @@ describe('Plannings (e2e)', () => {
       });
     });
 
+    it('201 accepts the last palette hue (color 10)', async () => {
+      const { call } = await newUser();
+
+      const res = await call('post', '/plannings', {
+        ...FRAME,
+        categories: [{ name: 'Gris', color: 10 }],
+      }).expect(201);
+
+      expect(res.body.categories[0].color).toBe(10);
+    });
+
     it('201 accepts an empty category list', async () => {
       const { call } = await newUser();
 
@@ -214,8 +225,14 @@ describe('Plannings (e2e)', () => {
         'validation.startMinute.isInt',
       ],
       [
-        'a category color 6',
-        { categories: [{ name: 'Rouge', color: 6 }] },
+        'a category color 0',
+        { categories: [{ name: 'Rouge', color: 0 }] },
+        'categories.0.color',
+        'validation.color.min',
+      ],
+      [
+        'a category color 11',
+        { categories: [{ name: 'Rouge', color: 11 }] },
         'categories.0.color',
         'validation.color.max',
       ],
@@ -449,6 +466,43 @@ describe('Plannings (e2e)', () => {
           where: { id: musique.id },
         }),
       ).toBeNull();
+    });
+
+    it('200 accepts color 10 on an existing category', async () => {
+      const me = await newUser();
+      const planning = await createPlanning(t, me.accessToken);
+      const [first] = planning.categories;
+
+      const res = await me
+        .call('put', `/plannings/${planning.id}`, {
+          ...FRAME,
+          categories: [{ id: first.id, name: first.name, color: 10 }],
+        })
+        .expect(200);
+
+      expect(res.body.categories).toEqual([
+        { id: first.id, name: first.name, color: 10, position: 0 },
+      ]);
+    });
+
+    it('400 validation.failed for color 11, and nothing changes', async () => {
+      const me = await newUser();
+      const planning = await createPlanning(t, me.accessToken);
+      const [first] = planning.categories;
+
+      const res = await me
+        .call('put', `/plannings/${planning.id}`, {
+          ...FRAME,
+          categories: [{ id: first.id, name: first.name, color: 11 }],
+        })
+        .expect(400);
+
+      expect(res.body.code).toBe('validation.failed');
+      expect(res.body.params.fields).toContainEqual({
+        key: 'categories.0.color',
+        code: 'validation.color.max',
+      });
+      expect(await categoriesOf(planning.id)).toHaveLength(5);
     });
 
     it('400 planning.category.not_in_planning for a category id of another planning, and nothing changes', async () => {

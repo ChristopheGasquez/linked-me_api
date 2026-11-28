@@ -96,6 +96,12 @@ describe('Swagger docs (e2e)', () => {
       );
     });
 
+    it('exposes the 10-hue category palette', () => {
+      expect(
+        constants.components?.schemas?.PlanningConstants?.properties?.COLOR_MAX,
+      ).toEqual({ type: 'integer', example: 10 });
+    });
+
     it('contains no endpoint', () => {
       expect(constants.paths).toEqual({});
     });
