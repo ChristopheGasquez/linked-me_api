@@ -1,5 +1,6 @@
 import type { Mocked } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { AdminUsersService } from './users.service.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
@@ -37,6 +38,7 @@ describe('AdminUsersService', () => {
   let service: AdminUsersService;
   let prisma: PrismaServiceMock;
   let auditService: Mocked<Pick<AuditService, 'log'>>;
+  let eventEmitter: Mocked<Pick<EventEmitter2, 'emitAsync'>>;
   let userCache: Mocked<Pick<UserCacheService, 'invalidate' | 'invalidateAll'>>;
 
   beforeEach(async () => {
@@ -44,6 +46,10 @@ describe('AdminUsersService', () => {
 
     auditService = {
       log: vi.fn().mockResolvedValue(undefined),
+    };
+
+    eventEmitter = {
+      emitAsync: vi.fn().mockResolvedValue([]),
     };
 
     userCache = {
@@ -57,6 +63,7 @@ describe('AdminUsersService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: auditService },
         { provide: UserCacheService, useValue: userCache },
+        { provide: EventEmitter2, useValue: eventEmitter },
       ],
     }).compile();
 
@@ -276,6 +283,21 @@ describe('AdminUsersService', () => {
         code: 'admin.user.deleted',
         params: { userId: testId(1) },
       });
+    });
+
+    it('should emit user.deleted after deleting the user', async () => {
+      const userNoRoles = { ...mockUser, roles: [] };
+      prisma.user.findUnique.mockResolvedValue(userNoRoles as any);
+      prisma.user.delete.mockResolvedValue(userNoRoles as any);
+
+      await service.deleteUser(testId(2), testId(1));
+
+      expect(eventEmitter.emitAsync).toHaveBeenCalledWith('user.deleted', {
+        userId: testId(1),
+      });
+      expect(prisma.user.delete.mock.invocationCallOrder[0]).toBeLessThan(
+        eventEmitter.emitAsync.mock.invocationCallOrder[0],
+      );
     });
   });
 

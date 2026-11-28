@@ -4,12 +4,17 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
 import { UserCacheService } from '../auth/cache/user-cache.service.js';
 import { UpdateProfileDto } from './dto/update-profile.dto.js';
 import { BCRYPT_ROUNDS, MS_PER_HOUR } from '../../common/constants.js';
 import { ResponseCodes } from '../../common/constants/response-codes.js';
+import {
+  UserEvents,
+  type UserDeletedEvent,
+} from '../../common/events/user-events.js';
 
 @Injectable()
 export class ProfilesService {
@@ -17,6 +22,7 @@ export class ProfilesService {
     private prisma: PrismaService,
     private auditService: AuditService,
     private userCache: UserCacheService,
+    private eventEmitter: EventEmitter2,
   ) {}
 
   async findOne(id: string) {
@@ -71,6 +77,10 @@ export class ProfilesService {
         code: ResponseCodes.PROFILE_USER_NOT_FOUND,
       });
     await this.prisma.user.delete({ where: { id } });
+    // apps purge their data of this user (awaited)
+    await this.eventEmitter.emitAsync(UserEvents.DELETED, {
+      userId: id,
+    } satisfies UserDeletedEvent);
     this.userCache.invalidate(id);
     await this.auditService.log('profile.delete', id, id, 'user', {
       email: user.email,

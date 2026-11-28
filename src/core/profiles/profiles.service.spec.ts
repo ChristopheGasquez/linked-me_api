@@ -5,6 +5,7 @@ vi.mock('bcrypt', () => ({
 }));
 
 import { Test, TestingModule } from '@nestjs/testing';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { NotFoundException, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { ProfilesService } from './profiles.service.js';
@@ -33,6 +34,7 @@ describe('ProfilesService', () => {
   let service: ProfilesService;
   let prisma: PrismaServiceMock;
   let auditService: Mocked<Pick<AuditService, 'log'>>;
+  let eventEmitter: Mocked<Pick<EventEmitter2, 'emitAsync'>>;
   let userCache: Mocked<Pick<UserCacheService, 'invalidate'>>;
 
   beforeEach(async () => {
@@ -40,6 +42,10 @@ describe('ProfilesService', () => {
 
     auditService = {
       log: vi.fn().mockResolvedValue(undefined),
+    };
+
+    eventEmitter = {
+      emitAsync: vi.fn().mockResolvedValue([]),
     };
 
     userCache = {
@@ -52,6 +58,7 @@ describe('ProfilesService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: auditService },
         { provide: UserCacheService, useValue: userCache },
+        { provide: EventEmitter2, useValue: eventEmitter },
       ],
     }).compile();
 
@@ -155,6 +162,20 @@ describe('ProfilesService', () => {
         { email: mockUser.email },
       );
       expect(result).toMatchObject({ code: 'profile.deleted' });
+    });
+
+    it('should emit user.deleted after deleting the user', async () => {
+      prisma.user.findUnique.mockResolvedValue(mockUser as any);
+      prisma.user.delete.mockResolvedValue(mockUser as any);
+
+      await service.remove(testId(1));
+
+      expect(eventEmitter.emitAsync).toHaveBeenCalledWith('user.deleted', {
+        userId: testId(1),
+      });
+      expect(prisma.user.delete.mock.invocationCallOrder[0]).toBeLessThan(
+        eventEmitter.emitAsync.mock.invocationCallOrder[0],
+      );
     });
   });
 

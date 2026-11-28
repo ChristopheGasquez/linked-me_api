@@ -1,3 +1,5 @@
+import { PlanningPermissions } from '../../apps/planning/planning.permissions.js';
+
 // All application permissions — used by seed, guards and controllers
 export const Permissions = {
   // Realms (controller-level gate)
@@ -33,6 +35,9 @@ export const Permissions = {
   PROFILE_READ: 'profile:read',
   PROFILE_UPDATE_OWN: 'profile:update:own',
   PROFILE_DELETE_OWN: 'profile:delete:own',
+
+  // Apps
+  ...PlanningPermissions,
 } as const;
 
 // Utility type: union of all permission values

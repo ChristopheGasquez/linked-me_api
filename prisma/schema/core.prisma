@@ -3,11 +3,12 @@
 
 generator client {
   provider = "prisma-client"
-  output   = "../generated/prisma"
+  output   = "../../generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
+  schemas  = ["public", "planning"]
 }
 
 // Table des utilisateurs
@@ -31,6 +32,7 @@ model User {
 
   // Nom de la table en base de données (convention snake_case en SQL)
   @@map("users")
+  @@schema("public")
 }
 
 // Table des refresh tokens (un par session/appareil)
@@ -45,6 +47,7 @@ model RefreshToken {
   createdAt         DateTime  @default(now())
 
   @@map("refresh_tokens")
+  @@schema("public")
 }
 
 // Table des tokens de vérification d'email
@@ -57,6 +60,7 @@ model EmailVerification {
   createdAt DateTime @default(now())
 
   @@map("email_verifications")
+  @@schema("public")
 }
 
 // Table des tokens de réinitialisation de mot de passe
@@ -69,6 +73,7 @@ model PasswordReset {
   createdAt DateTime @default(now())
 
   @@map("password_resets")
+  @@schema("public")
 }
 
 // Table des rôles (USER, ADMIN, MODERATOR...)
@@ -81,6 +86,7 @@ model Role {
   permissions RolePermission[]
 
   @@map("roles")
+  @@schema("public")
 }
 
 // Table des permissions (READ_USER, EDIT_OWN_PROFILE...)
@@ -90,6 +96,7 @@ model Permission {
   roles RolePermission[]
 
   @@map("permissions")
+  @@schema("public")
 }
 
 // Table pivot : quelles permissions a chaque rôle (many-to-many)
@@ -101,6 +108,7 @@ model RolePermission {
 
   @@id([roleId, permissionId])
   @@map("role_permissions")
+  @@schema("public")
 }
 
 // Table pivot : quels rôles a chaque utilisateur (many-to-many)
@@ -112,6 +120,7 @@ model UserRole {
 
   @@id([userId, roleId])
   @@map("user_roles")
+  @@schema("public")
 }
 
 // Table des logs d'audit (actions importantes tracées)
@@ -128,4 +137,5 @@ model AuditLog {
   @@index([actorId, createdAt])
   @@index([targetType, targetId, createdAt])
   @@map("audit_logs")
+  @@schema("public")
 }

@@ -1,3 +1,5 @@
+import { PlanningResponseCodes } from '../../apps/planning/planning.response-codes.js';
+
 export const ResponseCodes = {
   // ─── Throttle ─────────────────────────────────────────────
   THROTTLE_TOO_MANY_REQUESTS: 'throttle.too_many_requests',
@@ -78,4 +80,7 @@ export const ResponseCodes = {
   TASK_CLEANUP_ORPHANED_PERMISSIONS_NONE:
     'task.cleanup.orphaned_permissions.none_found',
   TASK_CLEANUP_AUDIT_LOGS: 'task.cleanup.audit_logs.done',
+
+  // ─── Apps ────────────────────────────────────────────────
+  ...PlanningResponseCodes,
 } as const;

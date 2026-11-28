@@ -18,7 +18,7 @@ import { createUserWithPermissions } from '../setup/permissions.helper.js';
  * handlers, so 400/404 still prove that access was granted.
  */
 
-type Method = 'get' | 'post' | 'patch' | 'delete';
+type Method = 'get' | 'post' | 'put' | 'patch' | 'delete';
 type Route = { method: Method; path: string };
 type ProtectedRoute = Route & {
   permissions: readonly Permission[];
@@ -29,6 +29,44 @@ type ProtectedRoute = Route & {
 const NO_ID = UNKNOWN_ID;
 
 const PROTECTED_ROUTES: ProtectedRoute[] = [
+  // Planning app
+  { method: 'get', path: '/plannings', permissions: [P.REALM_PLANNING] },
+  {
+    method: 'get',
+    path: `/plannings/${NO_ID}`,
+    permissions: [P.REALM_PLANNING],
+  },
+  { method: 'post', path: '/plannings', permissions: [P.REALM_PLANNING] },
+  {
+    method: 'put',
+    path: `/plannings/${NO_ID}`,
+    permissions: [P.REALM_PLANNING],
+  },
+  {
+    method: 'delete',
+    path: `/plannings/${NO_ID}`,
+    permissions: [P.REALM_PLANNING],
+  },
+  {
+    method: 'delete',
+    path: `/plannings/${NO_ID}/events`,
+    permissions: [P.REALM_PLANNING],
+  },
+  {
+    method: 'post',
+    path: `/plannings/${NO_ID}/events`,
+    permissions: [P.REALM_PLANNING],
+  },
+  {
+    method: 'patch',
+    path: `/plannings/${NO_ID}/events/${NO_ID}`,
+    permissions: [P.REALM_PLANNING],
+  },
+  {
+    method: 'delete',
+    path: `/plannings/${NO_ID}/events/${NO_ID}`,
+    permissions: [P.REALM_PLANNING],
+  },
   // Admin — roles
   {
     method: 'get',
