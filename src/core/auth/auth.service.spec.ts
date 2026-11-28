@@ -15,6 +15,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { AuthService } from './auth.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { MailService } from '../mail/mail.service.js';
@@ -24,6 +25,10 @@ import {
   PrismaServiceMock,
 } from '../prisma/prisma.service.mock.js';
 import { testId } from '../../../test/setup/test-id.js';
+
+const DAY = 24 * 60 * 60 * 1000;
+const sha256 = (value: string) =>
+  crypto.createHash('sha256').update(value).digest('hex');
 
 const mockUser = {
   id: testId(1),
@@ -50,24 +55,17 @@ describe('AuthService', () => {
     >
   >;
   let auditService: Mocked<Pick<AuditService, 'log'>>;
-  let configService: { getOrThrow: Mock; get: Mock };
+  let configService: { get: Mock };
 
   beforeEach(async () => {
     prisma = createPrismaServiceMock();
 
     jwtService = {
       signAsync: vi.fn().mockResolvedValue('mock_token'),
-      decode: vi
-        .fn()
-        .mockReturnValue({ exp: Math.floor(Date.now() / 1000) + 3600 }),
-      verifyAsync: vi
-        .fn()
-        .mockResolvedValue({ sub: testId(1), email: 'test@example.com' }),
     } as any;
 
     configService = {
-      getOrThrow: vi.fn().mockReturnValue('mock_secret'),
-      get: vi.fn().mockReturnValue('7d'),
+      get: vi.fn((_key: string, fallback?: unknown) => fallback),
     };
 
     mailService = {
@@ -272,48 +270,59 @@ describe('AuthService', () => {
       ).rejects.toThrow(UnauthorizedException);
     });
 
-    it('should return tokens and user on success', async () => {
+    it('should create a session and return an opaque <sessionId>.<secret> refresh token', async () => {
       prisma.user.findUnique.mockResolvedValue(mockUser as any);
       (bcrypt.compare as Mock).mockResolvedValue(true);
       prisma.user.update.mockResolvedValue(mockUser as any);
-      prisma.refreshToken.create.mockResolvedValue({} as any);
+      prisma.refreshToken.create.mockResolvedValue({ id: testId(10) } as any);
       prisma.refreshToken.findMany.mockResolvedValue([]);
 
+      const before = Date.now();
       const result = await service.login('test@example.com', 'password');
 
-      expect(result).toHaveProperty('access_token');
-      expect(result).toHaveProperty('refresh_token');
-      expect(result).toHaveProperty('user');
+      expect(result).toMatchObject({
+        access_token: 'mock_token',
+        user: expect.objectContaining({ id: mockUser.id }),
+      });
+      const [sessionId, secret] = result.refresh_token.split('.');
+      expect(sessionId).toBe(testId(10));
+      expect(secret).toMatch(/^[A-Za-z0-9_-]{43}$/);
+
+      const { data } = prisma.refreshToken.create.mock.calls[0][0] as any;
+      expect(data.tokenHash).toBe(sha256(secret));
+      expect(data.userId).toBe(mockUser.id);
+      expect(data.expiresAt.getTime()).toBeGreaterThanOrEqual(before + 7 * DAY);
     });
 
-    it('should sign the refresh token with a unique jti', async () => {
+    it('should use REFRESH_TOKEN_TTL_DAYS for the session lifetime', async () => {
+      configService.get.mockImplementation((key: string, fallback?: unknown) =>
+        key === 'REFRESH_TOKEN_TTL_DAYS' ? '2' : fallback,
+      );
       prisma.user.findUnique.mockResolvedValue(mockUser as any);
       (bcrypt.compare as Mock).mockResolvedValue(true);
       prisma.user.update.mockResolvedValue(mockUser as any);
-      prisma.refreshToken.create.mockResolvedValue({} as any);
+      prisma.refreshToken.create.mockResolvedValue({ id: testId(10) } as any);
       prisma.refreshToken.findMany.mockResolvedValue([]);
 
-      await service.login('test@example.com', 'password');
+      const before = Date.now();
       await service.login('test@example.com', 'password');
 
-      const refreshPayloads = jwtService.signAsync.mock.calls
-        .filter(([, options]) => options?.secret) // refresh tokens only
-        .map(([payload]) => payload as { jti?: string });
-      expect(refreshPayloads).toHaveLength(2);
-      expect(refreshPayloads[0].jti).toEqual(expect.any(String));
-      expect(refreshPayloads[0].jti).not.toBe(refreshPayloads[1].jti);
+      const { data } = prisma.refreshToken.create.mock.calls[0][0] as any;
+      const ttl = data.expiresAt.getTime() - before;
+      expect(ttl).toBeGreaterThanOrEqual(2 * DAY);
+      expect(ttl).toBeLessThan(2 * DAY + 5000);
     });
   });
 
   // ─────────────────────────────────────────────────────────────
-  // session limit (generateTokens via login)
+  // session limit (createSession via login)
   // ─────────────────────────────────────────────────────────────
   describe('session limit', () => {
     beforeEach(() => {
       prisma.user.findUnique.mockResolvedValue(mockUser as any);
       (bcrypt.compare as Mock).mockResolvedValue(true);
       prisma.user.update.mockResolvedValue(mockUser as any);
-      prisma.refreshToken.create.mockResolvedValue({} as any);
+      prisma.refreshToken.create.mockResolvedValue({ id: testId(10) } as any);
     });
 
     it('should not evict any session when the user has 10 sessions or fewer', async () => {
@@ -442,77 +451,184 @@ describe('AuthService', () => {
   // refresh()
   // ─────────────────────────────────────────────────────────────
   describe('refresh()', () => {
-    it('should throw UnauthorizedException if token is invalid', async () => {
-      jwtService.verifyAsync.mockRejectedValue(new Error('invalid token'));
+    const SESSION_ID = testId(10);
+    const CURRENT = 'current-secret';
+    const PREVIOUS = 'previous-secret';
+    const token = (secret: string) => `${SESSION_ID}.${secret}`;
+    const session = (overrides: Record<string, unknown> = {}) => ({
+      id: SESSION_ID,
+      userId: mockUser.id,
+      tokenHash: sha256(CURRENT),
+      previousTokenHash: sha256(PREVIOUS),
+      rotatedAt: new Date(Date.now() - 5000),
+      expiresAt: new Date(Date.now() + DAY),
+      createdAt: new Date(),
+      user: { email: mockUser.email },
+      ...overrides,
+    });
+    const expectCode = (promise: Promise<unknown>, code: string) =>
+      expect(promise).rejects.toMatchObject({ response: { code } });
 
-      await expect(service.refresh('bad_token')).rejects.toThrow(
-        UnauthorizedException,
+    it.each([
+      ['a missing cookie', undefined],
+      ['a JWT (issued before v3)', 'aaa.bbb.ccc'],
+      ['no secret', `${testId(10)}.`],
+      ['no separator', 'not-a-token'],
+      ['a non UUID v7 session id', '1.secret'],
+    ])(
+      'should throw invalid token for %s without hitting the DB',
+      async (_label, value) => {
+        await expectCode(service.refresh(value), 'auth.refresh.invalid_token');
+        expect(prisma.refreshToken.findUnique).not.toHaveBeenCalled();
+      },
+    );
+
+    it('should throw token revoked when the session does not exist', async () => {
+      prisma.refreshToken.findUnique.mockResolvedValue(null);
+
+      await expectCode(
+        service.refresh(token(CURRENT)),
+        'auth.refresh.token_revoked',
       );
     });
 
-    it('should throw invalid token for a non UUID v7 subject (token issued before v2)', async () => {
-      jwtService.verifyAsync.mockResolvedValue({
-        sub: 1,
-        email: 'test@example.com',
-      } as any);
-
-      await expect(service.refresh('old_token')).rejects.toMatchObject({
-        response: { code: 'auth.refresh.invalid_token' },
-      });
-      expect(prisma.refreshToken.findFirst).not.toHaveBeenCalled();
-    });
-
-    it('should throw UnauthorizedException if token not found in DB (revoked)', async () => {
-      jwtService.verifyAsync.mockResolvedValue({
-        sub: testId(1),
-        email: 'test@example.com',
-      } as any);
-      prisma.refreshToken.findFirst.mockResolvedValue(null);
-
-      await expect(service.refresh('valid_but_revoked_token')).rejects.toThrow(
-        UnauthorizedException,
+    it('should throw invalid token when the session is expired', async () => {
+      prisma.refreshToken.findUnique.mockResolvedValue(
+        session({ expiresAt: new Date(Date.now() - 1000) }) as any,
       );
+
+      await expectCode(
+        service.refresh(token(CURRENT)),
+        'auth.refresh.invalid_token',
+      );
+      expect(prisma.refreshToken.updateMany).not.toHaveBeenCalled();
     });
 
-    it('should rotate token and return new tokens on success', async () => {
-      const storedToken = {
-        id: testId(10),
-        token: 'hash',
-        userId: testId(1),
-        expiresAt: new Date(),
-        createdAt: new Date(),
-      };
-      jwtService.verifyAsync.mockResolvedValue({
-        sub: testId(1),
-        email: 'test@example.com',
-      } as any);
-      prisma.refreshToken.findFirst.mockResolvedValue(storedToken as any);
-      prisma.refreshToken.delete.mockResolvedValue(storedToken as any);
-      prisma.refreshToken.create.mockResolvedValue({} as any);
-      prisma.refreshToken.findMany.mockResolvedValue([]);
+    it('should rotate the current secret atomically and keep the session id', async () => {
+      prisma.refreshToken.findUnique.mockResolvedValue(session() as any);
+      prisma.refreshToken.updateMany.mockResolvedValue({ count: 1 });
 
-      const result = await service.refresh('valid_token');
+      const result = await service.refresh(token(CURRENT));
 
-      expect(prisma.refreshToken.delete).toHaveBeenCalledWith({
-        where: { id: testId(10) },
+      const [sessionId, secret] = result.refresh_token!.split('.');
+      expect(sessionId).toBe(SESSION_ID);
+      expect(secret).not.toBe(CURRENT);
+      expect(result.access_token).toBe('mock_token');
+      expect(jwtService.signAsync).toHaveBeenCalledWith({
+        sub: mockUser.id,
+        email: mockUser.email,
       });
-      expect(result).toHaveProperty('access_token');
-      expect(result).toHaveProperty('refresh_token');
+      expect(prisma.refreshToken.updateMany).toHaveBeenCalledWith({
+        where: { id: SESSION_ID, tokenHash: sha256(CURRENT) },
+        data: {
+          tokenHash: sha256(secret),
+          previousTokenHash: sha256(CURRENT),
+          rotatedAt: expect.any(Date),
+          expiresAt: expect.any(Date),
+        },
+      });
     });
+
+    it('should re-evaluate when a concurrent request rotated first', async () => {
+      prisma.refreshToken.findUnique
+        .mockResolvedValueOnce(session() as any)
+        .mockResolvedValueOnce(
+          session({
+            tokenHash: sha256('rotated-by-other-request'),
+            previousTokenHash: sha256(CURRENT),
+            rotatedAt: new Date(),
+          }) as any,
+        );
+      prisma.refreshToken.updateMany.mockResolvedValue({ count: 0 });
+
+      const result = await service.refresh(token(CURRENT));
+
+      expect(result).toEqual({ access_token: 'mock_token' });
+      expect(prisma.refreshToken.findUnique).toHaveBeenCalledTimes(2);
+    });
+
+    it('should return only an access token for the previous secret within 30 s', async () => {
+      prisma.refreshToken.findUnique.mockResolvedValue(session() as any);
+
+      const result = await service.refresh(token(PREVIOUS));
+
+      expect(result).toEqual({ access_token: 'mock_token' });
+      expect(prisma.refreshToken.updateMany).not.toHaveBeenCalled();
+      expect(prisma.refreshToken.deleteMany).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      [
+        'the previous secret after 30 s',
+        PREVIOUS,
+        {
+          rotatedAt: new Date(Date.now() - 31_000),
+        },
+      ],
+      ['an unknown secret', 'unknown-secret', {}],
+      [
+        'a secret on a never rotated session',
+        PREVIOUS,
+        {
+          previousTokenHash: null,
+          rotatedAt: null,
+        },
+      ],
+    ])(
+      'should revoke the session and audit a reuse for %s',
+      async (_label, secret, overrides) => {
+        prisma.refreshToken.findUnique.mockResolvedValue(
+          session(overrides) as any,
+        );
+
+        await expectCode(
+          service.refresh(token(secret)),
+          'auth.refresh.token_reused',
+        );
+        expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
+          where: { id: SESSION_ID },
+        });
+        expect(auditService.log).toHaveBeenCalledWith(
+          'session.reuse_detected',
+          null,
+          mockUser.id,
+          'user',
+          { sessionId: SESSION_ID },
+        );
+      },
+    );
   });
 
   // ─────────────────────────────────────────────────────────────
   // logout()
   // ─────────────────────────────────────────────────────────────
   describe('logout()', () => {
-    it('should delete refresh token and return success message', async () => {
+    it('should delete the session matching the current or previous secret', async () => {
       prisma.refreshToken.deleteMany.mockResolvedValue({ count: 1 });
 
-      const result = await service.logout('some_refresh_token');
+      const result = await service.logout(`${testId(10)}.some-secret`);
 
-      expect(prisma.refreshToken.deleteMany).toHaveBeenCalledTimes(1);
+      expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
+        where: {
+          id: testId(10),
+          OR: [
+            { tokenHash: sha256('some-secret') },
+            { previousTokenHash: sha256('some-secret') },
+          ],
+        },
+      });
       expect(result).toMatchObject({ code: 'auth.logout.success' });
     });
+
+    it.each(['not-a-token', undefined])(
+      'should answer success without touching the DB for %s',
+      async (value) => {
+        const result = await service.logout(value);
+
+        expect(prisma.refreshToken.deleteMany).not.toHaveBeenCalled();
+        expect(result).toMatchObject({ code: 'auth.logout.success' });
+      },
+    );
   });
 
   // ─────────────────────────────────────────────────────────────
@@ -540,7 +656,9 @@ describe('AuthService', () => {
         {
           id: testId(1),
           userId: testId(1),
-          token: 'hash',
+          tokenHash: 'hash',
+          previousTokenHash: 'previous',
+          rotatedAt: null,
           expiresAt: new Date(),
           createdAt: new Date(),
         },
@@ -557,9 +675,41 @@ describe('AuthService', () => {
       const result = await service.getSessions(testId(1), query);
 
       expect(result.data).toHaveLength(1);
-      expect(result.data[0]).not.toHaveProperty('token');
+      expect(result.data[0]).not.toHaveProperty('tokenHash');
+      expect(result.data[0]).not.toHaveProperty('previousTokenHash');
+      expect(result.data[0]).toHaveProperty('rotatedAt', null);
+      expect(result.data[0]).toHaveProperty('current', false);
       expect(result.meta.total).toBe(1);
     });
+
+    it('should flag the session of the refresh cookie as current', async () => {
+      prisma.refreshToken.findMany.mockResolvedValue([
+        { id: testId(1), userId: testId(1) },
+        { id: testId(2), userId: testId(1) },
+      ] as any);
+      prisma.refreshToken.count.mockResolvedValue(2);
+
+      const result = await service.getSessions(
+        testId(1),
+        { page: 1, limit: 20, sortBy: 'createdAt', sortOrder: 'desc' },
+        `${testId(2)}.secret`,
+      );
+
+      expect(result.data.map((s) => s.current)).toEqual([false, true]);
+    });
+  });
+
+  describe('sessionIdOf()', () => {
+    it('should return the session id of a well-formed refresh token', () => {
+      expect(service.sessionIdOf(`${testId(3)}.secret`)).toBe(testId(3));
+    });
+
+    it.each([undefined, '', 'not-a-token'])(
+      'should return undefined for %s',
+      (value) => {
+        expect(service.sessionIdOf(value)).toBeUndefined();
+      },
+    );
   });
 
   // ─────────────────────────────────────────────────────────────

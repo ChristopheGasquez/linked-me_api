@@ -1,12 +1,13 @@
 import request from 'supertest';
 import { createTestApp, type TestApp } from '../setup/app.factory.js';
 import {
-  bearer,
+  authCookie,
   createVerifiedUser,
   DEFAULT_PASSWORD,
   loginAsAdmin,
   uniqueEmail,
   type AuthTokens,
+  refreshCookie,
 } from '../setup/auth.helper.js';
 import { cleanDatabase } from '../setup/db.js';
 import { createUserWithPermissions } from '../setup/permissions.helper.js';
@@ -41,7 +42,7 @@ describe('Tasks (e2e)', () => {
   const runTask = (name: string, body: Record<string, unknown> = {}) =>
     request(t.http)
       .post(`/tasks/${name}`)
-      .set(bearer(admin.accessToken))
+      .set(authCookie(admin.accessToken))
       .send(body);
 
   const lastTaskLog = (action: string) =>
@@ -58,7 +59,7 @@ describe('Tasks (e2e)', () => {
   // ─────────────────────────────────────────────────────────────
   describe('GET /tasks', () => {
     const listTasks = (accessToken: string) =>
-      request(t.http).get('/tasks').set(bearer(accessToken));
+      request(t.http).get('/tasks').set(authCookie(accessToken));
 
     it('200 lists the 4 tasks with schedule, config and canRun for an admin', async () => {
       const res = await listTasks(admin.accessToken).expect(200);
@@ -213,10 +214,14 @@ describe('Tasks (e2e)', () => {
       const [expiredRefresh, validRefresh, expiredReset, validReset] =
         await Promise.all([
           t.prisma.refreshToken.create({
-            data: { userId, token: 'expired', expiresAt: ago(HOUR) },
+            data: { userId, tokenHash: 'a'.repeat(64), expiresAt: ago(HOUR) },
           }),
           t.prisma.refreshToken.create({
-            data: { userId, token: 'valid', expiresAt: inFuture(DAY) },
+            data: {
+              userId,
+              tokenHash: 'b'.repeat(64),
+              expiresAt: inFuture(DAY),
+            },
           }),
           t.prisma.passwordReset.create({
             data: { userId, token: 'expired', expiresAt: ago(HOUR) },
@@ -247,7 +252,7 @@ describe('Tasks (e2e)', () => {
       // the session opened by the real login is untouched
       await request(t.http)
         .post('/auth/refresh')
-        .send({ refresh_token: user.refreshToken })
+        .set(refreshCookie(user.refreshToken))
         .expect(201);
 
       const log = await lastTaskLog('task.cleanup.expired-tokens');

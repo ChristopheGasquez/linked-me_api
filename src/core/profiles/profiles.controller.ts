@@ -7,14 +7,17 @@ import {
   Body,
   UseGuards,
   ParseUUIDPipe,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
-  ApiBearerAuth,
+  ApiCookieAuth,
 } from '@nestjs/swagger';
 import { ProfilesService } from './profiles.service.js';
+import { AuthCookies } from '../auth/auth-cookies.js';
 import { UpdateProfileDto } from './dto/update-profile.dto.js';
 import { ChangePasswordDto } from './dto/change-password.dto.js';
 import { ProfileResponseDto } from './dto/profile-response.dto.js';
@@ -31,6 +34,7 @@ import { ValidationErrorResponseDto } from '../../common/dto/validation-error-re
 import {
   ApiAuthErrors,
   ApiInvalidIdError,
+  ApiOriginError,
   ApiThrottleError,
   ApiValidationError,
 } from '../../common/swagger/api-common-responses.decorator.js';
@@ -40,12 +44,16 @@ import type { CachedUser } from '../auth/cache/user-cache.service.js';
 @ApiTags('Profiles')
 @ApiAuthErrors()
 @ApiThrottleError()
-@ApiBearerAuth()
+@ApiOriginError()
+@ApiCookieAuth()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @RequirePermissions(Permissions.REALM_PROFILE)
 @Controller('profiles')
 export class ProfilesController {
-  constructor(private profilesService: ProfilesService) {}
+  constructor(
+    private profilesService: ProfilesService,
+    private authCookies: AuthCookies,
+  ) {}
 
   @ApiOperation({ summary: 'Get the public profile of a user' })
   @ApiResponse({
@@ -96,15 +104,18 @@ export class ProfilesController {
   })
   @RequirePermissions(Permissions.PROFILE_UPDATE_OWN)
   @Patch('me/password')
-  changePassword(
+  async changePassword(
     @CurrentUser() user: CachedUser,
     @Body() dto: ChangePasswordDto,
+    @Res({ passthrough: true }) res: Response,
   ) {
-    return this.profilesService.changePassword(
+    const result = await this.profilesService.changePassword(
       user.id,
       dto.currentPassword,
       dto.newPassword,
     );
+    this.authCookies.clear(res);
+    return result;
   }
 
   @ApiOperation({ summary: 'Delete your own account' })
@@ -115,7 +126,12 @@ export class ProfilesController {
   })
   @RequirePermissions(Permissions.PROFILE_DELETE_OWN)
   @Delete('me')
-  remove(@CurrentUser() user: CachedUser) {
-    return this.profilesService.remove(user.id);
+  async remove(
+    @CurrentUser() user: CachedUser,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.profilesService.remove(user.id);
+    this.authCookies.clear(res);
+    return result;
   }
 }

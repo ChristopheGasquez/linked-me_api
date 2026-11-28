@@ -2,10 +2,14 @@ import { Controller, Get } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AppService } from './app.service.js';
 import { HealthResponseDto } from './common/dto/health-response.dto.js';
-import { ApiThrottleError } from './common/swagger/api-common-responses.decorator.js';
+import {
+  ApiOriginError,
+  ApiThrottleError,
+} from './common/swagger/api-common-responses.decorator.js';
 
 @ApiTags('Health')
 @ApiThrottleError()
+@ApiOriginError()
 @Controller()
 export class AppController {
   constructor(private readonly appService: AppService) {}

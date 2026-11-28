@@ -2,6 +2,9 @@ export const ResponseCodes = {
   // ─── Throttle ─────────────────────────────────────────────
   THROTTLE_TOO_MANY_REQUESTS: 'throttle.too_many_requests',
 
+  // ─── Origin ──────────────────────────────────────────────
+  ORIGIN_NOT_ALLOWED: 'origin.not_allowed',
+
   // ─── Captcha ─────────────────────────────────────────────
   CAPTCHA_MISSING: 'captcha.missing',
   CAPTCHA_INVALID: 'captcha.invalid',
@@ -17,12 +20,14 @@ export const ResponseCodes = {
   AUTH_LOGIN_EMAIL_NOT_VERIFIED: 'auth.login.email_not_verified',
   AUTH_REFRESH_INVALID_TOKEN: 'auth.refresh.invalid_token',
   AUTH_REFRESH_TOKEN_REVOKED: 'auth.refresh.token_revoked',
+  AUTH_REFRESH_TOKEN_REUSED: 'auth.refresh.token_reused',
   AUTH_SESSION_NOT_FOUND: 'auth.session.not_found',
   AUTH_EMAIL_INVALID_TOKEN: 'auth.email.invalid_token',
   AUTH_PASSWORD_RESET_INVALID: 'auth.password_reset.invalid_token',
   AUTH_CALLBACK_URL_NOT_ALLOWED: 'auth.callback_url.not_allowed',
 
   // ─── Auth — success ──────────────────────────────────────
+  AUTH_REFRESH_SUCCESS: 'auth.refresh.success',
   AUTH_LOGOUT_SUCCESS: 'auth.logout.success',
   AUTH_SESSION_REVOKED: 'auth.session.revoked',
   AUTH_LOGOUT_ALL_SUCCESS: 'auth.logout_all.success',

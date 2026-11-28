@@ -2,10 +2,16 @@ import { JwtService } from '@nestjs/jwt';
 import request from 'supertest';
 import { createTestApp, type TestApp } from '../setup/app.factory.js';
 import {
-  bearer,
+  ACCESS_COOKIE,
+  authCookie,
+  cookieValue,
   createVerifiedUser,
   DEFAULT_PASSWORD,
   login,
+  REFRESH_COOKIE,
+  refreshCookie,
+  sessionCookies,
+  setCookies,
   uniqueEmail,
 } from '../setup/auth.helper.js';
 import { cleanDatabase } from '../setup/db.js';
@@ -29,8 +35,10 @@ describe('Auth (e2e)', () => {
     request(t.http).post('/auth/register').send(body);
   const loginReq = (email: string, password: string) =>
     request(t.http).post('/auth/login').send({ email, password });
-  const refreshReq = (refresh_token: string) =>
-    request(t.http).post('/auth/refresh').send({ refresh_token });
+  const refreshReq = (refreshToken: string) =>
+    request(t.http).post('/auth/refresh').set(refreshCookie(refreshToken));
+  const accessOf = (res: request.Response) => cookieValue(res, ACCESS_COOKIE);
+  const refreshOf = (res: request.Response) => cookieValue(res, REFRESH_COOKIE);
   const auditActions = async (userId: string) =>
     (
       await t.prisma.auditLog.findMany({
@@ -195,16 +203,15 @@ describe('Auth (e2e)', () => {
   // Login & lockout
   // ─────────────────────────────────────────────────────────────
   describe('POST /auth/login', () => {
-    it('201 returns tokens and the user without sensitive fields', async () => {
+    it('201 sets the session cookies and returns only the user, without sensitive fields', async () => {
       const user = await createVerifiedUser(t);
 
       const res = await loginReq(user.email, user.password).expect(201);
 
-      expect(res.body).toMatchObject({
-        access_token: expect.any(String),
-        refresh_token: expect.any(String),
-        user: { email: user.email },
-      });
+      expect(Object.keys(res.body)).toEqual(['user']);
+      expect(res.body.user).toMatchObject({ email: user.email });
+      expect(accessOf(res)).toEqual(expect.any(String));
+      expect(refreshOf(res)).toEqual(expect.any(String));
       for (const field of ['password', 'failedLoginAttempts', 'lockedUntil']) {
         expect(res.body.user).not.toHaveProperty(field);
       }
@@ -265,24 +272,113 @@ describe('Auth (e2e)', () => {
   // Refresh, sessions, logout
   // ─────────────────────────────────────────────────────────────
   describe('Refresh tokens & sessions', () => {
-    it('refresh rotates tokens: the previous refresh token is rejected', async () => {
+    const sessionIdOf = (refreshToken: string) => refreshToken.split('.')[0];
+    const ageLastRotation = (sessionId: string, ms: number) =>
+      t.prisma.refreshToken.update({
+        where: { id: sessionId },
+        data: { rotatedAt: new Date(Date.now() - ms) },
+      });
+
+    it('the refresh token is opaque: <sessionId>.<secret>, only its hash is stored', async () => {
+      const user = await createVerifiedUser(t);
+
+      const [sessionId, secret] = user.refreshToken.split('.');
+      expect(sessionId).toMatch(UUID_V7);
+      const stored = await t.prisma.refreshToken.findUniqueOrThrow({
+        where: { id: sessionId },
+      });
+      expect(stored.tokenHash).toHaveLength(64);
+      expect(stored.tokenHash).not.toContain(secret);
+      expect(stored.rotatedAt).toBeNull();
+    });
+
+    it('refresh rotates the secret and keeps the same session id', async () => {
       const user = await createVerifiedUser(t);
 
       const res = await refreshReq(user.refreshToken).expect(201);
-      expect(res.body).toMatchObject({
-        access_token: expect.any(String),
-        refresh_token: expect.any(String),
+      expect(res.body).toEqual({
+        message: 'Session refreshed',
+        code: 'auth.refresh.success',
       });
-      expect(res.body.refresh_token).not.toBe(user.refreshToken);
+      expect(accessOf(res)).toEqual(expect.any(String));
+      expect(refreshOf(res)).not.toBe(user.refreshToken);
+      expect(sessionIdOf(refreshOf(res)!)).toBe(sessionIdOf(user.refreshToken));
+
+      await refreshReq(refreshOf(res)!).expect(201);
+    });
+
+    it('the previous refresh token within 30 s returns only an access token (concurrent tabs)', async () => {
+      const user = await createVerifiedUser(t);
+      const rotated = await refreshReq(user.refreshToken).expect(201);
+
+      const late = await refreshReq(user.refreshToken).expect(201);
+      expect(late.body.code).toBe('auth.refresh.success');
+      expect(refreshOf(late)).toBeUndefined();
+      await request(t.http)
+        .get('/auth/me')
+        .set(authCookie(accessOf(late)!))
+        .expect(200);
+
+      // the session is untouched: the rotated token still works
+      await refreshReq(refreshOf(rotated)!).expect(201);
+    });
+
+    it('concurrent refreshes with the same token all succeed, a single new refresh token is issued', async () => {
+      const user = await createVerifiedUser(t);
+
+      const responses = await Promise.all(
+        Array.from({ length: 3 }, () => refreshReq(user.refreshToken)),
+      );
+
+      expect(responses.map((r) => r.status)).toEqual([201, 201, 201]);
+      const issued = responses.map(refreshOf).filter(Boolean);
+      expect(issued).toHaveLength(1);
+      await refreshReq(issued[0]!).expect(201);
+    });
+
+    it('the previous refresh token after 30 s is a reuse: session revoked, audited', async () => {
+      const user = await createVerifiedUser(t);
+      const rotated = await refreshReq(user.refreshToken).expect(201);
+      const sessionId = sessionIdOf(user.refreshToken);
+      await ageLastRotation(sessionId, 31_000);
 
       const reused = await refreshReq(user.refreshToken).expect(401);
-      expect(reused.body.code).toBe('auth.refresh.token_revoked');
+      expect(reused.body.code).toBe('auth.refresh.token_reused');
 
-      await refreshReq(res.body.refresh_token).expect(201);
+      const revoked = await refreshReq(refreshOf(rotated)!).expect(401);
+      expect(revoked.body.code).toBe('auth.refresh.token_revoked');
+      expect(await auditActions(user.userId)).toContain(
+        'session.reuse_detected',
+      );
+    });
+
+    it('an older refresh token (two rotations back) is also detected as a reuse', async () => {
+      const user = await createVerifiedUser(t);
+      const first = await refreshReq(user.refreshToken).expect(201);
+      await refreshReq(refreshOf(first)!).expect(201);
+
+      const reused = await refreshReq(user.refreshToken).expect(401);
+      expect(reused.body.code).toBe('auth.refresh.token_reused');
+      expect(
+        await t.prisma.refreshToken.count({
+          where: { id: sessionIdOf(user.refreshToken) },
+        }),
+      ).toBe(0);
+    });
+
+    it('401 auth.refresh.invalid_token for an expired session', async () => {
+      const user = await createVerifiedUser(t);
+      await t.prisma.refreshToken.update({
+        where: { id: sessionIdOf(user.refreshToken) },
+        data: { expiresAt: new Date(Date.now() - 1000) },
+      });
+
+      const res = await refreshReq(user.refreshToken).expect(401);
+      expect(res.body.code).toBe('auth.refresh.invalid_token');
     });
 
     it('401 auth.refresh.invalid_token for a malformed refresh token', async () => {
-      const res = await refreshReq('not-a-jwt').expect(401);
+      const res = await refreshReq('not-a-token').expect(401);
       expect(res.body.code).toBe('auth.refresh.invalid_token');
     });
 
@@ -291,14 +387,13 @@ describe('Auth (e2e)', () => {
 
       const res = await request(t.http)
         .post('/auth/logout')
-        .send({ refresh_token: user.refreshToken })
+        .set(refreshCookie(user.refreshToken))
         .expect(201);
       expect(res.body.code).toBe('auth.logout.success');
 
       await refreshReq(user.refreshToken).expect(401);
     });
 
-    // two logins in the same second must still create distinct sessions (jti)
     it('two logins create two distinct sessions', async () => {
       const user = await createVerifiedUser(t);
       const second = await login(t, user.email, user.password);
@@ -308,7 +403,7 @@ describe('Auth (e2e)', () => {
       // logging out one device must not log out the other
       await request(t.http)
         .post('/auth/logout')
-        .send({ refresh_token: user.refreshToken })
+        .set(refreshCookie(user.refreshToken))
         .expect(201);
       await refreshReq(second.refreshToken).expect(201);
     });
@@ -318,15 +413,17 @@ describe('Auth (e2e)', () => {
 
       const res = await request(t.http)
         .get('/auth/sessions')
-        .set(bearer(user.accessToken))
+        .set(authCookie(user.accessToken))
         .expect(200);
 
       expect(res.body.meta).toMatchObject({ page: 1, total: 1 });
       expect(res.body.data[0]).toMatchObject({
-        id: expect.any(String),
+        id: sessionIdOf(user.refreshToken),
         expiresAt: expect.any(String),
+        rotatedAt: null,
       });
-      expect(res.body.data[0]).not.toHaveProperty('token');
+      expect(res.body.data[0]).not.toHaveProperty('tokenHash');
+      expect(res.body.data[0]).not.toHaveProperty('previousTokenHash');
     });
 
     it('DELETE /auth/sessions/:id revokes own session, 404 for another user session', async () => {
@@ -340,13 +437,13 @@ describe('Auth (e2e)', () => {
 
       const notFound = await request(t.http)
         .delete(`/auth/sessions/${theirs.id}`)
-        .set(bearer(user.accessToken))
+        .set(authCookie(user.accessToken))
         .expect(404);
       expect(notFound.body.code).toBe('auth.session.not_found');
 
       const revoked = await request(t.http)
         .delete(`/auth/sessions/${mine.id}`)
-        .set(bearer(user.accessToken))
+        .set(authCookie(user.accessToken))
         .expect(200);
       expect(revoked.body.code).toBe('auth.session.revoked');
       await refreshReq(user.refreshToken).expect(401);
@@ -359,7 +456,7 @@ describe('Auth (e2e)', () => {
 
       const res = await request(t.http)
         .post('/auth/logout-all')
-        .set(bearer(user.accessToken))
+        .set(authCookie(user.accessToken))
         .expect(201);
       expect(res.body.code).toBe('auth.logout_all.success');
 
@@ -451,7 +548,7 @@ describe('Auth (e2e)', () => {
 
       const res = await request(t.http)
         .get('/auth/me')
-        .set(bearer(expiredToken(user.userId, user.email)))
+        .set(authCookie(expiredToken(user.userId, user.email)))
         .expect(401);
 
       expect(res.body).toEqual(UNAUTHORIZED_WITHOUT_CODE);
@@ -463,13 +560,13 @@ describe('Auth (e2e)', () => {
 
       await request(t.http)
         .get('/auth/me')
-        .set(bearer(expiredToken(user.userId, user.email)))
+        .set(authCookie(expiredToken(user.userId, user.email)))
         .expect(401);
 
       const refreshed = await refreshReq(user.refreshToken).expect(201);
       await request(t.http)
         .get('/auth/me')
-        .set(bearer(refreshed.body.access_token))
+        .set(authCookie(accessOf(refreshed)!))
         .expect(200);
     });
 
@@ -482,13 +579,168 @@ describe('Auth (e2e)', () => {
 
       const res = await request(t.http)
         .get('/auth/me')
-        .set(bearer(forged))
+        .set(authCookie(forged))
         .expect(401);
       expect(res.body).toEqual(UNAUTHORIZED_WITHOUT_CODE);
     });
   });
 
-  describe('Tokens issued before v2 (integer user id)', () => {
+  // ─────────────────────────────────────────────────────────────
+  // Cookies (v3): attributes, clearing, current session, algorithm
+  // ─────────────────────────────────────────────────────────────
+  describe('Session cookies', () => {
+    const CLEARED =
+      /=; Path=\/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; Secure; SameSite=Strict$/;
+    const expectCleared = (res: request.Response) => {
+      const cookies = setCookies(res);
+      expect(cookies[ACCESS_COOKIE]).toMatch(CLEARED);
+      expect(cookies[REFRESH_COOKIE]).toMatch(CLEARED);
+    };
+
+    it('both cookies are HttpOnly, Secure, SameSite=Strict, Path=/, host-only, with the right Max-Age', async () => {
+      const user = await createVerifiedUser(t);
+
+      const cookies = setCookies(
+        await loginReq(user.email, user.password).expect(201),
+      );
+
+      const attributes = (line: string) => line.split('; ').slice(1);
+      expect(attributes(cookies[ACCESS_COOKIE])).toEqual([
+        'Max-Age=600',
+        'Path=/',
+        expect.stringMatching(/^Expires=/),
+        'HttpOnly',
+        'Secure',
+        'SameSite=Strict',
+      ]);
+      expect(attributes(cookies[REFRESH_COOKIE])).toEqual([
+        `Max-Age=${7 * 24 * 60 * 60}`,
+        'Path=/',
+        expect.stringMatching(/^Expires=/),
+        'HttpOnly',
+        'Secure',
+        'SameSite=Strict',
+      ]);
+      for (const line of Object.values(cookies)) {
+        expect(line).not.toMatch(/Domain=/i);
+      }
+    });
+
+    it('the Authorization header is ignored: 401 without code', async () => {
+      const user = await createVerifiedUser(t);
+
+      const res = await request(t.http)
+        .get('/auth/me')
+        .set({ Authorization: `Bearer ${user.accessToken}` })
+        .expect(401);
+      expect(res.body).not.toHaveProperty('code');
+    });
+
+    it('refresh without cookie → 401 auth.refresh.invalid_token', async () => {
+      const res = await request(t.http).post('/auth/refresh').expect(401);
+      expect(res.body.code).toBe('auth.refresh.invalid_token');
+    });
+
+    it('logout clears both cookies, even without a refresh cookie', async () => {
+      const user = await createVerifiedUser(t);
+
+      const res = await request(t.http)
+        .post('/auth/logout')
+        .set(sessionCookies(user))
+        .expect(201);
+      expectCleared(res);
+      await refreshReq(user.refreshToken).expect(401);
+
+      expectCleared(await request(t.http).post('/auth/logout').expect(201));
+    });
+
+    it('logout-all clears the cookies', async () => {
+      const user = await createVerifiedUser(t);
+
+      const res = await request(t.http)
+        .post('/auth/logout-all')
+        .set(sessionCookies(user))
+        .expect(201);
+      expectCleared(res);
+    });
+
+    it('revoking the current session clears the cookies, revoking another one does not', async () => {
+      const user = await createVerifiedUser(t);
+      const other = await login(t, user.email, user.password);
+
+      const otherRes = await request(t.http)
+        .delete(`/auth/sessions/${other.refreshToken.split('.')[0]}`)
+        .set(sessionCookies(user))
+        .expect(200);
+      expect(setCookies(otherRes)).toEqual({});
+
+      const currentRes = await request(t.http)
+        .delete(`/auth/sessions/${user.refreshToken.split('.')[0]}`)
+        .set(sessionCookies(user))
+        .expect(200);
+      expectCleared(currentRes);
+    });
+
+    it('GET /auth/sessions flags the session of the refresh cookie as current', async () => {
+      const user = await createVerifiedUser(t);
+      await login(t, user.email, user.password);
+
+      const res = await request(t.http)
+        .get('/auth/sessions')
+        .set(sessionCookies(user))
+        .expect(200);
+
+      const current = res.body.data.filter(
+        (s: { current: boolean }) => s.current,
+      );
+      expect(res.body.data).toHaveLength(2);
+      expect(current).toEqual([
+        expect.objectContaining({ id: user.refreshToken.split('.')[0] }),
+      ]);
+    });
+
+    it('reset-password clears the cookies', async () => {
+      const user = await createVerifiedUser(t);
+      await request(t.http)
+        .post('/auth/forgot-password')
+        .send({ email: user.email })
+        .expect(201);
+      const token = t.mail.lastToken(user.email, 'password-reset');
+
+      const res = await request(t.http)
+        .post('/auth/reset-password')
+        .set(sessionCookies(user))
+        .send({ token, password: NEW_PASSWORD })
+        .expect(201);
+      expectCleared(res);
+    });
+
+    it.each([
+      ['HS512', { algorithm: 'HS512' as const }],
+      ['alg none', { algorithm: 'none' as const }],
+    ])(
+      'an access token signed with %s is rejected (HS256 pinned)',
+      async (_label, options) => {
+        const user = await createVerifiedUser(t);
+        const token = new JwtService().sign(
+          { sub: user.userId, email: user.email },
+          {
+            ...options,
+            secret:
+              options.algorithm === 'none' ? undefined : process.env.JWT_SECRET,
+            expiresIn: '10m',
+          },
+        );
+
+        await request(t.http)
+          .get('/auth/me')
+          .set(authCookie(token))
+          .expect(401);
+      },
+    );
+  });
+
+  describe('Tokens issued before v2 / v3', () => {
     const jwt = new JwtService();
 
     it('access token with a numeric sub → 401 without code, not a 500', async () => {
@@ -499,15 +751,15 @@ describe('Auth (e2e)', () => {
 
       const res = await request(t.http)
         .get('/auth/me')
-        .set(bearer(legacy))
+        .set(authCookie(legacy))
         .expect(401);
       expect(res.body).not.toHaveProperty('code');
     });
 
-    it('refresh token with a numeric sub → 401 auth.refresh.invalid_token, not a 500', async () => {
+    it('JWT refresh token (before v3) → 401 auth.refresh.invalid_token, not a 500', async () => {
       const legacy = jwt.sign(
         { sub: 1, email: 'legacy@example.com' },
-        { secret: process.env.JWT_REFRESH_SECRET, expiresIn: '7d' },
+        { secret: process.env.JWT_SECRET, expiresIn: '7d' },
       );
 
       const res = await refreshReq(legacy).expect(401);

@@ -1,10 +1,13 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
-import { ExtractJwt, Strategy } from 'passport-jwt';
+import { Strategy } from 'passport-jwt';
+import type { Request } from 'express';
 import { isUUID } from 'class-validator';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { CachedUser, UserCacheService } from '../cache/user-cache.service.js';
+import { authCookieNames, isCookieSecure } from '../auth-cookies.js';
+import { getJwtSecret, JWT_ALGORITHM } from '../jwt-secret.js';
 
 interface JwtPayload {
   sub: string; // JWT standard claim: user id
@@ -18,10 +21,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     private config: ConfigService,
     private userCache: UserCacheService,
   ) {
+    const accessCookie = authCookieNames(isCookieSecure(config)).access;
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: (req: Request) =>
+        (req.cookies?.[accessCookie] as string | undefined) ?? null,
       ignoreExpiration: false,
-      secretOrKey: config.getOrThrow<string>('JWT_SECRET'),
+      secretOrKey: getJwtSecret(config),
+      algorithms: [JWT_ALGORITHM],
     });
   }
 

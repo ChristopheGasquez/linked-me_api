@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { createTestApp, type TestApp } from './setup/app.factory.js';
 import {
-  bearer,
+  authCookie,
   createVerifiedUser,
   login,
   loginAsAdmin,
@@ -24,7 +24,7 @@ describe('E2E tooling (e2e)', () => {
 
     const res = await request(t.http)
       .get('/auth/me')
-      .set(bearer(user.accessToken))
+      .set(authCookie(user.accessToken))
       .expect(200);
     expect(res.body.email).toBe(user.email);
   });

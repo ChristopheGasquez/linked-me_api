@@ -50,17 +50,18 @@ cp .env.example .env
 | Variable | Description |
 |----------|-------------|
 | `DATABASE_URL` | PostgreSQL connection URL |
-| `JWT_SECRET` | Secret key for JWT tokens |
-| `JWT_ACCESS_EXPIRY` | Access token lifetime (default: `15m`) |
-| `JWT_REFRESH_SECRET` | Secret key for refresh tokens |
-| `JWT_REFRESH_EXPIRY` | Refresh token lifetime (default: `7d`) |
+| `JWT_SECRET` | HS256 secret for access tokens, at least 32 bytes (the API refuses to start otherwise) |
+| `ACCESS_TOKEN_TTL_MINUTES` | Access token lifetime in minutes (default: `10`) |
+| `COOKIE_SECURE` | `false` only for local http dev: drops `Secure` and the `__Host-` prefix (default: `true`) |
+| `REFRESH_TOKEN_TTL_DAYS` | Refresh session lifetime in days, extended on every refresh (default: `7`) |
 | `PORT` | Server port (default: `3000`) |
 | `NODE_ENV` | Environment (`development` / `production`) |
 | `APP_URL` | API base URL (used in email links) |
 | `FRONTEND_URL` | Frontend URL for password reset links (optional, falls back to `APP_URL`) |
 | `MAIL_FROM` | Sender email address (must be verified in Resend) |
 | `RESEND_API_KEY` | API key for transactional emails (Resend) |
-| `CORS_ORIGIN` | Allowed CORS origin (optional, all origins if unset) |
+| `ADMIN_ORIGINS` | Comma-separated admin front origins (exact `scheme://host[:port]`), allowed by CORS and the Origin guard on every route (required) |
+| `APP_ORIGINS` | Comma-separated origins of the other apps, allowed on every route except `/admin/*` and `/tasks/*` (optional) |
 | `ALLOWED_REDIRECT_ORIGINS` | Comma-separated origins allowed for `callbackUrl` in emails (optional, `callbackUrl` rejected if unset) |
 | `ADMIN_EMAIL` | Initial admin account email |
 | `ADMIN_PASSWORD` | Initial admin account password |
@@ -151,7 +152,18 @@ A Postman collection is available in [`docs/`](docs/) for testing all endpoints.
 
 ## Authentication
 
-The API uses **JWT Bearer tokens** with refresh token rotation (max 10 active sessions per user).
+The API authenticates with **HttpOnly cookies** only (no token in bodies, no `Authorization` header):
+
+- `__Host-access_token`: JWT (HS256), 10 min; `__Host-refresh_token`: opaque `<sessionId>.<secret>` (only a SHA-256 hash is stored), sliding 7 days
+- Attributes: `HttpOnly; Secure; SameSite=Strict; Path=/`, no `Domain` (host-only on the API)
+- Clients send `credentials: 'include'` / `withCredentials: true`; on a 401 without `code`, call `POST /auth/refresh` then retry
+- `logout`, `logout-all`, password change / reset, account deletion and revoking the current session clear the cookies
+
+Refresh tokens rotate (max 10 active sessions per user):
+
+- The session id stays the same across rotations; each refresh issues a new secret and extends the session.
+- A refresh with the previous secret within 30 s of a rotation (concurrent requests) sets only a new access cookie (the refresh cookie set by the other request is kept).
+- Any other old or unknown secret for a session is treated as a reuse: the session is revoked (`auth.refresh.token_reused`, audit `session.reuse_detected`).
 
 ```mermaid
 flowchart TD
@@ -161,8 +173,8 @@ flowchart TD
     C -- not received --> E[POST /auth/resend-verification]
     E --> B
 
-    D --> F[access_token 15min + refresh_token 7d]
-    F --> G[API calls\nAuthorization: Bearer access_token]
+    D --> F[cookies: access 10min + refresh 7d]
+    F --> G[API calls\nwithCredentials]
     G -- expired --> H[POST /auth/refresh]
     H -- rotation --> F
 

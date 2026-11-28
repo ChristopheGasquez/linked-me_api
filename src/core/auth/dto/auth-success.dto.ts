@@ -46,6 +46,16 @@ export class PasswordResetResponseDto extends MessageResponseDto {
   declare code: string;
 }
 
+// ─── Refresh ───────────────────────────────────────────────────────────────────
+
+export class RefreshResponseDto extends MessageResponseDto {
+  @ApiProperty({ example: 'Session refreshed' })
+  declare message: string;
+
+  @ApiProperty({ example: 'auth.refresh.success' })
+  declare code: string;
+}
+
 // ─── Logout ────────────────────────────────────────────────────────────────────
 
 export class LogoutResponseDto extends MessageResponseDto {

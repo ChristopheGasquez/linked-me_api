@@ -10,7 +10,7 @@ import {
   ApiTags,
   ApiOperation,
   ApiResponse,
-  ApiBearerAuth,
+  ApiCookieAuth,
 } from '@nestjs/swagger';
 import { TasksService } from './tasks.service.js';
 import { CleanupAuditLogsDto } from './dto/cleanup-audit-logs.dto.js';
@@ -27,16 +27,20 @@ import {
 import { TaskListResponseDto } from './dto/task-list-response.dto.js';
 import {
   ApiAuthErrors,
+  ApiOriginError,
   ApiThrottleError,
   ApiValidationError,
 } from '../../common/swagger/api-common-responses.decorator.js';
+import { AdminOriginOnly } from '../../common/origins/admin-origin-only.decorator.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 import type { CachedUser } from '../auth/cache/user-cache.service.js';
 
 @ApiTags('Tasks')
 @ApiAuthErrors()
 @ApiThrottleError()
-@ApiBearerAuth()
+@ApiOriginError()
+@AdminOriginOnly()
+@ApiCookieAuth()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @RequirePermissions(Permissions.REALM_TASK)
 @Controller('tasks')

@@ -10,13 +10,6 @@ export class LoginUserDto {
   @ApiProperty() updatedAt: Date;
 }
 
-export class TokensResponseDto {
-  @ApiProperty() access_token: string;
-  @ApiProperty() refresh_token: string;
-}
-
 export class LoginResponseDto {
-  @ApiProperty() access_token: string;
-  @ApiProperty() refresh_token: string;
   @ApiProperty({ type: () => LoginUserDto }) user: LoginUserDto;
 }

@@ -1,7 +1,11 @@
 import request from 'supertest';
 import { THROTTLE } from '../../src/common/constants.js';
 import { createTestApp, type TestApp } from '../setup/app.factory.js';
-import { createVerifiedUser, uniqueEmail } from '../setup/auth.helper.js';
+import {
+  createVerifiedUser,
+  uniqueEmail,
+  refreshCookie,
+} from '../setup/auth.helper.js';
 import { cleanDatabase } from '../setup/db.js';
 import { VALID_CAPTCHA } from '../setup/fake-turnstile.service.js';
 
@@ -115,7 +119,7 @@ describe('Captcha (e2e)', () => {
   it('POST /auth/refresh needs no captcha', async () => {
     await request(t.http)
       .post('/auth/refresh')
-      .send({ refresh_token: 'not-a-token' })
+      .set(refreshCookie('not-a-token'))
       .expect(401);
     expect(t.captcha.calls).toHaveLength(0);
   });

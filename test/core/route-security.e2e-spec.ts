@@ -4,7 +4,7 @@ import {
   type Permission,
 } from '../../src/core/auth/permissions.constants.js';
 import { createTestApp, type TestApp } from '../setup/app.factory.js';
-import { bearer, createVerifiedUser } from '../setup/auth.helper.js';
+import { authCookie, createVerifiedUser } from '../setup/auth.helper.js';
 import { cleanDatabase } from '../setup/db.js';
 import { UNKNOWN_ID } from '../setup/test-id.js';
 import { createUserWithPermissions } from '../setup/permissions.helper.js';
@@ -166,7 +166,7 @@ const AUTHENTICATED_ROUTES: Route[] = [
   { method: 'delete', path: `/auth/sessions/${NO_ID}` },
 ];
 
-/** No JWT (refresh/logout authenticate with the refresh token in the body). */
+/** No JWT (refresh/logout authenticate with the refresh cookie). */
 const PUBLIC_ROUTES: Route[] = [
   { method: 'get', path: '/' },
   { method: 'post', path: '/auth/register' },
@@ -201,7 +201,7 @@ describe('Route security (e2e)', () => {
 
   const call = (route: Route, token?: string) => {
     const req = request(t.http)[route.method](route.path);
-    return token ? req.set(bearer(token)) : req;
+    return token ? req.set(authCookie(token)) : req;
   };
 
   beforeAll(async () => {
@@ -245,9 +245,12 @@ describe('Route security (e2e)', () => {
   });
 
   describe.each(PUBLIC_ROUTES)('$method $path', (route) => {
+    // a business 401 with a code (e.g. auth.refresh.invalid_token without
+    // cookie) is fine: only the guards' 401 without code or a 403 is not
     it('reachable without token', async () => {
       const res = await call(route);
-      expect([401, 403]).not.toContain(res.status);
+      expect(res.status).not.toBe(403);
+      if (res.status === 401) expect(res.body.code).toEqual(expect.any(String));
     });
   });
 

@@ -4,6 +4,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { CustomThrottlerGuard } from './common/guards/throttler.guard.js';
+import { OriginGuard } from './common/origins/origin.guard.js';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { PrismaModule } from './core/prisma/prisma.module.js';
@@ -34,6 +35,7 @@ import { THROTTLE } from './common/constants.js';
   providers: [
     AppService,
     { provide: APP_GUARD, useClass: CustomThrottlerGuard },
+    { provide: APP_GUARD, useClass: OriginGuard },
   ],
 })
 export class AppModule {}

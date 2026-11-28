@@ -153,7 +153,7 @@ export function setupSwagger(app: INestApplication): void {
             swaggerNav('/docs'),
         )
         .setVersion('1.0')
-        .addBearerAuth()
+        .addCookieAuth('__Host-access_token')
         .build(),
     ),
   );
@@ -171,7 +171,7 @@ export function setupSwagger(app: INestApplication): void {
             swaggerNav('/docs/core'),
         )
         .setVersion('1.0')
-        .addBearerAuth()
+        .addCookieAuth('__Host-access_token')
         .build(),
       {
         include: [

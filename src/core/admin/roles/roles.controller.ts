@@ -14,7 +14,7 @@ import {
   ApiTags,
   ApiOperation,
   ApiResponse,
-  ApiBearerAuth,
+  ApiCookieAuth,
 } from '@nestjs/swagger';
 import { AdminRolesService } from './roles.service.js';
 import { CreateRoleDto } from './dto/create-role.dto.js';
@@ -44,16 +44,20 @@ import { ApiPaginatedResponse } from '../../../common/pagination/index.js';
 import {
   ApiAuthErrors,
   ApiInvalidIdError,
+  ApiOriginError,
   ApiThrottleError,
   ApiValidationError,
 } from '../../../common/swagger/api-common-responses.decorator.js';
+import { AdminOriginOnly } from '../../../common/origins/admin-origin-only.decorator.js';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator.js';
 import type { CachedUser } from '../../auth/cache/user-cache.service.js';
 
 @ApiTags('Admin / Roles')
 @ApiAuthErrors()
 @ApiThrottleError()
-@ApiBearerAuth()
+@ApiOriginError()
+@AdminOriginOnly()
+@ApiCookieAuth()
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @RequirePermissions(Permissions.REALM_ADMIN)
 @Controller('admin')
