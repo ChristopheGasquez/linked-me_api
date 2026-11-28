@@ -64,4 +64,33 @@ describe('validationExceptionFactory', () => {
       },
     });
   });
+
+  it('should flatten nested errors with a dotted key and the leaf property in the code', () => {
+    const exception = validationExceptionFactory([
+      {
+        property: 'categories',
+        children: [
+          {
+            property: '2',
+            children: [
+              error('name', { maxLength: 'name is too long' }),
+              error('color', { max: 'color must not be greater than 5' }),
+            ],
+          },
+        ],
+      },
+      error('name', { isNotEmpty: 'name should not be empty' }),
+    ]);
+
+    expect(exception.getResponse()).toMatchObject({
+      message: 'name is too long',
+      params: {
+        fields: [
+          { key: 'categories.2.name', code: 'validation.name.maxLength' },
+          { key: 'categories.2.color', code: 'validation.color.max' },
+          { key: 'name', code: 'validation.name.isNotEmpty' },
+        ],
+      },
+    });
+  });
 });

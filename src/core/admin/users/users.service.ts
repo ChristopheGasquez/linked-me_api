@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { AuditService } from '../../audit/audit.service.js';
 import { UserCacheService } from '../../auth/cache/user-cache.service.js';
@@ -14,6 +15,10 @@ import type { Prisma } from '../../../../generated/prisma/client.js';
 import { FindUsersQueryDto } from './dto/find-users-query.dto.js';
 import { FindSessionsQueryDto } from '../../auth/dto/find-sessions-query.dto.js';
 import { ResponseCodes } from '../../../common/constants/response-codes.js';
+import {
+  UserEvents,
+  type UserDeletedEvent,
+} from '../../../common/events/user-events.js';
 
 @Injectable()
 export class AdminUsersService {
@@ -21,6 +26,7 @@ export class AdminUsersService {
     private prisma: PrismaService,
     private auditService: AuditService,
     private userCache: UserCacheService,
+    private eventEmitter: EventEmitter2,
   ) {}
 
   async findAllUsers(query: FindUsersQueryDto) {
@@ -154,6 +160,10 @@ export class AdminUsersService {
     }
 
     await this.prisma.user.delete({ where: { id: userId } });
+    // apps purge their data of this user (awaited)
+    await this.eventEmitter.emitAsync(UserEvents.DELETED, {
+      userId,
+    } satisfies UserDeletedEvent);
     await this.auditService.log('user.delete', actorId, userId, 'user', {
       email: user.email,
       name: user.name,

@@ -45,6 +45,11 @@ test/
     admin-users.e2e-spec.ts     # users list & filters, role assignment, admin deletion, immediate effect on logged-in users
     audit.e2e-spec.ts           # audit logs list: fields, filters, pagination, real actions recorded
     tasks.e2e-spec.ts           # real effects of the 4 cleanup tasks + their own audit log
+  apps/
+    planning/
+      planning.helper.ts            # FRAME, DEFAULT_CATEGORIES, api(), createPlanning()
+      plannings.e2e-spec.ts         # plannings CRUD, form save rules (categories, removed days, reduced range), limits, isolation, account deletion
+      planning-events.e2e-spec.ts   # events CRUD and rules, clear, limits, isolation
   setup.e2e-spec.ts       # self-test of the tooling above
   swagger.e2e-spec.ts     # Swagger docs: response codes in /docs/constants, permissions/realms notes, every route documented
   health.e2e-spec.ts

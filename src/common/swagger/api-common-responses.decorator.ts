@@ -15,7 +15,7 @@ export const ApiAuthErrors = () =>
     ApiResponse({
       status: 403,
       description:
-        'Missing required permission(s), or origin not allowed (origin.not_allowed)',
+        'Missing required permission(s) (auth.permission.denied), or origin not allowed (origin.not_allowed)',
       type: ErrorResponseDto,
     }),
   );

@@ -1,3 +1,5 @@
+import { PlanningResponseCodes } from '../../apps/planning/planning.response-codes.js';
+
 export const ResponseCodes = {
   // ─── Throttle ─────────────────────────────────────────────
   THROTTLE_TOO_MANY_REQUESTS: 'throttle.too_many_requests',
@@ -25,6 +27,7 @@ export const ResponseCodes = {
   AUTH_EMAIL_INVALID_TOKEN: 'auth.email.invalid_token',
   AUTH_PASSWORD_RESET_INVALID: 'auth.password_reset.invalid_token',
   AUTH_CALLBACK_URL_NOT_ALLOWED: 'auth.callback_url.not_allowed',
+  AUTH_PERMISSION_DENIED: 'auth.permission.denied',
 
   // ─── Auth — success ──────────────────────────────────────
   AUTH_REFRESH_SUCCESS: 'auth.refresh.success',
@@ -77,4 +80,7 @@ export const ResponseCodes = {
   TASK_CLEANUP_ORPHANED_PERMISSIONS_NONE:
     'task.cleanup.orphaned_permissions.none_found',
   TASK_CLEANUP_AUDIT_LOGS: 'task.cleanup.audit_logs.done',
+
+  // ─── Apps ────────────────────────────────────────────────
+  ...PlanningResponseCodes,
 } as const;

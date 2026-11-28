@@ -1076,6 +1076,223 @@
 			]
 		},
 		{
+			"name": "planning",
+			"item": [
+				{
+					"name": "plannings",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/plannings?page=1&limit=50",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"plannings"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "50"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "plannings",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/plannings",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"plannings"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Planning Lucas\",\n    \"firstDay\": 1,\n    \"dayCount\": 5,\n    \"startMinute\": 480,\n    \"endMinute\": 1080,\n    \"categories\": [\n        {\n            \"name\": \"Vert\",\n            \"color\": 1\n        },\n        {\n            \"name\": \"Orange\",\n            \"color\": 2\n        },\n        {\n            \"name\": \"Bleu\",\n            \"color\": 3\n        },\n        {\n            \"name\": \"Violet\",\n            \"color\": 4\n        },\n        {\n            \"name\": \"Jaune\",\n            \"color\": 5\n        }\n    ],\n    \"events\": [\n        {\n            \"day\": 1,\n            \"startMinute\": 510,\n            \"endMinute\": 990,\n            \"title\": \"École\",\n            \"categoryIndex\": 2\n        }\n    ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "plannings/:id",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/plannings/{{planningId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"plannings",
+								"{{planningId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "plannings/:id",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/plannings/{{planningId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"plannings",
+								"{{planningId}}"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Planning Lucas\",\n    \"firstDay\": 1,\n    \"dayCount\": 5,\n    \"startMinute\": 480,\n    \"endMinute\": 1080,\n    \"categories\": [\n        {\n            \"id\": \"{{categoryId}}\",\n            \"name\": \"École\",\n            \"color\": 3\n        },\n        {\n            \"name\": \"Musique\",\n            \"color\": 4\n        }\n    ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "plannings/:id",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/plannings/{{planningId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"plannings",
+								"{{planningId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "plannings/:id/events",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/plannings/{{planningId}}/events",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"plannings",
+								"{{planningId}}",
+								"events"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"day\": 1,\n    \"startMinute\": 510,\n    \"endMinute\": 990,\n    \"title\": \"École\",\n    \"categoryId\": null,\n    \"location\": null,\n    \"description\": null\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "plannings/:id/events/:eventId",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/plannings/{{planningId}}/events/{{eventId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"plannings",
+								"{{planningId}}",
+								"events",
+								"{{eventId}}"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"day\": 2,\n    \"startMinute\": 525,\n    \"endMinute\": 1005\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "plannings/:id/events/:eventId",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/plannings/{{planningId}}/events/{{eventId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"plannings",
+								"{{planningId}}",
+								"events",
+								"{{eventId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "plannings/:id/events (clear)",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/plannings/{{planningId}}/events",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"plannings",
+								"{{planningId}}",
+								"events"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
 			"name": "Swagger",
 			"item": [
 				{
@@ -1164,6 +1381,42 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "docs/planning",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/docs/planning",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"docs",
+								"planning"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "docs/planning-json",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/docs/planning-json",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"docs",
+								"planning-json"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
@@ -1230,6 +1483,21 @@
 		},
 		{
 			"key": "sessionId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "planningId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "categoryId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "eventId",
 			"value": "",
 			"type": "string"
 		}

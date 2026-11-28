@@ -7,6 +7,8 @@ import { AuditModule } from './core/audit/audit.module.js';
 import { TasksModule } from './core/tasks/tasks.module.js';
 import { ResponseCodes } from './common/constants/response-codes.js';
 import { AuditAction } from './core/audit/audit-actions.constants.js';
+import { PlanningModule } from './apps/planning/planning.module.js';
+import { PlanningConstants } from './apps/planning/planning.constants.js';
 import { UUID_V7_EXAMPLE } from './common/swagger/api-id-property.decorator.js';
 
 const SWAGGER_SECTIONS = [
@@ -15,6 +17,11 @@ const SWAGGER_SECTIONS = [
     label: 'Core API',
     path: '/docs/core',
     description: 'Auth, profiles, administration, audit, tasks',
+  },
+  {
+    label: 'Planning API',
+    path: '/docs/planning',
+    description: 'Planning app: weekly plannings, categories, events',
   },
   {
     label: 'Constants',
@@ -189,6 +196,25 @@ export function setupSwagger(app: INestApplication): void {
   );
   SwaggerModule.setup('docs/core', app, coreDocument);
 
+  // Planning app doc
+  const planningDocument = buildDocument(
+    app,
+    SwaggerModule.createDocument(
+      app,
+      new DocumentBuilder()
+        .setTitle('linked-me — Planning API')
+        .setDescription(
+          'Weekly plannings, their categories and events' +
+            swaggerNav('/docs/planning'),
+        )
+        .setVersion('1.0')
+        .addCookieAuth('__Host-access_token')
+        .build(),
+      { include: [PlanningModule] },
+    ),
+  );
+  SwaggerModule.setup('docs/planning', app, planningDocument);
+
   // Constants doc — response codes and shared constants
   const constantsDocument = buildDocument(
     app,
@@ -221,6 +247,16 @@ export function setupSwagger(app: INestApplication): void {
         description: 'Audit log actions (GET /admin/audit-logs)',
         type: 'string',
         enum: Object.values(AuditAction),
+      },
+      PlanningConstants: {
+        description: 'Planning app limits and value ranges',
+        type: 'object',
+        properties: Object.fromEntries(
+          Object.entries(PlanningConstants).map(([key, value]) => [
+            key,
+            { type: 'integer', example: value },
+          ]),
+        ),
       },
     },
   };
