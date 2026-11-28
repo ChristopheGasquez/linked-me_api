@@ -37,6 +37,7 @@ async function main() {
     Permissions.PROFILE_READ,
     Permissions.PROFILE_UPDATE_OWN,
     Permissions.PROFILE_DELETE_OWN,
+    Permissions.REALM_PLANNING,
   ];
   const adminPermissions = permissions; // Admin a toutes les permissions
 

@@ -1,0 +1,56 @@
+// Planning app (src/apps/planning). Self-contained in the "planning" Postgres
+// schema: no relation to core models (ownerId is a plain user id) so the app
+// can be moved to its own database.
+
+model Planning {
+  id          String             @id @default(uuid(7)) @db.Uuid
+  ownerId     String             @db.Uuid
+  name        String             @db.VarChar(100)
+  firstDay    Int                @db.SmallInt
+  dayCount    Int                @db.SmallInt
+  startMinute Int                @db.SmallInt
+  endMinute   Int                @db.SmallInt
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  categories  PlanningCategory[]
+  events      PlanningEvent[]
+
+  @@index([ownerId, createdAt])
+  @@map("plannings")
+  @@schema("planning")
+}
+
+model PlanningCategory {
+  id         String          @id @default(uuid(7)) @db.Uuid
+  planningId String          @db.Uuid
+  planning   Planning        @relation(fields: [planningId], references: [id], onDelete: Cascade)
+  name       String          @db.VarChar(50)
+  color      Int             @db.SmallInt
+  position   Int             @db.SmallInt
+  events     PlanningEvent[]
+
+  @@index([planningId])
+  @@map("categories")
+  @@schema("planning")
+}
+
+model PlanningEvent {
+  id          String            @id @default(uuid(7)) @db.Uuid
+  planningId  String            @db.Uuid
+  planning    Planning          @relation(fields: [planningId], references: [id], onDelete: Cascade)
+  categoryId  String?           @db.Uuid
+  category    PlanningCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  day         Int               @db.SmallInt
+  startMinute Int               @db.SmallInt
+  endMinute   Int               @db.SmallInt
+  title       String            @db.VarChar(100)
+  location    String?           @db.VarChar(200)
+  description String?           @db.VarChar(2000)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@index([planningId])
+  @@index([categoryId])
+  @@map("events")
+  @@schema("planning")
+}

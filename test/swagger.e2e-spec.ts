@@ -1,6 +1,7 @@
 import request from 'supertest';
 import { ResponseCodes } from '../src/common/constants/response-codes.js';
 import { Permissions } from '../src/core/auth/permissions.constants.js';
+import { PlanningConstants } from '../src/apps/planning/planning.constants.js';
 import { AuditAction } from '../src/core/audit/audit-actions.constants.js';
 import { createTestApp, type TestApp } from './setup/app.factory.js';
 
@@ -28,6 +29,7 @@ describe('Swagger docs (e2e)', () => {
   let t: TestApp;
   let global: OpenApiDoc;
   let core: OpenApiDoc;
+  let planning: OpenApiDoc;
   let constants: OpenApiDoc;
 
   const fetchDoc = async (url: string) =>
@@ -35,17 +37,21 @@ describe('Swagger docs (e2e)', () => {
 
   beforeAll(async () => {
     t = await createTestApp({ swagger: true });
-    [global, core, constants] = await Promise.all([
-      fetchDoc('/docs-json'),
-      fetchDoc('/docs/core-json'),
-      fetchDoc('/docs/constants-json'),
-    ]);
+    global = await fetchDoc('/docs-json');
+    core = await fetchDoc('/docs/core-json');
+    planning = await fetchDoc('/docs/planning-json');
+    constants = await fetchDoc('/docs/constants-json');
   });
 
   afterAll(() => t.app.close());
 
   it('serves the Swagger UI pages', async () => {
-    for (const url of ['/docs', '/docs/core', '/docs/constants']) {
+    for (const url of [
+      '/docs',
+      '/docs/core',
+      '/docs/planning',
+      '/docs/constants',
+    ]) {
       const res = await request(t.http).get(url).redirects(1);
       expect(res.status).toBe(200);
       expect(res.text).toContain('swagger');
@@ -75,6 +81,19 @@ describe('Swagger docs (e2e)', () => {
         type: 'string',
         enum: Object.values(AuditAction),
       });
+    });
+
+    it('exposes the planning constants with their values', () => {
+      expect(
+        constants.components?.schemas?.PlanningConstants?.properties,
+      ).toEqual(
+        Object.fromEntries(
+          Object.entries(PlanningConstants).map(([key, value]) => [
+            key,
+            { type: 'integer', example: value },
+          ]),
+        ),
+      );
     });
 
     it('contains no endpoint', () => {
@@ -237,6 +256,17 @@ describe('Swagger docs (e2e)', () => {
 
       expect([...operationsOf(core)].sort()).toEqual(
         [...new Set(coreRoutes)].sort(),
+      );
+    });
+
+    it('/docs/planning documents every planning route and only them', () => {
+      const planningRoutes = appRoutes().filter((route: string) =>
+        /^\w+ \/plannings(\/|$)/.test(route),
+      );
+
+      expect(planningRoutes.length).toBeGreaterThan(0);
+      expect([...operationsOf(planning)].sort()).toEqual(
+        [...new Set(planningRoutes)].sort(),
       );
     });
   });

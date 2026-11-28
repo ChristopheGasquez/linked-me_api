@@ -86,7 +86,8 @@ npx prisma db seed
 ```
 
 > **Re-run the seed after pulling a new permission.** Permissions are defined in
-> `src/core/auth/permissions.constants.ts` and created by the seed (upserts only,
+> `src/core/auth/permissions.constants.ts` (apps: `src/apps/<app>/<app>.permissions.ts`,
+> merged into it) and created by the seed (upserts only,
 > safe to re-run). On Railway the seed runs on every start; locally `start:dev`
 > does not run it, so run `npx prisma db seed` after each change to that file,
 > otherwise the new permissions are missing from the database and the routes
@@ -146,6 +147,7 @@ npm run test:cov   # unit + E2E tests, merged coverage report (coverage/)
 Swagger is available when `SWAGGER_ENABLED=true` (disabled by default):
 - `/docs` — full API documentation
 - `/docs/core` — core (auth, profiles, admin, audit, tasks)
+- `/docs/planning` — planning app (plannings, categories, events)
 - `/docs/constants` — response codes (for client-side i18n)
 
 A Postman collection is available in [`docs/`](docs/) for testing all endpoints.
@@ -297,11 +299,28 @@ src/
 │   ├── mail/           #   Email service (Resend)
 │   ├── tasks/          #   Scheduled tasks (cron jobs + manual trigger endpoints)
 │   └── prisma/         #   PrismaModule (service + connection)
-├── apps/               # Business app modules (future — each with its own route prefix)
+├── apps/               # Business app modules, each with its own route prefix
+│   └── planning/       #   Weekly plannings (/plannings)
 ├── common/             # Shared utilities (pagination, DTOs)
 ├── app.module.ts       # Root module
 └── main.ts             # Bootstrap
+prisma/
+├── schema/             # Prisma schema, one file per area
+│   ├── core.prisma     #   generator, datasource, core models (Postgres schema "public")
+│   └── planning.prisma #   planning app models (Postgres schema "planning")
+└── migrations/
 ```
+
+### Apps
+
+Each app in `src/apps/` is built to be moved to its own service and database one day:
+
+- **Own Postgres schema** (`@@schema("<app>")`), no relation to core models: users are referenced by a plain `ownerId` (no foreign key).
+- **Depends on core only through** the auth guards and decorators, `PrismaService` (its own models only) and `src/common/`.
+- **Own registries** merged into the global ones: `<app>.permissions.ts` (into `Permissions`, so the seed creates them and the orphaned-permissions cleanup keeps them), `<app>.response-codes.ts` (into `ResponseCodes`, prefix `<app>.`), constants exposed in `/docs/constants`.
+- **Account deletion**: core emits `user.deleted` (`src/common/events/user-events.ts`, awaited); each app listens and purges the user's data.
+- **No audit logging**: audit logs are an administration feature; an app handles its own needs.
+- Own Swagger doc (`/docs/<app>`) and E2E tests in `test/apps/<app>/`.
 
 ## Cron Jobs
 

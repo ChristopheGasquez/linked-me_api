@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { CustomThrottlerGuard } from './common/guards/throttler.guard.js';
@@ -15,12 +16,14 @@ import { MailModule } from './core/mail/mail.module.js';
 import { TasksModule } from './core/tasks/tasks.module.js';
 import { AuditModule } from './core/audit/audit.module.js';
 import { TurnstileModule } from './core/turnstile/turnstile.module.js';
+import { PlanningModule } from './apps/planning/planning.module.js';
 import { THROTTLE } from './common/constants.js';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ScheduleModule.forRoot(),
+    EventEmitterModule.forRoot(),
     ThrottlerModule.forRoot([{ name: 'global', ...THROTTLE.GLOBAL }]),
     PrismaModule,
     MailModule,
@@ -30,6 +33,7 @@ import { THROTTLE } from './common/constants.js';
     TasksModule,
     AuditModule,
     TurnstileModule,
+    PlanningModule,
   ],
   controllers: [AppController],
   providers: [
