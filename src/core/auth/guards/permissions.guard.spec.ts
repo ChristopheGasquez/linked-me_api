@@ -1,4 +1,9 @@
-import { Controller, ExecutionContext, Get } from '@nestjs/common';
+import {
+  Controller,
+  ExecutionContext,
+  ForbiddenException,
+  Get,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PermissionsGuard } from './permissions.guard.js';
 import { RequirePermissions } from '../decorators/permissions.decorator.js';
@@ -61,13 +66,17 @@ describe('PermissionsGuard', () => {
       permissions: [P2],
     });
 
-    expect(guard.canActivate(context)).toBe(false);
+    expect(() => guard.canActivate(context)).toThrow(
+      expect.objectContaining({
+        response: expect.objectContaining({ code: 'auth.permission.denied' }),
+      }),
+    );
   });
 
   it('should deny access without crashing when the user has no permissions array', () => {
     const context = buildContext(MethodController, 'guarded', {});
 
-    expect(guard.canActivate(context)).toBe(false);
+    expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
   });
 
   it('should require both class-level and method-level permissions', () => {
@@ -78,19 +87,19 @@ describe('PermissionsGuard', () => {
         }),
       ),
     ).toBe(true);
-    expect(
+    expect(() =>
       guard.canActivate(
         buildContext(ClassAndMethodController, 'guarded', {
           permissions: [P2],
         }),
       ),
-    ).toBe(false);
-    expect(
+    ).toThrow(ForbiddenException);
+    expect(() =>
       guard.canActivate(
         buildContext(ClassAndMethodController, 'guarded', {
           permissions: [P1],
         }),
       ),
-    ).toBe(false);
+    ).toThrow(ForbiddenException);
   });
 });
