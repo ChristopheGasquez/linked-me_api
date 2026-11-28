@@ -1,5 +1,11 @@
-import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { ResponseCodes } from '../../../common/constants/response-codes.js';
 import { PERMISSIONS_KEY } from '../decorators/permissions.decorator.js';
 import type { CachedUser } from '../cache/user-cache.service.js';
 
@@ -19,8 +25,15 @@ export class PermissionsGuard implements CanActivate {
 
     const { user } = context.switchToHttp().getRequest<{ user: CachedUser }>();
 
-    return requiredPermissions.every((permission) =>
+    const granted = requiredPermissions.every((permission) =>
       user.permissions?.includes(permission),
     );
+    if (!granted) {
+      throw new ForbiddenException({
+        message: 'Missing required permission(s)',
+        code: ResponseCodes.AUTH_PERMISSION_DENIED,
+      });
+    }
+    return true;
   }
 }

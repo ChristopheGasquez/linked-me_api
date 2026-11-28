@@ -25,6 +25,7 @@ export const ResponseCodes = {
   AUTH_EMAIL_INVALID_TOKEN: 'auth.email.invalid_token',
   AUTH_PASSWORD_RESET_INVALID: 'auth.password_reset.invalid_token',
   AUTH_CALLBACK_URL_NOT_ALLOWED: 'auth.callback_url.not_allowed',
+  AUTH_PERMISSION_DENIED: 'auth.permission.denied',
 
   // ─── Auth — success ──────────────────────────────────────
   AUTH_REFRESH_SUCCESS: 'auth.refresh.success',

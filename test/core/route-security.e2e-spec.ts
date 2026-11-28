@@ -220,7 +220,8 @@ describe('Route security (e2e)', () => {
       const token = await tokenFor(
         route.permissions.filter((p) => p !== missing),
       );
-      await call(route, token).expect(403);
+      const res = await call(route, token).expect(403);
+      expect(res.body.code).toBe('auth.permission.denied');
     });
 
     it('access granted with exactly the required permissions', async () => {
@@ -276,9 +277,10 @@ describe('Route security (e2e)', () => {
 
   it('sanity: a regular verified user (USER role) cannot reach admin routes', async () => {
     const user = await createVerifiedUser(t);
-    await call(
+    const res = await call(
       { method: 'get', path: '/admin/users' },
       user.accessToken,
     ).expect(403);
+    expect(res.body.code).toBe('auth.permission.denied');
   });
 });
